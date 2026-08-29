@@ -71,9 +71,9 @@ export function ThreeGates() {
         <section className="tg-hero lo-wrap" aria-labelledby="tg-h1">
           <div className="tg-hero-copy">
             <h1 id="tg-h1">
-              Captions that look great
+              Create styled video captions
               <br />
-              <em>and get every word right.</em>
+              <em>with your AI agent.</em>
             </h1>
             <p className="tg-lede">
               Upload a short video. ClipSubtitles transcribes it word by word, styles the captions,
