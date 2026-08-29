@@ -45,8 +45,15 @@ other MCP clients, or the web editor.
 The vertical slice from `docs/plans/initial-agent-native-plan.md` is
 implemented locally: contracts, caption core, transcription adapters +
 benchmark harness, SQLite storage with a durable task queue and credit ledger,
-the deterministic render pipeline, the REST/OpenAPI + MCP server with the
-WorkOS boundary (mock locally), the durable worker, and the Next.js editor.
+the deterministic render pipeline (plus the optional Remotion renderer,
+verified locally behind `RENDERER=remotion`), the REST/OpenAPI + MCP server
+with the WorkOS boundary (mock locally), the durable worker, the Next.js
+editor with Playwright coverage at desktop and 390 px, and the Phase 4
+directory-readiness packet in `docs/directory/` (prepared, never submitted).
+Hardening already in place: per-workspace ledger idempotency (migration 2),
+fail-closed client-IP resolution behind `TRUSTED_PROXIES`, and atomic export
+publishing with cleanup on every terminal task state
+(`packages/server/src/services/outputs.ts`).
 External gates (live provider benchmark, WorkOS tenant, cloud resources,
 directory submission) are listed in `PARKED_ACTIONS.md`. Read
 `docs/architecture.md` and `docs/decisions/` before changing boundaries.
