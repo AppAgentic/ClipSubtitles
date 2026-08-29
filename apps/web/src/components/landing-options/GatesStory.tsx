@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { EDITED_WORD, OUTPUTS, SAMPLE, shortHash } from './facts';
+import { EDITED_WORD, OUTPUTS, SAMPLE } from './facts';
 
 type Gate = 0 | 1 | 2 | 3;
 
@@ -40,11 +40,11 @@ export function GatesStory() {
 
   return (
     <div className="tg-story" data-gate={gate}>
-      <figure className="tg-artifact" aria-label="The caption artifact, changing as it passes each gate">
+      <figure className="tg-artifact" aria-label="A captioned video moving from words to style to finished files">
         <div className="tg-frame">
           <div className="tg-frame-video" />
           <span className="tg-frame-readout lo-mono">
-            v{gate >= 1 ? SAMPLE.version : SAMPLE.prevVersion} · {shortHash(gate >= 1 ? SAMPLE.hashV3 : SAMPLE.hashV2, 6, 4)}
+            00:12 · {gate >= 1 ? '1 word corrected' : 'reviewing captions'}
           </span>
           <p className="tg-caption lo-cap">
             {page2.map((w) => (
@@ -53,12 +53,10 @@ export function GatesStory() {
               </span>
             ))}
           </p>
-          <div className="tg-quote lo-mono" aria-hidden={gate !== 2}>
-            <span>{SAMPLE.quoteId}</span>
-            <span className="tg-quote-cost">{SAMPLE.creditCost} credits</span>
-            <span>
-              v{SAMPLE.version} · {SAMPLE.outputs.join(' + ')} · 1080p
-            </span>
+          <div className="tg-quote" aria-hidden={gate !== 2}>
+            <span className="lo-mono">Your look</span>
+            <span className="tg-quote-cost">Bold Pop</span>
+            <span>Spring motion · 1080p preview</span>
           </div>
         </div>
         <ul className="tg-outputs lo-mono" aria-hidden={gate !== 3}>
@@ -72,28 +70,27 @@ export function GatesStory() {
 
       <ol className="tg-gates">
         <li ref={(el) => void (refs.current[0] = el)} data-gate="1" className="tg-gate">
-          <span className="tg-gate-n lo-mono">Gate 1</span>
-          <h3>Words</h3>
+          <span className="tg-gate-n lo-mono">01 · Words</span>
+          <h3>Fix any word.</h3>
           <p>
-            The transcript heard “{EDITED_WORD.was}”. You mean “{EDITED_WORD.text}”. One explicit patch —{' '}
-            <span className="lo-mono">replace_word_text</span> — bumps v{SAMPLE.prevVersion} to v{SAMPLE.version} and changes the content hash. Nothing else moves; the
-            system never rewrites a spoken word on its own.
+            Captions arrive timed to your speech and ready to review. If the transcript hears “{EDITED_WORD.was}” when you said “{EDITED_WORD.text}”,
+            correct that word and carry on. The rest stays exactly where it was.
           </p>
         </li>
         <li ref={(el) => void (refs.current[1] = el)} data-gate="2" className="tg-gate">
-          <span className="tg-gate-n lo-mono">Gate 2</span>
-          <h3>Cost</h3>
+          <span className="tg-gate-n lo-mono">02 · Look</span>
+          <h3>Make it yours.</h3>
           <p>
-            The agent asks to render and gets a quote instead: version, hash, outputs, {SAMPLE.creditCost} credits, an expiry. It cannot approve.
-            You echo <span className="lo-mono">approvedCreditCost: {SAMPLE.creditCost}</span> — exactly — or nothing is reserved.
+            Choose one of five caption styles and four motion options. Preview the finished look before you export—without keyframes, timelines or
+            rebuilding the effect for every clip.
           </p>
         </li>
         <li ref={(el) => void (refs.current[2] = el)} data-gate="3" className="tg-gate">
-          <span className="tg-gate-n lo-mono">Gate 3</span>
-          <h3>Output</h3>
+          <span className="tg-gate-n lo-mono">03 · Files</span>
+          <h3>Export your way.</h3>
           <p>
-            MP4 with captions composited, a ProRes 4444 overlay with alpha, SRT, VTT. Your selection is frozen inside the quote; the render settles
-            the credits once and hands back short-lived download links.
+            Download a ready-to-post captioned MP4, a transparent caption layer for your own edit, or subtitle files for any platform. One edit keeps
+            every format in sync.
           </p>
         </li>
       </ol>

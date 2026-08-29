@@ -53,6 +53,21 @@
   color: var(--mute);
 }
 
+[data-lo='three-gates'] .tg-section-head {
+  display: grid;
+  gap: 18px;
+  max-width: 760px;
+  padding-top: clamp(72px, 12vw, 160px);
+}
+
+[data-lo='three-gates'] .tg-section-head h2,
+[data-lo='three-gates'] .tg-section-copy h2 {
+  font-size: clamp(38px, 5.6vw, 76px);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+  font-weight: 500;
+}
+
 /* Hero: one statement, lots of air. */
 [data-lo='three-gates'] .tg-hero {
   min-height: calc(100vh - 72px);
@@ -216,7 +231,7 @@
   transform: scaleX(1);
 }
 
-/* Quote sheet slides up inside the frame at gate 2. */
+/* Style sheet slides up inside the frame at step 2. */
 [data-lo='three-gates'] .tg-quote {
   position: absolute;
   left: 8%;
@@ -243,6 +258,7 @@
 [data-lo='three-gates'] .tg-quote-cost {
   font-size: 16px;
   color: var(--warm);
+  font-weight: 650;
 }
 
 /* Outputs separate with a soft rise at gate 3. */
@@ -341,55 +357,235 @@
   color: var(--dim);
 }
 
-/* Rest */
-[data-lo='three-gates'] .tg-rest {
-  padding-block: clamp(64px, 10vw, 140px);
+/* Customer-facing sections */
+[data-lo='three-gates'] .tg-section {
+  display: grid;
+  grid-template-columns: minmax(0, 0.84fr) minmax(0, 1.16fr);
+  gap: clamp(40px, 8vw, 120px);
+  padding-block: clamp(88px, 12vw, 168px);
   border-top: 1px solid var(--line);
 }
 
-[data-lo='three-gates'] .tg-tools {
+[data-lo='three-gates'] .tg-section-copy {
+  display: grid;
+  align-content: start;
+  gap: 20px;
+}
+
+[data-lo='three-gates'] .tg-section-copy > p:last-child {
+  max-width: 48ch;
+  color: var(--dim);
+  font-size: 17px;
+}
+
+[data-lo='three-gates'] .tg-style-board {
+  display: grid;
+  align-content: center;
+  gap: 20px;
+  min-height: 520px;
+  padding: clamp(24px, 4vw, 52px);
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  background: radial-gradient(70% 60% at 50% 40%, rgb(230 162 107 / 0.16), transparent 70%), var(--ink-2);
+}
+
+[data-lo='three-gates'] .tg-style-preview {
+  display: grid;
+  place-items: center;
+  min-height: 230px;
+  text-align: center;
+  text-transform: uppercase;
+  font-size: clamp(28px, 4vw, 52px);
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  paint-order: stroke fill;
+  -webkit-text-stroke: 0.045em #000;
+  text-shadow: 0 5px 20px rgb(0 0 0 / 0.55);
+}
+
+[data-lo='three-gates'] .tg-style-preview strong {
+  color: var(--warm);
+}
+
+[data-lo='three-gates'] .tg-pills {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 24px;
-  margin-top: 20px;
-  font-size: 12.5px;
+  gap: 8px;
+}
+
+[data-lo='three-gates'] .tg-pills li {
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
   color: var(--dim);
+  font-size: 13px;
 }
 
-[data-lo='three-gates'] .tg-tools li {
-  opacity: 0;
-  transform: translateY(6px);
-  transition: opacity 500ms ease, transform 600ms cubic-bezier(0.2, 0.8, 0.2, 1);
-  transition-delay: calc(var(--i) * 60ms);
-}
-
-[data-lo='three-gates'] [data-inview='true'] .tg-tools li {
-  opacity: 1;
-  transform: none;
-}
-
-[data-lo='three-gates'] .tg-guarantees {
-  display: grid;
-  gap: 14px;
-  margin-top: 48px;
-  max-width: 62ch;
-  font-size: 15px;
-  color: var(--dim);
-}
-
-[data-lo='three-gates'] .tg-guarantees li {
-  padding-left: 20px;
-  position: relative;
-}
-
-[data-lo='three-gates'] .tg-guarantees li::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0.65em;
-  width: 8px;
-  height: 1px;
+[data-lo='three-gates'] .tg-pills .is-active {
+  border-color: var(--warm);
   background: var(--warm);
+  color: var(--warm-ink);
+}
+
+[data-lo='three-gates'] .tg-board-label {
+  color: var(--mute);
+}
+
+[data-lo='three-gates'] .tg-motion-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 20px;
+  font-size: 11px;
+  color: var(--dim);
+}
+
+[data-lo='three-gates'] .tg-exports,
+[data-lo='three-gates'] .tg-audience,
+[data-lo='three-gates'] .tg-faq {
+  grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+}
+
+[data-lo='three-gates'] .tg-export-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+
+[data-lo='three-gates'] .tg-export-grid li {
+  min-height: 220px;
+  padding: 26px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+[data-lo='three-gates'] .tg-export-grid span {
+  color: var(--warm);
+  font-size: 10px;
+}
+
+[data-lo='three-gates'] .tg-export-grid h3,
+[data-lo='three-gates'] .tg-audience-grid h3 {
+  margin-top: 54px;
+  font-size: 23px;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+}
+
+[data-lo='three-gates'] .tg-export-grid p,
+[data-lo='three-gates'] .tg-audience-grid p {
+  margin-top: 10px;
+  color: var(--dim);
+}
+
+[data-lo='three-gates'] .tg-control {
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+  align-items: center;
+}
+
+[data-lo='three-gates'] .tg-approval {
+  display: grid;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+[data-lo='three-gates'] .tg-approval span,
+[data-lo='three-gates'] .tg-approval strong {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--line);
+  font-weight: 500;
+}
+
+[data-lo='three-gates'] .tg-approval span::before {
+  content: '✓';
+  margin-right: 12px;
+  color: var(--warm);
+}
+
+[data-lo='three-gates'] .tg-approval strong {
+  border: 0;
+  background: var(--warm);
+  color: var(--warm-ink);
+}
+
+[data-lo='three-gates'] .tg-audience-grid {
+  display: grid;
+  gap: 0;
+}
+
+[data-lo='three-gates'] .tg-audience-grid li {
+  padding: 0 0 28px;
+  border-bottom: 1px solid var(--line);
+}
+
+[data-lo='three-gates'] .tg-audience-grid li + li {
+  padding-top: 28px;
+}
+
+[data-lo='three-gates'] .tg-audience-grid h3 {
+  margin-top: 0;
+}
+
+[data-lo='three-gates'] .tg-agent-note {
+  grid-column: 2;
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  color: var(--dim);
+}
+
+[data-lo='three-gates'] .tg-agent-note strong {
+  color: var(--text);
+}
+
+[data-lo='three-gates'] .tg-agent-note a {
+  flex: none;
+  color: var(--warm);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+[data-lo='three-gates'] .tg-faq-list {
+  border-top: 1px solid var(--line);
+}
+
+[data-lo='three-gates'] .tg-faq-list details {
+  border-bottom: 1px solid var(--line);
+}
+
+[data-lo='three-gates'] .tg-faq-list summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 22px 0;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 550;
+  list-style: none;
+}
+
+[data-lo='three-gates'] .tg-faq-list summary::-webkit-details-marker {
+  display: none;
+}
+
+[data-lo='three-gates'] .tg-faq-list summary span {
+  color: var(--warm);
+  transition: transform 200ms ease;
+}
+
+[data-lo='three-gates'] .tg-faq-list details[open] summary span {
+  transform: rotate(45deg);
+}
+
+[data-lo='three-gates'] .tg-faq-list details p {
+  max-width: 58ch;
+  padding: 0 36px 24px 0;
+  color: var(--dim);
 }
 
 /* Final */
@@ -401,10 +597,16 @@
 }
 
 [data-lo='three-gates'] .tg-final h2 {
+  max-width: 12ch;
   font-size: clamp(36px, 6.4vw, 88px);
   line-height: 0.98;
   letter-spacing: -0.045em;
   font-weight: 500;
+}
+
+[data-lo='three-gates'] .tg-final > p {
+  color: var(--dim);
+  font-size: 18px;
 }
 
 @media (max-width: 860px) {
@@ -446,14 +648,30 @@
   [data-lo='three-gates'] .tg-hero {
     min-height: 0;
   }
+  [data-lo='three-gates'] .tg-section {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 44px;
+  }
+  [data-lo='three-gates'] .tg-agent-note {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 560px) {
+  [data-lo='three-gates'] .tg-export-grid,
+  [data-lo='three-gates'] .tg-motion-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  [data-lo='three-gates'] .tg-style-board {
+    min-height: 440px;
+  }
+  [data-lo='three-gates'] .tg-agent-note {
+    display: grid;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   [data-lo='three-gates'] .tg-gate::after {
     height: 60%;
-  }
-  [data-lo='three-gates'] .tg-tools li {
-    opacity: 1;
-    transform: none;
   }
 }
