@@ -28,6 +28,7 @@ fixtures/benchmark/reports/*.md
 .idea/
 .vscode/*
 !.vscode/extensions.json
+.claude/worktrees/
 
 # Logs & coverage
 *.log
