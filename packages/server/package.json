@@ -27,6 +27,7 @@
     "@clipsubtitles/contracts": "workspace:*",
     "@clipsubtitles/core": "workspace:*",
     "@clipsubtitles/render": "workspace:*",
+    "@clipsubtitles/render-remotion": "workspace:*",
     "@clipsubtitles/storage": "workspace:*",
     "@clipsubtitles/transcription": "workspace:*",
     "@hono/node-server": "^2.1.1",

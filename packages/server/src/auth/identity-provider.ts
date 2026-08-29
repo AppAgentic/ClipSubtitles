@@ -27,10 +27,11 @@ export const MOCK_USERS: IdentityUser[] = [
 
 export class MockIdentityProvider implements IdentityProvider {
   readonly kind = 'mock' as const;
-  constructor(private readonly apiPublicUrl: string) {}
+  /** `entryUrl` is the public origin users browse (the web app proxies /auth/* to the API). */
+  constructor(private readonly entryUrl: string) {}
 
   authorizationUrl(state: string): string {
-    return `${this.apiPublicUrl}/auth/mock/sign-in?state=${encodeURIComponent(state)}`;
+    return `${this.entryUrl}/auth/mock/sign-in?state=${encodeURIComponent(state)}`;
   }
 
   async exchangeCode(code: string): Promise<IdentityUser> {
@@ -110,5 +111,5 @@ export class WorkOSIdentityProvider implements IdentityProvider {
 
 export function createIdentityProvider(config: AppConfig): IdentityProvider {
   if (config.auth.mode === 'workos' && config.auth.workos) return new WorkOSIdentityProvider(config.auth.workos);
-  return new MockIdentityProvider(config.apiPublicUrl);
+  return new MockIdentityProvider(config.webPublicUrl);
 }

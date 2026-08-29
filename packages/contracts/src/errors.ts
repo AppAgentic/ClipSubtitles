@@ -108,7 +108,7 @@ export const ApiErrorSchema = z
       details: z.array(ValidationIssueSchema).max(50).optional(),
     }),
   })
-  .describe('Public error envelope');
+  .describe('Public error envelope').meta({ id: 'ApiError' });
 
 export type ApiError = z.infer<typeof ApiErrorSchema>;
 export type ValidationIssue = z.infer<typeof ValidationIssueSchema>;

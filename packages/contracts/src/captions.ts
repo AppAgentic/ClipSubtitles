@@ -22,7 +22,7 @@ export const SegmentationParamsSchema = z.object({
   maxCps: z.number().min(10).max(40),
   /** Extend page end into following silence up to this many ms (readability). */
   tailPaddingMs: z.number().int().min(0).max(1_000),
-});
+}).meta({ id: 'SegmentationParams' });
 export type SegmentationParams = z.infer<typeof SegmentationParamsSchema>;
 
 export const CaptionLineSchema = z.object({
@@ -47,7 +47,7 @@ export const CaptionPageSchema = z.object({
   text: z.string().max(LIMITS.wordTextMaxChars * 60),
   /** Set when the user explicitly split/merged; automatic resegmentation preserves manual breaks. */
   manual: z.boolean().optional(),
-});
+}).meta({ id: 'CaptionPage' });
 export type CaptionPage = z.infer<typeof CaptionPageSchema>;
 
 export const CaptionQaIssueSchema = z.object({
@@ -64,5 +64,5 @@ export const CaptionQaSummarySchema = z.object({
   maxCps: z.number().nonnegative(),
   averageCps: z.number().nonnegative(),
   fidelity: z.boolean().describe('True when pages cover every transcript word exactly once, in order'),
-});
+}).meta({ id: 'CaptionQaSummary' });
 export type CaptionQaSummary = z.infer<typeof CaptionQaSummarySchema>;

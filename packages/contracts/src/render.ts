@@ -27,7 +27,7 @@ export const OutputSettingsSchema = z
     fps: FpsSchema,
     quality: z.enum(['standard', 'high']),
   })
-  .strict();
+  .strict().meta({ id: 'OutputSettings' });
 export type OutputSettings = z.infer<typeof OutputSettingsSchema>;
 
 export const DEFAULT_OUTPUT_SETTINGS: OutputSettings = {
@@ -45,7 +45,7 @@ export const ExpectedOutputSchema = z.object({
   height: z.number().int().positive().optional(),
   priced: z.boolean(),
   credits: z.number().int().nonnegative(),
-});
+}).meta({ id: 'ExpectedOutput' });
 export type ExpectedOutput = z.infer<typeof ExpectedOutputSchema>;
 
 export const QuoteStatusSchema = z.enum(['open', 'consumed', 'expired', 'invalidated']);
@@ -69,7 +69,7 @@ export const RenderQuoteSchema = z.object({
   invalidatedReason: z.string().max(200).optional(),
   createdAt: z.iso.datetime(),
   expiresAt: z.iso.datetime(),
-});
+}).meta({ id: 'RenderQuote' });
 export type RenderQuote = z.infer<typeof RenderQuoteSchema>;
 
 export const CreateRenderQuoteRequestSchema = z
@@ -77,7 +77,7 @@ export const CreateRenderQuoteRequestSchema = z
     settings: OutputSettingsSchema.optional(),
     expectedVersion: z.number().int().positive().optional(),
   })
-  .strict();
+  .strict().meta({ id: 'CreateRenderQuoteRequest' });
 export type CreateRenderQuoteRequest = z.infer<typeof CreateRenderQuoteRequestSchema>;
 
 export const CreateRenderRequestSchema = z
@@ -86,7 +86,7 @@ export const CreateRenderRequestSchema = z
     approvedCreditCost: z.number().int().nonnegative().describe('Must equal the quote creditCost exactly'),
     idempotencyKey: IdempotencyKeySchema,
   })
-  .strict();
+  .strict().meta({ id: 'CreateRenderRequest' });
 export type CreateRenderRequest = z.infer<typeof CreateRenderRequestSchema>;
 
 export const CreatePreviewRequestSchema = z
@@ -96,7 +96,7 @@ export const CreatePreviewRequestSchema = z
     resolution: PreviewResolutionSchema.optional(),
     idempotencyKey: IdempotencyKeySchema.optional(),
   })
-  .strict();
+  .strict().meta({ id: 'CreatePreviewRequest' });
 export type CreatePreviewRequest = z.infer<typeof CreatePreviewRequestSchema>;
 
 export const ExportKindSchema = z.enum([...OUTPUT_KINDS, 'preview']);
@@ -121,7 +121,7 @@ export const ExportSchema = z.object({
   expiresAt: z.iso.datetime(),
   downloadUrl: z.string().max(2048).optional().describe('Short-lived signed URL'),
   downloadUrlExpiresAt: z.iso.datetime().optional(),
-});
+}).meta({ id: 'Export' });
 export type Export = z.infer<typeof ExportSchema>;
 
 export const ExportListSchema = z.object({ exports: z.array(ExportSchema).max(200) });

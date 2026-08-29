@@ -31,6 +31,7 @@
     "fixtures:build": "pnpm --filter @clipsubtitles/transcription fixtures:build",
     "benchmark": "pnpm --filter @clipsubtitles/transcription benchmark",
     "smoke:render": "pnpm --filter @clipsubtitles/render smoke",
+    "smoke:render:remotion": "pnpm --filter @clipsubtitles/render-remotion smoke",
     "smoke:e2e": "pnpm --filter @clipsubtitles/server smoke:e2e",
     "mcp:conformance": "pnpm --filter @clipsubtitles/server mcp:conformance",
     "openapi:emit": "pnpm --filter @clipsubtitles/server openapi:emit",

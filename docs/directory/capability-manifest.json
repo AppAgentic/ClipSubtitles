@@ -1,0 +1,163 @@
+{
+  "name": "clipsubtitles",
+  "title": "ClipSubtitles",
+  "version": "0.1.0",
+  "status": "prepared-not-submitted",
+  "summary": "Agent-native captioning studio: import a short video, generate word-timed captions, review and edit through a versioned project, preview for free, approve an immutable credit quote, and render MP4 / transparent overlay / SRT / VTT.",
+  "sourceOfTruth": {
+    "tools": "packages/contracts/src/mcp.ts (MCP_TOOLS)",
+    "limits": "packages/contracts/src/limits.ts (LIMITS)",
+    "prices": "packages/contracts/src/billing.ts (PRICE_TABLE)",
+    "openapi": "docs/api/openapi.json"
+  },
+  "endpoints": {
+    "mcp": "{API_PUBLIC_URL}/api/mcp",
+    "transport": "streamable-http",
+    "sessionMode": "stateless (one transport per request, no server-side session state)",
+    "protectedResourceMetadata": "{API_PUBLIC_URL}/.well-known/oauth-protected-resource",
+    "openapi": "{API_PUBLIC_URL}/openapi.json",
+    "llmsTxt": "{API_PUBLIC_URL}/llms.txt",
+    "webStudio": "{WEB_PUBLIC_URL}",
+    "productionValues": {
+      "API_PUBLIC_URL": "https://api.clipsubtitles.com  [after deploy — gate 7]",
+      "WEB_PUBLIC_URL": "https://clipsubtitles.com  [after deploy — gate 7]"
+    }
+  },
+  "auth": {
+    "type": "oauth2.1",
+    "pkce": "S256 required",
+    "clientRegistration": {
+      "local": "Dynamic Client Registration on the mock authorization server (AUTH_MODE=mock)",
+      "production": "DCR or CIMD through WorkOS AuthKit — dashboard setting, see docs/directory/cimd-dcr-notes.md [gate 3]"
+    },
+    "tokenFormat": "JWT bearer",
+    "verification": {
+      "production": "RS256 pinned to the WorkOS JWKS; issuer and audience from config",
+      "local": "HS256 with a local dev secret"
+    },
+    "scopes": {
+      "captions:read": "Read projects, tasks, exports",
+      "captions:write": "Create/update projects, start generation, previews, paid renders, cancel tasks"
+    },
+    "scopeEnforcement": "fail-closed per tool and per REST route",
+    "revocation": "per-client grants (oauth_grants); revoking a grant makes the client's next call 401",
+    "unauthenticatedBehaviour": "401 with WWW-Authenticate: Bearer resource_metadata=\"…/.well-known/oauth-protected-resource\""
+  },
+  "tools": [
+    {
+      "name": "create_caption_project",
+      "title": "Create caption project",
+      "scope": "captions:write",
+      "cost": "free",
+      "annotations": { "readOnlyHint": false, "destructiveHint": false, "idempotentHint": false, "openWorldHint": true },
+      "sideEffects": "Creates a project; with sourceUrl, fetches a public http(s) video (SSRF-guarded, DNS-pinned, size-bounded). Without sourceUrl, returns a short-lived web upload link for the user.",
+      "idempotency": "optional idempotencyKey",
+      "description": "Create a caption project from a short video. Provide a public http(s) sourceUrl to import it directly, or omit it to receive a web upload link the user must open to upload the file. Returns the project and, when importing, a durable task id to poll with get_caption_task."
+    },
+    {
+      "name": "generate_captions",
+      "title": "Generate captions",
+      "scope": "captions:write",
+      "cost": "free",
+      "annotations": { "readOnlyHint": false, "destructiveHint": false, "idempotentHint": false, "openWorldHint": false },
+      "sideEffects": "Starts a durable transcription + segmentation task; bumps the project version when it commits. Spoken words are never rewritten; vocabulary only biases recognition.",
+      "idempotency": "optional idempotencyKey",
+      "description": "Start transcription, normalization, semantic/prosody segmentation, and initial styling for a project whose source is ready. Returns a durable task."
+    },
+    {
+      "name": "get_caption_project",
+      "title": "Get caption project",
+      "scope": "captions:read",
+      "cost": "free",
+      "annotations": { "readOnlyHint": true, "destructiveHint": false, "idempotentHint": true, "openWorldHint": false },
+      "sideEffects": "none",
+      "description": "Read the current project: version, source, transcript summary, caption pages (text + timing), style, QA, active tasks, and recent exports. Request words=true with a bounded window to inspect word-level timing."
+    },
+    {
+      "name": "update_caption_project",
+      "title": "Update caption project",
+      "scope": "captions:write",
+      "cost": "free",
+      "annotations": { "readOnlyHint": false, "destructiveHint": false, "idempotentHint": false, "openWorldHint": false },
+      "sideEffects": "Applies a transactional batch of constrained edits with an optimistic version check (VERSION_CONFLICT on mismatch). Every edit increments the version and invalidates open render quotes.",
+      "description": "Apply constrained edits (word text/timing, page split/merge, resegmentation, style, position, title) with an optimistic version check."
+    },
+    {
+      "name": "render_caption_preview",
+      "title": "Render caption preview",
+      "scope": "captions:write",
+      "cost": "free",
+      "annotations": { "readOnlyHint": false, "destructiveHint": false, "idempotentHint": false, "openWorldHint": false },
+      "sideEffects": "Starts a durable low-resolution preview render (rate limited). The finished task carries a short-lived download URL.",
+      "description": "Render a fast, low-resolution preview clip (default: up to 8 seconds from the start) of the current project version."
+    },
+    {
+      "name": "render_caption_export",
+      "title": "Render caption export (paid)",
+      "scope": "captions:write",
+      "cost": "credits",
+      "annotations": { "readOnlyHint": false, "destructiveHint": false, "idempotentHint": false, "openWorldHint": false },
+      "sideEffects": "Step 1 (no approval field): returns an immutable quote and status quote_required — nothing is reserved. Step 2 (approval {quoteId, approvedCreditCost}): reserves credits and starts the render. Credits are charged exactly once on success and released on failure/cancel. A quote is bound to the project version, content hash, settings, and price version, and expires.",
+      "idempotency": "optional idempotencyKey — duplicate approvals return the same task",
+      "userConfirmationRequired": true,
+      "description": "Two-step paid render: quote, then approve."
+    },
+    {
+      "name": "get_caption_task",
+      "title": "Get caption task",
+      "scope": "captions:read",
+      "cost": "free",
+      "annotations": { "readOnlyHint": true, "destructiveHint": false, "idempotentHint": true, "openWorldHint": false },
+      "sideEffects": "none",
+      "description": "Poll a durable task. Finished render tasks include export metadata with short-lived download URLs. Errors are bounded and carry an errorRef for support."
+    },
+    {
+      "name": "cancel_caption_task",
+      "title": "Cancel caption task",
+      "scope": "captions:write",
+      "cost": "free",
+      "annotations": { "readOnlyHint": false, "destructiveHint": false, "idempotentHint": true, "openWorldHint": false },
+      "sideEffects": "Requests cooperative cancellation; reserved credits for a cancelled render are released. Finished tasks cannot be cancelled.",
+      "description": "Request cancellation of a queued or running task."
+    }
+  ],
+  "billing": {
+    "unit": "credits",
+    "onboarding": "beta credit grant on first sign-in (INITIAL_CREDIT_GRANT); purchases are a parked decision (PARKED_ACTIONS gate 8)",
+    "quote": "immutable; bound to project version + content hash + output settings + price version; TTL enforced",
+    "reserve": "on approval, in the same transaction that creates the task",
+    "settle": "exactly once, when the render succeeds (atomic with task completion)",
+    "release": "on failure, cancellation, or lease expiry",
+    "idempotency": "ledger entries are keyed; repeated reserve/settle/release calls are no-ops"
+  },
+  "limits": {
+    "note": "Exact numbers live in LIMITS (packages/contracts/src/limits.ts) and are enforced server-side; the values below are descriptions, not copies.",
+    "uploads": "bounded size, claimed atomically before streaming",
+    "sourceUrlImport": "public http(s) only; private/loopback/link-local addresses rejected after DNS resolution; size-bounded",
+    "patchOps": "bounded per request (LIMITS.maxPatchOps)",
+    "wordsWindow": "bounded per read (LIMITS.maxWordsWindow)",
+    "exportsPerRender": "bounded (LIMITS.maxExportsPerRender)",
+    "rateLimits": "per-principal token buckets on authenticated routes; anonymous limits keyed by client address"
+  },
+  "dataHandling": {
+    "inputs": "video/audio files, public video URLs, optional vocabulary hints, optional language tag",
+    "derived": "transcripts, caption pages, style, rendered previews/exports",
+    "storage": "workspace-scoped object store + SQLite/Postgres-shaped repositories; every read is scoped by workspace",
+    "retention": "configurable sweeps for uploads, previews, exports, and purged workspaces (services/retention.ts); documented on the privacy page [after deploy]",
+    "logging": "structured logs and audit events redact content and credential keys; transcript text is never logged",
+    "untrustedContent": "transcripts, captions, titles and filenames are data, returned under an explicit content notice (CONTENT_NOTICE); never interpreted as instructions",
+    "thirdParties": "transcription providers are config-gated adapters; none are enabled by default and no live provider has been benchmarked or contacted from this repository"
+  },
+  "safety": {
+    "paidActions": "only render_caption_export after an explicit approval of the exact quote",
+    "destructiveActions": "none exposed via MCP (no delete tools); cancellation only releases reservations",
+    "externalActions": "none — the server never posts to third-party platforms",
+    "promptInjection": "media/transcript content is quarantined as data; tool descriptions instruct the model accordingly"
+  },
+  "evidence": {
+    "conformance": "pnpm mcp:conformance — initialize, tools/list (8 tools), DCR + PKCE, full workflow to a completed render over Streamable HTTP",
+    "apiTests": "packages/server/src/test/*.test.ts — auth, scopes, idempotency, quotes, billing, uploads, retention, SSRF guard",
+    "renderDeterminism": "pnpm smoke:render — byte-identical repeat renders",
+    "e2e": "pnpm smoke:e2e and apps/web/e2e/studio.spec.ts (desktop + 390px)"
+  }
+}

@@ -42,15 +42,39 @@ other MCP clients, or the web editor.
 
 ## Repository Status
 
-This repository currently contains the project contract and initial plan only.
-Application scaffolding should follow the vertical-slice contracts in
-`docs/plans/initial-agent-native-plan.md`.
+The vertical slice from `docs/plans/initial-agent-native-plan.md` is
+implemented locally: contracts, caption core, transcription adapters +
+benchmark harness, SQLite storage with a durable task queue and credit ledger,
+the deterministic render pipeline, the REST/OpenAPI + MCP server with the
+WorkOS boundary (mock locally), the durable worker, and the Next.js editor.
+External gates (live provider benchmark, WorkOS tenant, cloud resources,
+directory submission) are listed in `PARKED_ACTIONS.md`. Read
+`docs/architecture.md` and `docs/decisions/` before changing boundaries.
 
 ## Commands
 
-No development commands exist until the application is scaffolded. When they
-are added, document local development, tests, linting, type checking, MCP
-conformance, and render smoke tests here.
+| Command | Purpose |
+|---------|---------|
+| `pnpm install && pnpm fixtures:build` | One-time setup (synthetic demo clips + benchmark corpus) |
+| `pnpm dev` | API (`:3101`), worker, web (`:3100`) with mock identity and mock transcription |
+| `pnpm dev:token` | Mint a local bearer token for REST/MCP testing (mock mode only) |
+| `pnpm check` | `lint` + `typecheck` + `test` + `build` — run before every commit |
+| `pnpm test` | Vitest across packages (unit, integration, contract, security, idempotency, MCP conformance) |
+| `pnpm mcp:conformance` | Streamable HTTP client fixtures: discovery, tools, negative, scope, cost approval, retry, cancel, redaction |
+| `pnpm smoke:e2e` | REST flow with a real render and exact-once billing assertions |
+| `pnpm smoke:render` | Byte-identical repeat render of the demo fixture |
+| `pnpm --filter @clipsubtitles/web e2e` | Playwright browser flows at desktop and 390 px (needs `pnpm dev` running and `PLAYWRIGHT_BROWSERS_PATH`) |
+| `pnpm benchmark` | Transcription benchmark (mock by default; live needs vault-injected keys) |
+| `pnpm openapi:emit` | Regenerate `docs/api/openapi.json` |
+
+## Working rules for agents in this repo
+
+- Contracts first: change `packages/contracts`, then services/routes/UI. MCP tool descriptors and REST routes must stay in sync (`packages/contracts/src/mcp.ts`, `packages/server/src/http/routes`).
+- Never accept `userId`/`workspaceId` from callers; derive from the principal.
+- Never rewrite transcript words programmatically; add explicit patch ops instead.
+- Any change to pricing bumps `PRICE_VERSION`; any change to render inputs must remain deterministic (`pnpm smoke:render`).
+- Keep logs/audit free of transcript text (see `packages/server/src/logging.ts` redaction).
+- Secrets come from the vault or injected environment only; `.env` holds non-secret defaults.
 
 ## Security and Privacy
 

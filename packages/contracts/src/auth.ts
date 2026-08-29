@@ -9,7 +9,7 @@ export type Scope = z.infer<typeof ScopeSchema>;
 export const RetentionPolicySchema = z.object({
   sourceDays: z.number().int().min(1).max(365),
   exportDays: z.number().int().min(1).max(90),
-});
+}).meta({ id: 'RetentionPolicy' });
 export type RetentionPolicy = z.infer<typeof RetentionPolicySchema>;
 
 export const WorkspaceSchema = z.object({
@@ -17,7 +17,7 @@ export const WorkspaceSchema = z.object({
   name: z.string().max(120),
   retention: RetentionPolicySchema,
   createdAt: z.iso.datetime(),
-});
+}).meta({ id: 'Workspace' });
 export type Workspace = z.infer<typeof WorkspaceSchema>;
 
 export const UpdateWorkspaceRequestSchema = z
@@ -40,7 +40,7 @@ export const MeSchema = z.object({
   scopes: z.array(ScopeSchema),
   authKind: AuthKindSchema,
   credits: CreditBalanceSchema,
-});
+}).meta({ id: 'Me' });
 export type Me = z.infer<typeof MeSchema>;
 
 /** An OAuth grant (agent connection) that the user can revoke from the web surface. */
@@ -52,7 +52,7 @@ export const ConnectionSchema = z.object({
   createdAt: z.iso.datetime(),
   lastUsedAt: z.iso.datetime().optional(),
   revokedAt: z.iso.datetime().optional(),
-});
+}).meta({ id: 'Connection' });
 export type Connection = z.infer<typeof ConnectionSchema>;
 
 export const ConnectionListSchema = z.object({ connections: z.array(ConnectionSchema).max(100) });

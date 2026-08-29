@@ -1,0 +1,38 @@
+{
+  "name": "@clipsubtitles/render-remotion",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Optional Remotion renderer: a React composition that draws captions with the shared layout engine (RENDERER=remotion)",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "node scripts/sync-fonts.mjs && tsc -p tsconfig.json",
+    "build": "node scripts/sync-fonts.mjs && tsc -p tsconfig.json",
+    "test": "vitest run",
+    "browser:ensure": "remotion browser ensure",
+    "smoke": "node scripts/sync-fonts.mjs && tsx src/bin/smoke.ts"
+  },
+  "dependencies": {
+    "@clipsubtitles/contracts": "workspace:*",
+    "@clipsubtitles/core": "workspace:*",
+    "@clipsubtitles/render": "workspace:*",
+    "@expo-google-fonts/inter": "^0.4.2",
+    "@remotion/bundler": "4.0.518",
+    "@remotion/renderer": "4.0.518",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "remotion": "4.0.518"
+  },
+  "devDependencies": {
+    "@clipsubtitles/transcription": "workspace:*",
+    "@remotion/cli": "4.0.518",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "tsx": "^4.23.12"
+  }
+}

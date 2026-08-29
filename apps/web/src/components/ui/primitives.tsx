@@ -1,7 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react';
+import { createContext, useContext, useId, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from 'react';
+
+/**
+ * A Field never wraps its control in a <label>: groups (radiogroups, sliders)
+ * would inherit the whole caption as the first control's accessible name.
+ * Instead the label element gets an id that descendants reference via
+ * aria-labelledby through this context.
+ */
+const FieldLabelContext = createContext<string | undefined>(undefined);
+
+export function useFieldLabelId(): string | undefined {
+  return useContext(FieldLabelContext);
+}
 
 type Variant = 'primary' | 'ghost' | 'subtle' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
@@ -112,37 +124,64 @@ export function Panel({ children, className = '', title, aside }: { children: Re
 }
 
 export function Field({ label, hint, children, inline = false }: { label: ReactNode; hint?: ReactNode; children: ReactNode; inline?: boolean }) {
+  const labelId = useId();
+  const hintId = useId();
   return (
-    <label className={`flex ${inline ? 'items-center justify-between gap-3' : 'flex-col gap-1.5'}`}>
-      <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-ink-mute">{label}</span>
-      {children}
-      {hint ? <span className="text-[11px] text-ink-mute">{hint}</span> : null}
-    </label>
+    <FieldLabelContext.Provider value={labelId}>
+      <div role="group" aria-labelledby={labelId} aria-describedby={hint ? hintId : undefined} className={`flex ${inline ? 'items-center justify-between gap-3' : 'flex-col gap-1.5'}`}>
+        <span id={labelId} className="text-[11px] font-medium uppercase tracking-[0.12em] text-ink-mute">
+          {label}
+        </span>
+        {children}
+        {hint ? (
+          <span id={hintId} className="text-[11px] text-ink-mute">
+            {hint}
+          </span>
+        ) : null}
+      </div>
+    </FieldLabelContext.Provider>
   );
 }
 
 export function TextInput(props: InputHTMLAttributes<HTMLInputElement>) {
+  const labelId = useFieldLabelId();
+  const labelled = props['aria-label'] || props['aria-labelledby'] ? {} : labelId ? { 'aria-labelledby': labelId } : {};
   return (
     <input
+      {...labelled}
       {...props}
       className={`h-9 w-full rounded-lg border border-line-strong bg-bg-elev px-3 text-[13px] text-ink placeholder:text-ink-mute focus:border-signal ${props.className ?? ''}`}
     />
   );
 }
 
-export function Slider({ value, min, max, step = 1, onChange, format }: { value: number; min: number; max: number; step?: number; onChange: (v: number) => void; format?: (v: number) => string }) {
+export function Slider({ value, min, max, step = 1, onChange, format, label }: { value: number; min: number; max: number; step?: number; onChange: (v: number) => void; format?: (v: number) => string; label?: string }) {
+  const labelId = useFieldLabelId();
   const fill = `${((value - min) / (max - min)) * 100}%`;
   return (
     <div className="flex items-center gap-3">
-      <input type="range" min={min} max={max} step={step} value={value} style={{ ['--fill' as string]: fill }} onChange={(e) => onChange(Number(e.target.value))} />
-      <span className="mono w-14 shrink-0 text-right text-[12px] text-ink-dim">{format ? format(value) : value}</span>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        style={{ ['--fill' as string]: fill }}
+        onChange={(e) => onChange(Number(e.target.value))}
+        aria-valuetext={format ? format(value) : undefined}
+        {...(label ? { 'aria-label': label } : labelId ? { 'aria-labelledby': labelId } : {})}
+      />
+      <span className="mono w-14 shrink-0 text-right text-[12px] text-ink-dim" aria-hidden>
+        {format ? format(value) : value}
+      </span>
     </div>
   );
 }
 
-export function Segmented<T extends string>({ value, options, onChange, size = 'md' }: { value: T; options: Array<{ value: T; label: ReactNode }>; onChange: (v: T) => void; size?: 'sm' | 'md' }) {
+export function Segmented<T extends string>({ value, options, onChange, size = 'md', label }: { value: T; options: Array<{ value: T; label: ReactNode }>; onChange: (v: T) => void; size?: 'sm' | 'md'; label?: string }) {
+  const labelId = useFieldLabelId();
   return (
-    <div role="radiogroup" className="inline-flex w-full rounded-lg border border-line-strong bg-bg-elev p-0.5">
+    <div role="radiogroup" {...(label ? { 'aria-label': label } : labelId ? { 'aria-labelledby': labelId } : {})} className="inline-flex w-full rounded-lg border border-line-strong bg-bg-elev p-0.5">
       {options.map((o) => (
         <button
           key={o.value}
@@ -150,7 +189,7 @@ export function Segmented<T extends string>({ value, options, onChange, size = '
           role="radio"
           aria-checked={o.value === value}
           onClick={() => onChange(o.value)}
-          className={`flex-1 rounded-md ${size === 'sm' ? 'px-2 py-1 text-[11px]' : 'px-2.5 py-1.5 text-[12px]'} font-medium transition-colors ${
+          className={`flex-1 rounded-md ${size === 'sm' ? 'px-2 py-1 text-[11px]' : 'px-2.5 py-1.5 text-[12px]'} font-medium transition-colors disabled:cursor-not-allowed ${
             o.value === value ? 'bg-panel-2 text-ink shadow-[inset_0_0_0_1px_rgb(255_255_255/0.06)]' : 'text-ink-mute hover:text-ink-dim'
           }`}
         >
@@ -191,11 +230,17 @@ export function EmptyState({ title, body, actions }: { title: ReactNode; body?: 
   );
 }
 
+/**
+ * Key/value row. The value may be a long identifier: it wraps (mono values
+ * break anywhere) instead of clipping, so nothing is hidden on narrow screens.
+ */
 export function KV({ k, v, mono = false }: { k: ReactNode; v: ReactNode; mono?: boolean }) {
   return (
     <div className="flex items-baseline justify-between gap-4 border-b border-line/70 py-2 last:border-b-0">
-      <span className="text-[12px] text-ink-mute">{k}</span>
-      <span className={`text-right text-[13px] text-ink ${mono ? 'mono' : ''}`}>{v}</span>
+      <span className="shrink-0 text-[12px] text-ink-mute">{k}</span>
+      <span data-kv-value className={`min-w-0 text-right text-[13px] text-ink ${mono ? 'mono break-all' : 'break-words'}`}>
+        {v}
+      </span>
     </div>
   );
 }

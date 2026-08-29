@@ -7,7 +7,12 @@ import { TaskWorker } from '../worker/worker';
 loadDotEnv();
 if (!process.env.DATA_DIR) process.env.DATA_DIR = path.join(findRepoRoot(), '.data');
 const config = loadConfig();
-const ctx = createAppContext(config);
+// The Remotion renderer is loaded lazily so the default worker never pulls React/Chromium tooling.
+const overrides =
+  config.renderer === 'remotion'
+    ? { renderer: new (await import('@clipsubtitles/render-remotion')).RemotionRenderer() }
+    : {};
+const ctx = createAppContext(config, overrides);
 const worker = new TaskWorker(ctx);
 worker.start();
 console.log(`ClipSubtitles worker ${worker.workerId} started (renderer: ${ctx.renderer.id}, providers: ${config.transcription.providers.join(',')})`);

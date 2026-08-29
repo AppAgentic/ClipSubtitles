@@ -49,12 +49,13 @@ export function registerAuthRoutes(app: Hono<AppEnv>, ctx: AppContext): void {
   });
 
   if (ctx.identity.kind === 'mock') {
-    app.get('/auth/mock/sign-in', (c) => c.html(mockPickerHtml(ctx, c.req.query('state') ?? '', `${ctx.config.apiPublicUrl}/auth/mock/sign-in`)));
+    // The whole mock flow stays on the web origin (proxied) so the session cookie is set for the host users browse.
+    app.get('/auth/mock/sign-in', (c) => c.html(mockPickerHtml(ctx, c.req.query('state') ?? '', `${ctx.config.webPublicUrl}/auth/mock/sign-in`)));
     app.post('/auth/mock/sign-in', async (c) => {
       const form = await c.req.parseBody();
       const subject = typeof form.subject === 'string' ? form.subject : '';
       const state = typeof form.state === 'string' ? form.state : '';
-      return c.redirect(`${ctx.config.apiPublicUrl}/auth/callback?code=${encodeURIComponent(subject)}&state=${encodeURIComponent(state)}`, 302);
+      return c.redirect(`${ctx.config.webPublicUrl}/auth/callback?code=${encodeURIComponent(subject)}&state=${encodeURIComponent(state)}`, 302);
     });
   }
 

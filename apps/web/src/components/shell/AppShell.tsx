@@ -72,16 +72,29 @@ export function AppShell({ children, wide = false, render }: { children?: ReactN
         </div>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex h-12 items-center justify-between border-b border-line bg-bg/80 px-5 backdrop-blur">
-          <div className="flex items-center gap-3 text-[12px] text-ink-mute">
-            <span className="text-ink">{me.workspace.name}</span>
-            <span className="mono text-[11px]">{me.workspace.id}</span>
+        <header className="sticky top-0 z-20 flex h-12 min-w-0 items-center justify-between gap-3 overflow-hidden border-b border-line bg-bg/80 px-3 backdrop-blur sm:px-5">
+          <div className="flex min-w-0 items-center gap-3 text-[12px] text-ink-mute">
+            <span className="truncate text-ink" title={me.workspace.name}>
+              {me.workspace.name}
+            </span>
+            <span className="mono hidden text-[11px] md:inline">{me.workspace.id}</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <CreditsPill available={me.credits.available} reserved={me.credits.reserved} />
-            <span className="text-[12px] text-ink-dim">{me.user.displayName ?? me.user.emailMasked ?? me.user.id}</span>
-            <form method="post" action="/auth/logout" onSubmit={(e) => { e.preventDefault(); void fetch('/auth/logout', { method: 'POST', credentials: 'include' }).then(() => router.replace('/sign-in')); }}>
-              <button type="submit" className="text-[12px] text-ink-mute hover:text-ink">Sign out</button>
+            <span className="hidden max-w-[160px] truncate text-[12px] text-ink-dim md:inline" title={me.user.displayName ?? me.user.emailMasked ?? me.user.id}>
+              {me.user.displayName ?? me.user.emailMasked ?? me.user.id}
+            </span>
+            <form
+              method="post"
+              action="/auth/logout"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void fetch('/auth/logout', { method: 'POST', credentials: 'include' }).then(() => router.replace('/sign-in'));
+              }}
+            >
+              <button type="submit" className="whitespace-nowrap text-[12px] text-ink-mute hover:text-ink">
+                Sign out
+              </button>
             </form>
           </div>
         </header>
@@ -93,11 +106,15 @@ export function AppShell({ children, wide = false, render }: { children?: ReactN
 
 export function CreditsPill({ available, reserved }: { available: number; reserved: number }) {
   return (
-    <span className="mono inline-flex items-center gap-2 rounded-full border border-line-strong bg-panel px-2.5 py-1 text-[11px] text-ink-dim" title="Credits available · reserved by in-flight renders">
+    <span
+      className="mono inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-line-strong bg-panel px-2.5 py-1 text-[11px] text-ink-dim sm:gap-2"
+      title={`${available} credits available${reserved ? `, ${reserved} reserved by in-flight renders` : ''}`}
+      aria-label={`${available} credits available${reserved ? `, ${reserved} reserved` : ''}`}
+    >
       <span className="h-1.5 w-1.5 rounded-full bg-phosphor" />
       <span className="text-ink">{available}</span>
-      {reserved > 0 ? <span className="text-signal">+{reserved} held</span> : null}
-      <span className="text-ink-mute">credits</span>
+      {reserved > 0 ? <span className="text-signal">+{reserved}</span> : null}
+      <span className="hidden text-ink-mute sm:inline">credits</span>
     </span>
   );
 }

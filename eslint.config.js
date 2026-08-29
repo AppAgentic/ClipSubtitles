@@ -39,7 +39,7 @@ export default tseslint.config(
   },
   {
     // Tests assert on fixtures they built; non-null assertions are the idiomatic way to index them.
-    files: ['**/*.test.ts', '**/src/test/**', '**/test-utils.ts', '**/src/bin/smoke*.ts', '**/src/bin/mcp-conformance.ts'],
+    files: ['**/*.test.ts', '**/*.test.tsx', '**/src/test/**', '**/test-utils.ts', '**/src/bin/smoke*.ts', '**/src/bin/mcp-conformance.ts'],
     rules: { '@typescript-eslint/no-non-null-assertion': 'off' },
   },
   {

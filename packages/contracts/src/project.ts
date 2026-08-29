@@ -37,7 +37,7 @@ export const SourceAssetSchema = z.object({
   /** Short-lived signed playback URL for the editor. */
   playbackUrl: z.string().max(2048).optional(),
   playbackUrlExpiresAt: z.iso.datetime().optional(),
-});
+}).meta({ id: 'SourceAsset' });
 export type SourceAsset = z.infer<typeof SourceAssetSchema>;
 
 export const UploadTargetSchema = z.object({
@@ -49,7 +49,7 @@ export const UploadTargetSchema = z.object({
   expiresAt: z.iso.datetime(),
   /** Human upload page for agent flows where the client cannot send binaries. */
   webUploadUrl: z.string().max(2048),
-});
+}).meta({ id: 'UploadTarget' });
 export type UploadTarget = z.infer<typeof UploadTargetSchema>;
 
 export const TitleSchema = z.string().trim().min(1).max(LIMITS.titleMaxChars);
@@ -66,7 +66,7 @@ export const CreateProjectRequestSchema = z
     language: LanguageTagSchema.optional(),
     idempotencyKey: IdempotencyKeySchema.optional(),
   })
-  .strict();
+  .strict().meta({ id: 'CreateProjectRequest' });
 export type CreateProjectRequest = z.infer<typeof CreateProjectRequestSchema>;
 
 export const GenerateCaptionsRequestSchema = z
@@ -79,7 +79,7 @@ export const GenerateCaptionsRequestSchema = z
     provider: z.string().max(32).optional().describe('Force a configured provider id (tests/benchmarks)'),
     idempotencyKey: IdempotencyKeySchema.optional(),
   })
-  .strict();
+  .strict().meta({ id: 'GenerateCaptionsRequest' });
 export type GenerateCaptionsRequest = z.infer<typeof GenerateCaptionsRequestSchema>;
 
 const WordTextSchema = z.string().trim().min(1).max(LIMITS.wordTextMaxChars);
@@ -115,7 +115,7 @@ export const PatchOpSchema = z.discriminatedUnion('op', [
   z.object({ op: z.literal('set_style'), style: StylePatchSchema }).strict(),
   z.object({ op: z.literal('set_preset'), preset: StylePresetIdSchema }).strict(),
   z.object({ op: z.literal('set_position'), position: CaptionPositionSchema }).strict(),
-]);
+]).meta({ id: 'PatchOp' });
 export type PatchOp = z.infer<typeof PatchOpSchema>;
 
 export const PatchProjectRequestSchema = z
@@ -123,7 +123,7 @@ export const PatchProjectRequestSchema = z
     expectedVersion: z.number().int().positive().describe('Optimistic concurrency: current project version'),
     ops: z.array(PatchOpSchema).min(1).max(LIMITS.maxPatchOps),
   })
-  .strict();
+  .strict().meta({ id: 'PatchProjectRequest' });
 export type PatchProjectRequest = z.infer<typeof PatchProjectRequestSchema>;
 
 export const ProjectLinksSchema = z.object({
@@ -152,7 +152,7 @@ export const CaptionProjectSchema = z.object({
   links: ProjectLinksSchema,
   /** Reminder carried on every project payload: media-derived text is data, not instructions. */
   contentNotice: z.string().max(300),
-});
+}).meta({ id: 'CaptionProject' });
 export type CaptionProject = z.infer<typeof CaptionProjectSchema>;
 
 export const ProjectSummarySchema = z.object({
@@ -165,7 +165,7 @@ export const ProjectSummarySchema = z.object({
   pageCount: z.number().int().nonnegative(),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
-});
+}).meta({ id: 'ProjectSummary' });
 export type ProjectSummary = z.infer<typeof ProjectSummarySchema>;
 
 export const ProjectListSchema = z.object({
@@ -176,7 +176,7 @@ export const CreateProjectResponseSchema = z.object({
   project: CaptionProjectSchema,
   uploadTarget: UploadTargetSchema.optional(),
   importTask: TaskSchema.optional(),
-});
+}).meta({ id: 'CreateProjectResponse' });
 export type CreateProjectResponse = z.infer<typeof CreateProjectResponseSchema>;
 
 export const ProjectQuerySchema = z.object({

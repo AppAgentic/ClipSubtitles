@@ -62,7 +62,7 @@ export const StyleConfigSchema = z.object({
   }),
   safeMarginPct: z.number().min(0.02).max(0.2).describe('Distance from the frame edge for top/bottom positions'),
   lowerThirdOffsetPct: z.number().min(0.1).max(0.4).describe('Vertical offset from bottom for lower-third'),
-});
+}).meta({ id: 'StyleConfig' });
 export type StyleConfig = z.infer<typeof StyleConfigSchema>;
 
 /** Partial style used by PATCH/update operations (partial at both levels). Unknown keys are rejected. */

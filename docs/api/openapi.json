@@ -1,0 +1,5938 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "ClipSubtitles API",
+    "version": "1.0.0",
+    "description": "Agent-native captioning API. Every asynchronous operation returns a durable task id. Ownership is derived from the verified credential; caller-provided user or workspace ids are never accepted. Transcript text is untrusted media data."
+  },
+  "servers": [
+    {
+      "url": "https://api.clipsubtitles.com"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Projects"
+    },
+    {
+      "name": "Captions"
+    },
+    {
+      "name": "Rendering"
+    },
+    {
+      "name": "Tasks"
+    },
+    {
+      "name": "Exports"
+    },
+    {
+      "name": "Account"
+    },
+    {
+      "name": "Billing"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "OAuth 2.1 access token issued by WorkOS/AuthKit (scopes: captions:read, captions:write)."
+      },
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "cs_session",
+        "description": "Web session cookie (same-origin requests only)."
+      }
+    },
+    "schemas": {
+      "CreateProjectResponse": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "$ref": "#/components/schemas/CaptionProject"
+          },
+          "uploadTarget": {
+            "$ref": "#/components/schemas/UploadTarget"
+          },
+          "importTask": {
+            "$ref": "#/components/schemas/Task"
+          }
+        },
+        "required": [
+          "project"
+        ]
+      },
+      "CaptionProject": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^proj_[0-9a-hjkmnp-tv-z]{16,32}$",
+            "description": "project identifier"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "awaiting_source",
+              "importing",
+              "ready",
+              "transcribing",
+              "captioned",
+              "failed"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "contentHash": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64,
+            "description": "sha256 over transcript words, pages, and style"
+          },
+          "language": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 35,
+            "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+            "description": "Language tag (BCP-47 subset)"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceAsset"
+          },
+          "transcript": {
+            "$ref": "#/components/schemas/TranscriptView"
+          },
+          "pageCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaptionPage"
+            },
+            "maxItems": 6000
+          },
+          "style": {
+            "$ref": "#/components/schemas/StyleConfig"
+          },
+          "segmentation": {
+            "$ref": "#/components/schemas/SegmentationParams"
+          },
+          "qa": {
+            "$ref": "#/components/schemas/CaptionQaSummary"
+          },
+          "activeTasks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Task"
+            },
+            "maxItems": 20
+          },
+          "recentExports": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Export"
+            },
+            "maxItems": 10
+          },
+          "links": {
+            "type": "object",
+            "properties": {
+              "editor": {
+                "type": "string",
+                "maxLength": 2048
+              },
+              "upload": {
+                "type": "string",
+                "maxLength": 2048
+              }
+            },
+            "required": [
+              "editor"
+            ]
+          },
+          "contentNotice": {
+            "type": "string",
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "status",
+          "version",
+          "contentHash",
+          "createdAt",
+          "updatedAt",
+          "source",
+          "transcript",
+          "pageCount",
+          "style",
+          "segmentation",
+          "qa",
+          "activeTasks",
+          "recentExports",
+          "links",
+          "contentNotice"
+        ]
+      },
+      "SourceAsset": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^asset_[0-9a-hjkmnp-tv-z]{16,32}$",
+            "description": "asset identifier"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending_upload",
+              "importing",
+              "ready",
+              "failed",
+              "purged"
+            ]
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "upload",
+              "remote_url",
+              "fixture"
+            ]
+          },
+          "fileName": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "mimeType": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "durationMs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 86400000
+          },
+          "width": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "height": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "fps": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 240
+          },
+          "hasAudio": {
+            "type": "boolean"
+          },
+          "sha256": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "playbackUrl": {
+            "type": "string",
+            "maxLength": 2048
+          },
+          "playbackUrlExpiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "origin"
+        ]
+      },
+      "TranscriptView": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^rev_[0-9a-hjkmnp-tv-z]{16,32}$",
+            "description": "revision identifier"
+          },
+          "revisionNumber": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "generated",
+              "edit",
+              "fallback",
+              "import"
+            ]
+          },
+          "provider": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "Adapter id that produced the words (e.g. mock, gemini)"
+          },
+          "model": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "language": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 35,
+            "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+            "description": "Language tag (BCP-47 subset)"
+          },
+          "wordCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "durationMs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 86400000
+          },
+          "fallbackFrom": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "Provider that failed before fallback produced this revision"
+          },
+          "parentRevisionId": {
+            "type": "string",
+            "pattern": "^rev_[0-9a-hjkmnp-tv-z]{16,32}$",
+            "description": "revision identifier"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "words": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TranscriptWord"
+            },
+            "maxItems": 500
+          },
+          "wordsWindow": {
+            "type": "object",
+            "properties": {
+              "offset": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "limit": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 500
+              },
+              "total": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "offset",
+              "limit",
+              "total"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "revisionNumber",
+          "source",
+          "provider",
+          "language",
+          "wordCount",
+          "durationMs",
+          "createdAt"
+        ]
+      },
+      "TranscriptWord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^w_[0-9a-hjkmnp-tv-z]{16,32}$",
+            "description": "word identifier"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "description": "Spoken token exactly as transcribed"
+          },
+          "startMs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 86400000
+          },
+          "endMs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 86400000
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Provider confidence when available"
+          },
+          "speaker": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "language": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 35,
+            "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+            "description": "Per-word language when the provider detects code-switching"
+          },
+          "edited": {
+            "type": "boolean",
+            "description": "True when a human/agent explicitly changed the text or timing"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "startMs",
+          "endMs"
+        ]
+      },
+      "CaptionPage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^pg_[0-9a-hjkmnp-tv-z]{16,32}$",
+            "description": "page identifier"
+          },
+          "index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "startWordIndex": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "endWordIndex": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Inclusive"
+          },
+          "startMs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 86400000
+          },
+          "endMs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 86400000
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "startWordIndex": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "endWordIndex": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Inclusive"
+                },
+                "text": {
+                  "type": "string",
+                  "maxLength": 3600
+                }
+              },
+              "required": [
+                "startWordIndex",
+                "endWordIndex",
+                "text"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 3
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 7200
+          },
+          "manual": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "index",
+          "startWordIndex",
+          "endWordIndex",
+          "startMs",
+          "endMs",
+          "lines",
+          "text"
+        ]
+      },
+      "StyleConfig": {
+        "type": "object",
+        "properties": {
+          "preset": {
+            "type": "string",
+            "enum": [
+              "clean",
+              "bold-pop",
+              "lower-third",
+              "karaoke",
+              "minimal"
+            ]
+          },
+          "position": {
+            "type": "string",
+            "enum": [
+              "top",
+              "center",
+              "lower-third",
+              "bottom"
+            ]
+          },
+          "fontFamily": {
+            "type": "string",
+            "enum": [
+              "Inter"
+            ]
+          },
+          "fontWeight": {
+            "anyOf": [
+              {
+                "type": "number",
+                "enum": [
+                  400
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  500
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  600
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  700
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  800
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  900
+                ]
+              }
+            ]
+          },
+          "fontSizePct": {
+            "type": "number",
+            "minimum": 0.02,
+            "maximum": 0.12,
+            "description": "Font size as fraction of the shorter frame side"
+          },
+          "lineHeight": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 1.8
+          },
+          "maxLines": {
+            "anyOf": [
+              {
+                "type": "number",
+                "enum": [
+                  1
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  2
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  3
+                ]
+              }
+            ]
+          },
+          "maxCharsPerLine": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 60
+          },
+          "textAlign": {
+            "type": "string",
+            "enum": [
+              "left",
+              "center",
+              "right"
+            ]
+          },
+          "textTransform": {
+            "type": "string",
+            "enum": [
+              "none",
+              "uppercase"
+            ]
+          },
+          "textColor": {
+            "type": "string",
+            "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+          },
+          "stroke": {
+            "type": "object",
+            "properties": {
+              "widthPct": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 0.02,
+                "description": "Outline width as fraction of the shorter frame side"
+              },
+              "color": {
+                "type": "string",
+                "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+              }
+            },
+            "required": [
+              "widthPct",
+              "color"
+            ]
+          },
+          "shadow": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "color": {
+                "type": "string",
+                "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+              },
+              "blurPct": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 0.03
+              },
+              "offsetYPct": {
+                "type": "number",
+                "minimum": -0.02,
+                "maximum": 0.02
+              }
+            },
+            "required": [
+              "enabled",
+              "color",
+              "blurPct",
+              "offsetYPct"
+            ]
+          },
+          "background": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "color": {
+                "type": "string",
+                "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+              },
+              "paddingXPct": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 0.05
+              },
+              "paddingYPct": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 0.05
+              },
+              "radiusPct": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 0.03
+              }
+            },
+            "required": [
+              "enabled",
+              "color",
+              "paddingXPct",
+              "paddingYPct",
+              "radiusPct"
+            ]
+          },
+          "highlight": {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "word"
+                ]
+              },
+              "color": {
+                "type": "string",
+                "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+              },
+              "backgroundColor": {
+                "type": "string",
+                "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+              },
+              "scale": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 1.3,
+                "description": "Scale applied to the active word"
+              }
+            },
+            "required": [
+              "mode",
+              "color",
+              "scale"
+            ]
+          },
+          "safeMarginPct": {
+            "type": "number",
+            "minimum": 0.02,
+            "maximum": 0.2,
+            "description": "Distance from the frame edge for top/bottom positions"
+          },
+          "lowerThirdOffsetPct": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 0.4,
+            "description": "Vertical offset from bottom for lower-third"
+          }
+        },
+        "required": [
+          "preset",
+          "position",
+          "fontFamily",
+          "fontWeight",
+          "fontSizePct",
+          "lineHeight",
+          "maxLines",
+          "maxCharsPerLine",
+          "textAlign",
+          "textTransform",
+          "textColor",
+          "stroke",
+          "shadow",
+          "background",
+          "highlight",
+          "safeMarginPct",
+          "lowerThirdOffsetPct"
+        ]
+      },
+      "SegmentationParams": {
+        "type": "object",
+        "properties": {
+          "maxCharsPerPage": {
+            "type": "integer",
+            "minimum": 12,
+            "maximum": 120
+          },
+          "maxLinesPerPage": {
+            "anyOf": [
+              {
+                "type": "number",
+                "enum": [
+                  1
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  2
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  3
+                ]
+              }
+            ]
+          },
+          "maxCharsPerLine": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 60
+          },
+          "maxPageDurationMs": {
+            "type": "integer",
+            "minimum": 800,
+            "maximum": 10000
+          },
+          "minPageDurationMs": {
+            "type": "integer",
+            "minimum": 200,
+            "maximum": 3000
+          },
+          "maxWordsPerPage": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 30
+          },
+          "pauseBreakMs": {
+            "type": "integer",
+            "minimum": 80,
+            "maximum": 2000
+          },
+          "targetCps": {
+            "type": "number",
+            "minimum": 8,
+            "maximum": 30
+          },
+          "maxCps": {
+            "type": "number",
+            "minimum": 10,
+            "maximum": 40
+          },
+          "tailPaddingMs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          }
+        },
+        "required": [
+          "maxCharsPerPage",
+          "maxLinesPerPage",
+          "maxCharsPerLine",
+          "maxPageDurationMs",
+          "minPageDurationMs",
+          "maxWordsPerPage",
+          "pauseBreakMs",
+          "targetCps",
+          "maxCps",
+          "tailPaddingMs"
+        ]
+      },
+      "CaptionQaSummary": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "pageCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "pageId": {
+                  "type": "string",
+                  "pattern": "^pg_[0-9a-hjkmnp-tv-z]{16,32}$",
+                  "description": "page identifier"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "reading_speed",
+                    "line_length",
+                    "duration_short",
+                    "duration_long",
+                    "overlap",
+                    "orphan_word"
+                  ]
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": [
+                    "warning",
+                    "error"
+                  ]
+                },
+                "message": {
+                  "type": "string",
+                  "maxLength": 200
+                }
+              },
+              "required": [
+                "pageId",
+                "kind",
+                "severity",
+                "message"
+              ]
+            },
+            "maxItems": 500
+          },
+          "maxCps": {
+            "type": "number",
+            "minimum": 0
+          },
+          "averageCps": {
+            "type": "number",
+            "minimum": 0
+          },
+          "fidelity": {
+            "type": "boolean",
+            "description": "True when pages cover every transcript word exactly once, in order"
+          }
+        },
+        "required": [
+          "pageCount",
+          "issues",
+          "maxCps",
+          "averageCps",
+          "fidelity"
+        ]
+      },
+      "Task": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^task_[0-9a-hjkmnp-tv-z]{16,32}$",
+            "description": "task identifier"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "import_source",
+              "generate_captions",
+              "render_preview",
+              "render_export",
+              "retention_sweep"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled"
+            ]
+          },
+          "progress": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "stage": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "Coarse pipeline stage for progress display"
+          },
+          "projectId": {
+            "type": "string",
+            "pattern": "^proj_[0-9a-hjkmnp-tv-z]{16,32}$",
+            "description": "project identifier"
+          },
+          "attempts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "maxAttempts": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "cancelRequested": {
+            "type": "boolean"
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Client-generated idempotency key (8-128 chars)"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finishedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "error": {
+            "$ref": "#/components/schemas/TaskError"
+          },
+          "result": {
+            "$ref": "#/components/schemas/TaskResult"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "progress",
+          "attempts",
+          "maxAttempts",
+          "cancelRequested",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "TaskError": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "VALIDATION_FAILED",
+              "UNAUTHENTICATED",
+              "FORBIDDEN",
+              "INSUFFICIENT_SCOPE",
+              "NOT_FOUND",
+              "CONFLICT",
+              "VERSION_CONFLICT",
+              "IDEMPOTENCY_KEY_REUSED",
+              "IDEMPOTENCY_IN_PROGRESS",
+              "PAYLOAD_TOO_LARGE",
+              "UNSUPPORTED_MEDIA",
+              "SOURCE_NOT_READY",
+              "SOURCE_URL_REJECTED",
+              "TRANSCRIPT_MISSING",
+              "QUOTE_EXPIRED",
+              "QUOTE_INVALIDATED",
+              "QUOTE_MISMATCH",
+              "INSUFFICIENT_CREDITS",
+              "TASK_NOT_CANCELLABLE",
+              "TASK_FAILED",
+              "RATE_LIMITED",
+              "PROVIDER_UNAVAILABLE",
+              "RENDER_FAILED",
+              "RETENTION_EXPIRED",
+              "INTERNAL"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "retryable": {
+            "type": "boolean"
+          },
+          "errorRef": {
+            "type": "string",
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable"
+        ]
+      },
+      "TaskResult": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "generate_captions"
+                ]
+              },
+              "projectId": {
+                "type": "string",
+                "pattern": "^proj_[0-9a-hjkmnp-tv-z]{16,32}$",
+                "description": "project identifier"
+              },
+              "revisionId": {
+                "type": "string",
+                "pattern": "^rev_[0-9a-hjkmnp-tv-z]{16,32}$",
+                "description": "revision identifier"
+              },
+              "projectVersion": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "wordCount": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "pageCount": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "provider": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "model": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "language": {
+                "type": "string",
+                "minLength": 2,
+                "maxLength": 35,
+                "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                "description": "Language tag (BCP-47 subset)"
+              },
+              "fallbackFrom": {
+                "type": "string",
+                "maxLength": 64
+              }
+            },
+            "required": [
+              "kind",
+              "projectId",
+              "revisionId",
+              "projectVersion",
+              "wordCount",
+              "pageCount",
+              "provider",
+              "language"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "render_preview"
+                ]
+              },
+              "projectId": {
+                "type": "string",
+                "pattern": "^proj_[0-9a-hjkmnp-tv-z]{16,32}$",
+                "description": "project identifier"
+              },
+              "exportId": {
+                "type": "string",
+                "pattern": "^exp_[0-9a-hjkmnp-tv-z]{16,32}$",
+                "description": "export identifier"
+              },
+              "projectVersion": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "contentHash": {
+                "type": "string",
+                "minLength": 64,
+                "maxLength": 64
+              }
+            },
+            "required": [
+              "kind",
+              "projectId",
+              "exportId",
+              "projectVersion",
+              "contentHash"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "render_export"
+                ]
+              },
+              "projectId": {
+                "type": "string",
+                "pattern": "^proj_[0-9a-hjkmnp-tv-z]{16,32}$",
+                "description": "project identifier"
+              },
+              "exportIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^exp_[0-9a-hjkmnp-tv-z]{16,32}$",
+                  "description": "export identifier"
+                },
+                "maxItems": 4
+              },
+              "projectVersion": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "contentHash": {
+                "type": "string",
+                "minLength": 64,
+                "maxLength": 64
+              },
+              "creditsCharged": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "reservationId": {
+                "type": "string",
+                "maxLength": 64
+              }
+            },
+            "required": [
+              "kind",
+              "projectId",
+              "exportIds",
+              "projectVersion",
+              "contentHash",
+              "creditsCharged",
+              "reservationId"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "import_source"
+                ]
+              },
+              "projectId": {
+                "type": "string",
+                "pattern": "^proj_[0-9a-hjkmnp-tv-z]{16,32}$",
+                "description": "project identifier"
+              },
+              "assetId": {
+                "type": "string",
+                "pattern": "^asset_[0-9a-hjkmnp-tv-z]{16,32}$",
+                "description": "asset identifier"
+              },
+              "durationMs": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 86400000
+              }
+            },
+            "required": [
+              "kind",
+              "projectId",
+              "assetId",
+              "durationMs"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "retention_sweep"
+                ]
+              },
+              "purgedAssets": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "purgedExports": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "kind",
+              "purgedAssets",
+              "purgedExports"
+            ]
+          }
+        ]
+      },
+      "Export": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^exp_[0-9a-hjkmnp-tv-z]{16,32}$",
+            "description": "export identifier"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "mp4",
+              "overlay",
+              "srt",
+              "vtt",
+              "preview"
+            ]
+          },
+          "projectId": {
+            "type": "string",
+            "pattern": "^proj_[0-9a-hjkmnp-tv-z]{16,32}$",
+            "description": "project identifier"
+          },
+          "taskId": {
+            "type": "string",
+            "pattern": "^task_[0-9a-hjkmnp-tv-z]{16,32}$",
+            "description": "task identifier"
+          },
+          "projectVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "contentHash": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64
+          },
+          "fileName": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "mimeType": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha256": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64
+          },
+          "width": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "height": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "durationMs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 86400000
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "available",
+              "purged"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "downloadUrl": {
+            "type": "string",
+            "maxLength": 2048,
+            "description": "Short-lived signed URL"
+          },
+          "downloadUrlExpiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "projectId",
+          "taskId",
+          "projectVersion",
+          "contentHash",
+          "fileName",
+          "mimeType",
+          "bytes",
+          "sha256",
+          "status",
+          "createdAt",
+          "expiresAt"
+        ]
+      },
+      "UploadTarget": {
+        "type": "object",
+        "properties": {
+          "uploadId": {
+            "type": "string",
+            "pattern": "^upl_[0-9a-hjkmnp-tv-z]{16,32}$",
+            "description": "upload identifier"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "PUT"
+            ]
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 2048,
+            "description": "Signed, short-lived upload URL (single PUT, bounded size)"
+          },
+          "maxBytes": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "acceptedMimeTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "webUploadUrl": {
+            "type": "string",
+            "maxLength": 2048
+          }
+        },
+        "required": [
+          "uploadId",
+          "method",
+          "url",
+          "maxBytes",
+          "acceptedMimeTypes",
+          "expiresAt",
+          "webUploadUrl"
+        ]
+      },
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "VALIDATION_FAILED",
+                  "UNAUTHENTICATED",
+                  "FORBIDDEN",
+                  "INSUFFICIENT_SCOPE",
+                  "NOT_FOUND",
+                  "CONFLICT",
+                  "VERSION_CONFLICT",
+                  "IDEMPOTENCY_KEY_REUSED",
+                  "IDEMPOTENCY_IN_PROGRESS",
+                  "PAYLOAD_TOO_LARGE",
+                  "UNSUPPORTED_MEDIA",
+                  "SOURCE_NOT_READY",
+                  "SOURCE_URL_REJECTED",
+                  "TRANSCRIPT_MISSING",
+                  "QUOTE_EXPIRED",
+                  "QUOTE_INVALIDATED",
+                  "QUOTE_MISMATCH",
+                  "INSUFFICIENT_CREDITS",
+                  "TASK_NOT_CANCELLABLE",
+                  "TASK_FAILED",
+                  "RATE_LIMITED",
+                  "PROVIDER_UNAVAILABLE",
+                  "RENDER_FAILED",
+                  "RETENTION_EXPIRED",
+                  "INTERNAL"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "maxLength": 500,
+                "description": "Stable, human-readable, never contains provider output"
+              },
+              "retryable": {
+                "type": "boolean"
+              },
+              "errorRef": {
+                "type": "string",
+                "maxLength": 64,
+                "description": "Correlation id for support/audit lookup"
+              },
+              "details": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "maxLength": 200,
+                      "description": "JSON pointer-ish path of the invalid field"
+                    },
+                    "message": {
+                      "type": "string",
+                      "maxLength": 300
+                    }
+                  },
+                  "required": [
+                    "path",
+                    "message"
+                  ]
+                },
+                "maxItems": 50
+              }
+            },
+            "required": [
+              "code",
+              "message",
+              "retryable"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "description": "Public error envelope"
+      },
+      "CreateProjectRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "sourceUrl": {
+            "type": "string",
+            "maxLength": 2048,
+            "format": "uri",
+            "description": "Bounded remote media URL (http/https, public host, size-capped)"
+          },
+          "fileName": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Original file name when an upload target is requested"
+          },
+          "language": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 35,
+            "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+            "description": "Language tag (BCP-47 subset)"
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Client-generated idempotency key (8-128 chars)"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProjectSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^proj_[0-9a-hjkmnp-tv-z]{16,32}$",
+            "description": "project identifier"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "awaiting_source",
+              "importing",
+              "ready",
+              "transcribing",
+              "captioned",
+              "failed"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "language": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 35,
+            "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+            "description": "Language tag (BCP-47 subset)"
+          },
+          "durationMs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 86400000
+          },
+          "pageCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "status",
+          "version",
+          "pageCount",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "PatchProjectRequest": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Optimistic concurrency: current project version"
+          },
+          "ops": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PatchOp"
+            },
+            "minItems": 1,
+            "maxItems": 200
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "ops"
+        ],
+        "additionalProperties": false
+      },
+      "PatchOp": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "enum": [
+                  "set_title"
+                ]
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              }
+            },
+            "required": [
+              "op",
+              "title"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "enum": [
+                  "set_language"
+                ]
+              },
+              "language": {
+                "type": "string",
+                "minLength": 2,
+                "maxLength": 35,
+                "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                "description": "Language tag (BCP-47 subset)"
+              }
+            },
+            "required": [
+              "op",
+              "language"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "enum": [
+                  "replace_word_text"
+                ]
+              },
+              "wordId": {
+                "type": "string",
+                "pattern": "^w_[0-9a-hjkmnp-tv-z]{16,32}$",
+                "description": "word identifier"
+              },
+              "text": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              }
+            },
+            "required": [
+              "op",
+              "wordId",
+              "text"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "enum": [
+                  "set_word_timing"
+                ]
+              },
+              "wordId": {
+                "type": "string",
+                "pattern": "^w_[0-9a-hjkmnp-tv-z]{16,32}$",
+                "description": "word identifier"
+              },
+              "startMs": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 86400000
+              },
+              "endMs": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 86400000
+              }
+            },
+            "required": [
+              "op",
+              "wordId",
+              "startMs",
+              "endMs"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "enum": [
+                  "delete_word"
+                ]
+              },
+              "wordId": {
+                "type": "string",
+                "pattern": "^w_[0-9a-hjkmnp-tv-z]{16,32}$",
+                "description": "word identifier"
+              }
+            },
+            "required": [
+              "op",
+              "wordId"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "enum": [
+                  "insert_word"
+                ]
+              },
+              "afterWordId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^w_[0-9a-hjkmnp-tv-z]{16,32}$",
+                "description": "null inserts at the beginning"
+              },
+              "text": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "startMs": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 86400000
+              },
+              "endMs": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 86400000
+              }
+            },
+            "required": [
+              "op",
+              "afterWordId",
+              "text",
+              "startMs",
+              "endMs"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "enum": [
+                  "split_page"
+                ]
+              },
+              "pageId": {
+                "type": "string",
+                "pattern": "^pg_[0-9a-hjkmnp-tv-z]{16,32}$",
+                "description": "page identifier"
+              },
+              "beforeWordId": {
+                "type": "string",
+                "pattern": "^w_[0-9a-hjkmnp-tv-z]{16,32}$",
+                "description": "word identifier"
+              }
+            },
+            "required": [
+              "op",
+              "pageId",
+              "beforeWordId"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "enum": [
+                  "merge_page_with_next"
+                ]
+              },
+              "pageId": {
+                "type": "string",
+                "pattern": "^pg_[0-9a-hjkmnp-tv-z]{16,32}$",
+                "description": "page identifier"
+              }
+            },
+            "required": [
+              "op",
+              "pageId"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "enum": [
+                  "resegment"
+                ]
+              },
+              "segmentation": {
+                "type": "object",
+                "properties": {
+                  "maxCharsPerPage": {
+                    "type": "integer",
+                    "minimum": 12,
+                    "maximum": 120
+                  },
+                  "maxLinesPerPage": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "enum": [
+                          1
+                        ]
+                      },
+                      {
+                        "type": "number",
+                        "enum": [
+                          2
+                        ]
+                      },
+                      {
+                        "type": "number",
+                        "enum": [
+                          3
+                        ]
+                      }
+                    ]
+                  },
+                  "maxCharsPerLine": {
+                    "type": "integer",
+                    "minimum": 10,
+                    "maximum": 60
+                  },
+                  "maxPageDurationMs": {
+                    "type": "integer",
+                    "minimum": 800,
+                    "maximum": 10000
+                  },
+                  "minPageDurationMs": {
+                    "type": "integer",
+                    "minimum": 200,
+                    "maximum": 3000
+                  },
+                  "maxWordsPerPage": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 30
+                  },
+                  "pauseBreakMs": {
+                    "type": "integer",
+                    "minimum": 80,
+                    "maximum": 2000
+                  },
+                  "targetCps": {
+                    "type": "number",
+                    "minimum": 8,
+                    "maximum": 30
+                  },
+                  "maxCps": {
+                    "type": "number",
+                    "minimum": 10,
+                    "maximum": 40
+                  },
+                  "tailPaddingMs": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "op"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "enum": [
+                  "set_style"
+                ]
+              },
+              "style": {
+                "type": "object",
+                "properties": {
+                  "preset": {
+                    "type": "string",
+                    "enum": [
+                      "clean",
+                      "bold-pop",
+                      "lower-third",
+                      "karaoke",
+                      "minimal"
+                    ]
+                  },
+                  "position": {
+                    "type": "string",
+                    "enum": [
+                      "top",
+                      "center",
+                      "lower-third",
+                      "bottom"
+                    ]
+                  },
+                  "fontFamily": {
+                    "type": "string",
+                    "enum": [
+                      "Inter"
+                    ]
+                  },
+                  "fontWeight": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "enum": [
+                          400
+                        ]
+                      },
+                      {
+                        "type": "number",
+                        "enum": [
+                          500
+                        ]
+                      },
+                      {
+                        "type": "number",
+                        "enum": [
+                          600
+                        ]
+                      },
+                      {
+                        "type": "number",
+                        "enum": [
+                          700
+                        ]
+                      },
+                      {
+                        "type": "number",
+                        "enum": [
+                          800
+                        ]
+                      },
+                      {
+                        "type": "number",
+                        "enum": [
+                          900
+                        ]
+                      }
+                    ]
+                  },
+                  "fontSizePct": {
+                    "type": "number",
+                    "minimum": 0.02,
+                    "maximum": 0.12,
+                    "description": "Font size as fraction of the shorter frame side"
+                  },
+                  "lineHeight": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 1.8
+                  },
+                  "maxLines": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "enum": [
+                          1
+                        ]
+                      },
+                      {
+                        "type": "number",
+                        "enum": [
+                          2
+                        ]
+                      },
+                      {
+                        "type": "number",
+                        "enum": [
+                          3
+                        ]
+                      }
+                    ]
+                  },
+                  "maxCharsPerLine": {
+                    "type": "integer",
+                    "minimum": 10,
+                    "maximum": 60
+                  },
+                  "textAlign": {
+                    "type": "string",
+                    "enum": [
+                      "left",
+                      "center",
+                      "right"
+                    ]
+                  },
+                  "textTransform": {
+                    "type": "string",
+                    "enum": [
+                      "none",
+                      "uppercase"
+                    ]
+                  },
+                  "textColor": {
+                    "type": "string",
+                    "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+                  },
+                  "stroke": {
+                    "type": "object",
+                    "properties": {
+                      "widthPct": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 0.02,
+                        "description": "Outline width as fraction of the shorter frame side"
+                      },
+                      "color": {
+                        "type": "string",
+                        "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "shadow": {
+                    "type": "object",
+                    "properties": {
+                      "enabled": {
+                        "type": "boolean"
+                      },
+                      "color": {
+                        "type": "string",
+                        "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+                      },
+                      "blurPct": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 0.03
+                      },
+                      "offsetYPct": {
+                        "type": "number",
+                        "minimum": -0.02,
+                        "maximum": 0.02
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "background": {
+                    "type": "object",
+                    "properties": {
+                      "enabled": {
+                        "type": "boolean"
+                      },
+                      "color": {
+                        "type": "string",
+                        "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+                      },
+                      "paddingXPct": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 0.05
+                      },
+                      "paddingYPct": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 0.05
+                      },
+                      "radiusPct": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 0.03
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "highlight": {
+                    "type": "object",
+                    "properties": {
+                      "mode": {
+                        "type": "string",
+                        "enum": [
+                          "none",
+                          "word"
+                        ]
+                      },
+                      "color": {
+                        "type": "string",
+                        "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+                      },
+                      "backgroundColor": {
+                        "type": "string",
+                        "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+                      },
+                      "scale": {
+                        "type": "number",
+                        "minimum": 1,
+                        "maximum": 1.3,
+                        "description": "Scale applied to the active word"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "safeMarginPct": {
+                    "type": "number",
+                    "minimum": 0.02,
+                    "maximum": 0.2,
+                    "description": "Distance from the frame edge for top/bottom positions"
+                  },
+                  "lowerThirdOffsetPct": {
+                    "type": "number",
+                    "minimum": 0.1,
+                    "maximum": 0.4,
+                    "description": "Vertical offset from bottom for lower-third"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "op",
+              "style"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "enum": [
+                  "set_preset"
+                ]
+              },
+              "preset": {
+                "type": "string",
+                "enum": [
+                  "clean",
+                  "bold-pop",
+                  "lower-third",
+                  "karaoke",
+                  "minimal"
+                ]
+              }
+            },
+            "required": [
+              "op",
+              "preset"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "enum": [
+                  "set_position"
+                ]
+              },
+              "position": {
+                "type": "string",
+                "enum": [
+                  "top",
+                  "center",
+                  "lower-third",
+                  "bottom"
+                ]
+              }
+            },
+            "required": [
+              "op",
+              "position"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "GenerateCaptionsRequest": {
+        "type": "object",
+        "properties": {
+          "language": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 35,
+            "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+            "description": "Expected spoken language; omit for auto-detect"
+          },
+          "vocabulary": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 100,
+            "description": "Proper nouns / domain terms to bias recognition"
+          },
+          "preset": {
+            "type": "string",
+            "enum": [
+              "clean",
+              "bold-pop",
+              "lower-third",
+              "karaoke",
+              "minimal"
+            ]
+          },
+          "position": {
+            "type": "string",
+            "enum": [
+              "top",
+              "center",
+              "lower-third",
+              "bottom"
+            ]
+          },
+          "segmentation": {
+            "type": "object",
+            "properties": {
+              "maxCharsPerPage": {
+                "type": "integer",
+                "minimum": 12,
+                "maximum": 120
+              },
+              "maxLinesPerPage": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "enum": [
+                      1
+                    ]
+                  },
+                  {
+                    "type": "number",
+                    "enum": [
+                      2
+                    ]
+                  },
+                  {
+                    "type": "number",
+                    "enum": [
+                      3
+                    ]
+                  }
+                ]
+              },
+              "maxCharsPerLine": {
+                "type": "integer",
+                "minimum": 10,
+                "maximum": 60
+              },
+              "maxPageDurationMs": {
+                "type": "integer",
+                "minimum": 800,
+                "maximum": 10000
+              },
+              "minPageDurationMs": {
+                "type": "integer",
+                "minimum": 200,
+                "maximum": 3000
+              },
+              "maxWordsPerPage": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 30
+              },
+              "pauseBreakMs": {
+                "type": "integer",
+                "minimum": 80,
+                "maximum": 2000
+              },
+              "targetCps": {
+                "type": "number",
+                "minimum": 8,
+                "maximum": 30
+              },
+              "maxCps": {
+                "type": "number",
+                "minimum": 10,
+                "maximum": 40
+              },
+              "tailPaddingMs": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              }
+            },
+            "additionalProperties": false
+          },
+          "provider": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "Force a configured provider id (tests/benchmarks)"
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Client-generated idempotency key (8-128 chars)"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreatePreviewRequest": {
+        "type": "object",
+        "properties": {
+          "startMs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 86400000
+          },
+          "durationMs": {
+            "type": "integer",
+            "minimum": 500,
+            "maximum": 15000
+          },
+          "resolution": {
+            "type": "string",
+            "enum": [
+              "360p",
+              "480p",
+              "720p"
+            ]
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Client-generated idempotency key (8-128 chars)"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RenderQuote": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^quote_[0-9a-hjkmnp-tv-z]{16,32}$",
+            "description": "quote identifier"
+          },
+          "projectId": {
+            "type": "string",
+            "pattern": "^proj_[0-9a-hjkmnp-tv-z]{16,32}$",
+            "description": "project identifier"
+          },
+          "projectVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "contentHash": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64
+          },
+          "settings": {
+            "$ref": "#/components/schemas/OutputSettings"
+          },
+          "expectedOutputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExpectedOutput"
+            },
+            "maxItems": 4
+          },
+          "durationMs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 86400000
+          },
+          "billableMinutes": {
+            "type": "number",
+            "minimum": 0
+          },
+          "creditCost": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "priceVersion": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "consumed",
+              "expired",
+              "invalidated"
+            ]
+          },
+          "invalidatedReason": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "projectVersion",
+          "contentHash",
+          "settings",
+          "expectedOutputs",
+          "durationMs",
+          "billableMinutes",
+          "creditCost",
+          "priceVersion",
+          "status",
+          "createdAt",
+          "expiresAt"
+        ]
+      },
+      "OutputSettings": {
+        "type": "object",
+        "properties": {
+          "outputs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "mp4",
+                "overlay",
+                "srt",
+                "vtt"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 4
+          },
+          "resolution": {
+            "type": "string",
+            "enum": [
+              "720p",
+              "1080p",
+              "source"
+            ]
+          },
+          "fps": {
+            "anyOf": [
+              {
+                "type": "number",
+                "enum": [
+                  24
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  25
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  30
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  60
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "source"
+                ]
+              }
+            ]
+          },
+          "quality": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "high"
+            ]
+          }
+        },
+        "required": [
+          "outputs",
+          "resolution",
+          "fps",
+          "quality"
+        ],
+        "additionalProperties": false
+      },
+      "ExpectedOutput": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "mp4",
+              "overlay",
+              "srt",
+              "vtt"
+            ]
+          },
+          "container": {
+            "type": "string",
+            "maxLength": 16
+          },
+          "mimeType": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "width": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "height": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "priced": {
+            "type": "boolean"
+          },
+          "credits": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "kind",
+          "container",
+          "mimeType",
+          "priced",
+          "credits"
+        ]
+      },
+      "CreateRenderQuoteRequest": {
+        "type": "object",
+        "properties": {
+          "settings": {
+            "$ref": "#/components/schemas/OutputSettings"
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateRenderRequest": {
+        "type": "object",
+        "properties": {
+          "quoteId": {
+            "type": "string",
+            "pattern": "^quote_[0-9a-hjkmnp-tv-z]{16,32}$",
+            "description": "quote identifier"
+          },
+          "approvedCreditCost": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Must equal the quote creditCost exactly"
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Client-generated idempotency key (8-128 chars)"
+          }
+        },
+        "required": [
+          "quoteId",
+          "approvedCreditCost",
+          "idempotencyKey"
+        ],
+        "additionalProperties": false
+      },
+      "Me": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "displayName": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "emailMasked": {
+                "type": "string",
+                "maxLength": 120
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/Workspace"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "captions:read",
+                "captions:write"
+              ]
+            }
+          },
+          "authKind": {
+            "type": "string",
+            "enum": [
+              "session",
+              "bearer"
+            ]
+          },
+          "credits": {
+            "$ref": "#/components/schemas/CreditBalance"
+          }
+        },
+        "required": [
+          "user",
+          "workspace",
+          "scopes",
+          "authKind",
+          "credits"
+        ]
+      },
+      "Workspace": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^ws_[0-9a-hjkmnp-tv-z]{16,32}$",
+            "description": "workspace identifier"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "retention": {
+            "$ref": "#/components/schemas/RetentionPolicy"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "retention",
+          "createdAt"
+        ]
+      },
+      "RetentionPolicy": {
+        "type": "object",
+        "properties": {
+          "sourceDays": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 365
+          },
+          "exportDays": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 90
+          }
+        },
+        "required": [
+          "sourceDays",
+          "exportDays"
+        ]
+      },
+      "CreditBalance": {
+        "type": "object",
+        "properties": {
+          "available": {
+            "type": "integer",
+            "description": "Credits not reserved by in-flight renders"
+          },
+          "reserved": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total": {
+            "type": "integer"
+          },
+          "priceVersion": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "available",
+          "reserved",
+          "total",
+          "priceVersion"
+        ]
+      },
+      "Connection": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^grant_[0-9a-hjkmnp-tv-z]{16,32}$",
+            "description": "grant identifier"
+          },
+          "clientId": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "clientName": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "captions:read",
+                "captions:write"
+              ]
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastUsedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "revokedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "clientId",
+          "scopes",
+          "createdAt"
+        ]
+      },
+      "LedgerEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "grant",
+              "reserve",
+              "settle",
+              "release",
+              "adjust"
+            ]
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Signed credit delta on available balance"
+          },
+          "availableAfter": {
+            "type": "integer"
+          },
+          "reservedAfter": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "taskId": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "quoteId": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "reservationId": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "amount",
+          "availableAfter",
+          "reservedAfter",
+          "createdAt"
+        ]
+      },
+      "PriceTable": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "perMinute": {
+            "type": "object",
+            "properties": {
+              "mp4": {
+                "type": "object",
+                "properties": {
+                  "720p": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "1080p": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "source": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                }
+              },
+              "overlay": {
+                "type": "object",
+                "properties": {
+                  "720p": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "1080p": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "source": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                }
+              },
+              "srt": {
+                "type": "object",
+                "properties": {
+                  "720p": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "1080p": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "source": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                }
+              },
+              "vtt": {
+                "type": "object",
+                "properties": {
+                  "720p": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "1080p": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "source": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          },
+          "highQualityMultiplier": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "minimumPaidCredits": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "previewCredits": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "version",
+          "perMinute",
+          "highQualityMultiplier",
+          "minimumPaidCredits",
+          "previewCredits"
+        ]
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {
+    "/v1/projects": {
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Create a caption project",
+        "description": "Returns an upload target (single bounded PUT) or, when sourceUrl is given, starts a bounded remote import task.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Request body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProjectRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Project created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateProjectResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "IDEMPOTENCY_KEY_REUSED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "SOURCE_URL_REJECTED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "List projects in the caller workspace",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Projects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "projects": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ProjectSummary"
+                      },
+                      "maxItems": 200
+                    }
+                  },
+                  "required": [
+                    "projects"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectId}": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Get a project",
+        "description": "include=pages,words selects caption pages and a bounded window of transcript words.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^proj_[0-9a-hjkmnp-tv-z]{16,32}$",
+              "description": "project identifier"
+            },
+            "required": true,
+            "description": "project identifier",
+            "name": "projectId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 64,
+              "description": "Comma-separated: pages, words (default: pages)"
+            },
+            "required": false,
+            "description": "Comma-separated: pages, words (default: pages)",
+            "name": "include",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "required": false,
+            "name": "wordsOffset",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 500
+            },
+            "required": false,
+            "name": "wordsLimit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Project",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaptionProject"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Apply constrained edits with an optimistic version check",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^proj_[0-9a-hjkmnp-tv-z]{16,32}$",
+              "description": "project identifier"
+            },
+            "required": true,
+            "description": "project identifier",
+            "name": "projectId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Request body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchProjectRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated project",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "project": {
+                      "$ref": "#/components/schemas/CaptionProject"
+                    },
+                    "applied": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "newRevision": {
+                      "type": "boolean",
+                      "description": "True when the patch produced a new transcript revision"
+                    }
+                  },
+                  "required": [
+                    "project",
+                    "applied",
+                    "newRevision"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VERSION_CONFLICT, TRANSCRIPT_MISSING",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Delete a project and its media immediately",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^proj_[0-9a-hjkmnp-tv-z]{16,32}$",
+              "description": "project identifier"
+            },
+            "required": true,
+            "description": "project identifier",
+            "name": "projectId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectId}/upload-targets": {
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Issue a fresh bounded upload target for a project awaiting its source",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^proj_[0-9a-hjkmnp-tv-z]{16,32}$",
+              "description": "project identifier"
+            },
+            "required": true,
+            "description": "project identifier",
+            "name": "projectId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Upload target",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadTarget"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectId}/captions": {
+      "post": {
+        "tags": [
+          "Captions"
+        ],
+        "summary": "Start transcription, normalization, segmentation, and initial styling",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^proj_[0-9a-hjkmnp-tv-z]{16,32}$",
+              "description": "project identifier"
+            },
+            "required": true,
+            "description": "project identifier",
+            "name": "projectId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Request body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateCaptionsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Generation task accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "task": {
+                      "$ref": "#/components/schemas/Task"
+                    },
+                    "project": {
+                      "$ref": "#/components/schemas/CaptionProject"
+                    }
+                  },
+                  "required": [
+                    "task",
+                    "project"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "SOURCE_NOT_READY, IDEMPOTENCY_KEY_REUSED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectId}/previews": {
+      "post": {
+        "tags": [
+          "Captions"
+        ],
+        "summary": "Create a fast low-resolution preview task (free, rate limited)",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^proj_[0-9a-hjkmnp-tv-z]{16,32}$",
+              "description": "project identifier"
+            },
+            "required": true,
+            "description": "project identifier",
+            "name": "projectId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Request body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePreviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Preview task accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "task": {
+                      "$ref": "#/components/schemas/Task"
+                    }
+                  },
+                  "required": [
+                    "task"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "SOURCE_NOT_READY, TRANSCRIPT_MISSING",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectId}/render-quotes": {
+      "post": {
+        "tags": [
+          "Rendering"
+        ],
+        "summary": "Create an immutable render quote (settings, version/hash, expected outputs, credit estimate)",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^proj_[0-9a-hjkmnp-tv-z]{16,32}$",
+              "description": "project identifier"
+            },
+            "required": true,
+            "description": "project identifier",
+            "name": "projectId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Request body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRenderQuoteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Quote",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenderQuote"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "SOURCE_NOT_READY, TRANSCRIPT_MISSING, VERSION_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectId}/renders": {
+      "post": {
+        "tags": [
+          "Rendering"
+        ],
+        "summary": "Consume an approved quote: reserve credits and start the final render",
+        "description": "Requires the quote id, the exact approved credit cost, and an idempotency key. Duplicate requests return the same task and never double-charge.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^proj_[0-9a-hjkmnp-tv-z]{16,32}$",
+              "description": "project identifier"
+            },
+            "required": true,
+            "description": "project identifier",
+            "name": "projectId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Request body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRenderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Render task accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "task": {
+                      "$ref": "#/components/schemas/Task"
+                    },
+                    "quote": {
+                      "$ref": "#/components/schemas/RenderQuote"
+                    },
+                    "reservedCredits": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "task",
+                    "quote",
+                    "reservedCredits"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "INSUFFICIENT_CREDITS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "QUOTE_INVALIDATED, QUOTE_MISMATCH, IDEMPOTENCY_KEY_REUSED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "QUOTE_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tasks": {
+      "get": {
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "List recent tasks in the caller workspace",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^proj_[0-9a-hjkmnp-tv-z]{16,32}$",
+              "description": "project identifier"
+            },
+            "required": false,
+            "description": "project identifier",
+            "name": "projectId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "required": false,
+            "name": "active",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tasks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "tasks": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Task"
+                      },
+                      "maxItems": 200
+                    }
+                  },
+                  "required": [
+                    "tasks"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tasks/{taskId}": {
+      "get": {
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Get durable task progress, bounded errors, and finished exports",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^task_[0-9a-hjkmnp-tv-z]{16,32}$",
+              "description": "task identifier"
+            },
+            "required": true,
+            "description": "task identifier",
+            "name": "taskId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "task": {
+                      "$ref": "#/components/schemas/Task"
+                    },
+                    "exports": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Export"
+                      },
+                      "maxItems": 4
+                    }
+                  },
+                  "required": [
+                    "task"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tasks/{taskId}/cancel": {
+      "post": {
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Request cancellation (queued tasks cancel immediately, running tasks cooperatively)",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^task_[0-9a-hjkmnp-tv-z]{16,32}$",
+              "description": "task identifier"
+            },
+            "required": true,
+            "description": "task identifier",
+            "name": "taskId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "task": {
+                      "$ref": "#/components/schemas/Task"
+                    }
+                  },
+                  "required": [
+                    "task"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "TASK_NOT_CANCELLABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/exports": {
+      "get": {
+        "tags": [
+          "Exports"
+        ],
+        "summary": "List exports in the caller workspace",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^proj_[0-9a-hjkmnp-tv-z]{16,32}$",
+              "description": "project identifier"
+            },
+            "required": false,
+            "description": "project identifier",
+            "name": "projectId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Exports",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "exports": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Export"
+                      },
+                      "maxItems": 200
+                    }
+                  },
+                  "required": [
+                    "exports"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/exports/{exportId}": {
+      "get": {
+        "tags": [
+          "Exports"
+        ],
+        "summary": "Get export metadata and a short-lived download URL",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^exp_[0-9a-hjkmnp-tv-z]{16,32}$",
+              "description": "export identifier"
+            },
+            "required": true,
+            "description": "export identifier",
+            "name": "exportId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Export",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Export"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "RETENTION_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/exports/{exportId}/content": {
+      "get": {
+        "tags": [
+          "Exports"
+        ],
+        "summary": "Download export bytes via a signed, short-lived URL (supports Range)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^exp_[0-9a-hjkmnp-tv-z]{16,32}$",
+              "description": "export identifier"
+            },
+            "required": true,
+            "description": "export identifier",
+            "name": "exportId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "required": false,
+            "name": "exp",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "required": true,
+            "name": "ws",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "required": true,
+            "name": "sig",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "0",
+                "1"
+              ]
+            },
+            "required": false,
+            "name": "download",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File bytes"
+          },
+          "206": {
+            "description": "Partial content"
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "RETENTION_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assets/{assetId}/content": {
+      "get": {
+        "tags": [
+          "Exports"
+        ],
+        "summary": "Stream source media for the editor via a signed, short-lived URL (supports Range)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^asset_[0-9a-hjkmnp-tv-z]{16,32}$",
+              "description": "asset identifier"
+            },
+            "required": true,
+            "description": "asset identifier",
+            "name": "assetId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "required": false,
+            "name": "exp",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "required": true,
+            "name": "ws",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "required": true,
+            "name": "sig",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "0",
+                "1"
+              ]
+            },
+            "required": false,
+            "name": "download",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Media bytes"
+          },
+          "206": {
+            "description": "Partial content"
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "RETENTION_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/uploads/{uploadToken}": {
+      "put": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Upload the source media in a single bounded PUT to a signed upload target",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            },
+            "required": true,
+            "name": "uploadToken",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "required": false,
+            "name": "exp",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "required": true,
+            "name": "ws",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "required": true,
+            "name": "sig",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "0",
+                "1"
+              ]
+            },
+            "required": false,
+            "name": "download",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Source stored and probed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "asset": {
+                      "$ref": "#/components/schemas/SourceAsset"
+                    }
+                  },
+                  "required": [
+                    "asset"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "RETENTION_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "PAYLOAD_TOO_LARGE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "UNSUPPORTED_MEDIA",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Identity, workspace, scopes, and credits derived from the verified credential",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Me",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/workspace": {
+      "patch": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Update workspace name and retention windows",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Request body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "retention": {
+                    "type": "object",
+                    "properties": {
+                      "sourceDays": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 365
+                      },
+                      "exportDays": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 90
+                      }
+                    }
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Workspace",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Workspace"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/connections": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "List agent/OAuth connections (grants) for the workspace",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Connections",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "connections": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Connection"
+                      },
+                      "maxItems": 100
+                    }
+                  },
+                  "required": [
+                    "connections"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/connections/{grantId}/revoke": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Revoke an agent connection; its tokens stop working immediately",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^grant_[0-9a-hjkmnp-tv-z]{16,32}$",
+              "description": "grant identifier"
+            },
+            "required": true,
+            "description": "grant identifier",
+            "name": "grantId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Connection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Connection"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/credits": {
+      "get": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Credit balance",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Balance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditBalance"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/credits/ledger": {
+      "get": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Append-only credit ledger (grants, reservations, settlements, releases)",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ledger",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "entries": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/LedgerEntry"
+                      },
+                      "maxItems": 500
+                    }
+                  },
+                  "required": [
+                    "entries"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/prices": {
+      "get": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Current credit price table and version",
+        "responses": {
+          "200": {
+            "description": "Prices",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceTable"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {}
+}

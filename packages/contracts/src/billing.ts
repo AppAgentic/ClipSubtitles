@@ -27,14 +27,14 @@ export const PriceTableSchema = z.object({
   highQualityMultiplier: z.number().positive(),
   minimumPaidCredits: z.number().int().nonnegative(),
   previewCredits: z.number().int().nonnegative(),
-});
+}).meta({ id: 'PriceTable' });
 
 export const CreditBalanceSchema = z.object({
   available: z.number().int().describe('Credits not reserved by in-flight renders'),
   reserved: z.number().int().nonnegative(),
   total: z.number().int(),
   priceVersion: z.string(),
-});
+}).meta({ id: 'CreditBalance' });
 export type CreditBalance = z.infer<typeof CreditBalanceSchema>;
 
 export const LedgerEntryKindSchema = z.enum(['grant', 'reserve', 'settle', 'release', 'adjust']);
@@ -51,7 +51,7 @@ export const LedgerEntrySchema = z.object({
   reservationId: z.string().max(64).optional(),
   note: z.string().max(200).optional(),
   createdAt: z.iso.datetime(),
-});
+}).meta({ id: 'LedgerEntry' });
 export type LedgerEntry = z.infer<typeof LedgerEntrySchema>;
 
 export const LedgerListSchema = z.object({ entries: z.array(LedgerEntrySchema).max(500) });

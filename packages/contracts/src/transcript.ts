@@ -26,7 +26,7 @@ export const TranscriptWordSchema = z.object({
   speaker: z.string().max(LIMITS.maxSpeakerLabelChars).optional(),
   language: LanguageTagSchema.optional().describe('Per-word language when the provider detects code-switching'),
   edited: z.boolean().optional().describe('True when a human/agent explicitly changed the text or timing'),
-});
+}).meta({ id: 'TranscriptWord' });
 export type TranscriptWord = z.infer<typeof TranscriptWordSchema>;
 
 export const TranscriptSourceSchema = z.enum(['generated', 'edit', 'fallback', 'import']);
@@ -44,7 +44,7 @@ export const TranscriptRevisionSummarySchema = z.object({
   fallbackFrom: z.string().max(64).optional().describe('Provider that failed before fallback produced this revision'),
   parentRevisionId: RevisionIdSchema.optional(),
   createdAt: z.iso.datetime(),
-});
+}).meta({ id: 'TranscriptRevisionSummary' });
 export type TranscriptRevisionSummary = z.infer<typeof TranscriptRevisionSummarySchema>;
 
 export const WordsWindowSchema = z.object({
@@ -58,7 +58,7 @@ export type WordsWindow = z.infer<typeof WordsWindowSchema>;
 export const TranscriptViewSchema = TranscriptRevisionSummarySchema.extend({
   words: z.array(TranscriptWordSchema).max(LIMITS.maxWordsWindow).optional(),
   wordsWindow: WordsWindowSchema.optional(),
-});
+}).meta({ id: 'TranscriptView' });
 export type TranscriptView = z.infer<typeof TranscriptViewSchema>;
 
 /** Vocabulary hints passed to transcription adapters (never treated as instructions). */

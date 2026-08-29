@@ -116,7 +116,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       apiKey: e.WORKOS_API_KEY,
       clientId: e.WORKOS_CLIENT_ID,
       issuer: e.WORKOS_AUTHKIT_ISSUER.replace(/\/$/, ''),
-      redirectUri: e.WORKOS_REDIRECT_URI ?? `${e.API_PUBLIC_URL}/auth/callback`,
+      // The callback is reached through the web origin (proxied to the API) so the session cookie lands on the web host.
+      redirectUri: e.WORKOS_REDIRECT_URI ?? `${e.WEB_PUBLIC_URL.replace(/\/$/, '')}/auth/callback`,
       ...(e.WORKOS_WEBHOOK_SECRET ? { webhookSecret: e.WORKOS_WEBHOOK_SECRET } : {}),
     };
   }

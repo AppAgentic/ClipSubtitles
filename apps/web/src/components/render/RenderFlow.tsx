@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { useCallback, useEffect, useReducer, useState } from 'react';
 import type { CaptionProject, Export, OutputKind, OutputSettings } from '@clipsubtitles/contracts';
 import { PRICE_TABLE } from '@clipsubtitles/contracts';
-import { Button, Chip, KV, Panel, Progress, Segmented, statusTone } from '@/components/ui/primitives';
+import { Button, Chip, Field, KV, Panel, Progress, Segmented, statusTone } from '@/components/ui/primitives';
 import { useToast } from '@/components/ui/Toast';
 import { ApiClientError, api, errorMessage } from '@/lib/api';
 import { isActiveTask, notifyCreditsChanged, useTask } from '@/lib/hooks';
+import { usePendingToast } from '@/lib/pending-toast';
 import { bytes, relativeTime, shortHash, timecode } from '@/lib/format';
 import { canApprove, canQuote, formLocked, initialRenderFlowState, isTaskTerminal, renderFlowReducer } from '@/lib/render-flow-state';
 import { ExportList } from '@/app/page';
@@ -28,6 +29,8 @@ export function RenderFlow({ projectId }: { projectId: string }) {
   const [now, setNow] = useState(() => Date.now());
   const [history, setHistory] = useState<Export[]>([]);
   const { task, exports } = useTask(state.taskId);
+  /** Sticky "reserved · rendering" toast: a terminal state replaces it, unmount dismisses it. */
+  const pending = usePendingToast(toast);
 
   const reload = useCallback(() => {
     api.getProject(projectId).then(setProject).catch((err) => toast.push('error', errorMessage(err)));
@@ -39,15 +42,19 @@ export function RenderFlow({ projectId }: { projectId: string }) {
     return () => clearInterval(id);
   }, []);
 
-  // Track task status in the flow state; on any terminal state credits settled/released → refresh the header balance.
+  // Track task status in the flow state; on any terminal state credits settled/released → refresh the header balance
+  // and replace the pending toast with the outcome.
   useEffect(() => {
     if (!task) return;
     dispatch({ type: 'task_status', status: task.status });
     if (!isActiveTask(task)) {
       notifyCreditsChanged();
       reload();
+      if (task.status === 'succeeded') pending.settle('ok', 'Render finished. Credits charged once.');
+      else if (task.status === 'cancelled') pending.settle('info', 'Render cancelled. Credits released.');
+      else pending.settle('error', task.error ? `${task.error.code}: ${task.error.message}` : 'Render failed. No credits were charged.');
     }
-  }, [task, reload]);
+  }, [task, reload, pending]);
 
   const getQuote = async () => {
     setQuoting(true);
@@ -70,7 +77,7 @@ export function RenderFlow({ projectId }: { projectId: string }) {
       const res = await api.startRender(projectId, { quoteId: quote.id, approvedCreditCost: quote.creditCost, idempotencyKey: `web-render-${quote.id}` });
       dispatch({ type: 'render_started', taskId: res.task.id });
       notifyCreditsChanged();
-      toast.push('ok', `${res.reservedCredits} credits reserved. Rendering…`);
+      pending.start(`${res.reservedCredits} credits reserved. Rendering…`);
     } catch (err) {
       if (err instanceof ApiClientError && (err.code === 'QUOTE_EXPIRED' || err.code === 'QUOTE_INVALIDATED' || err.code === 'QUOTE_MISMATCH')) {
         dispatch({ type: 'quote_failed' });
@@ -134,20 +141,17 @@ export function RenderFlow({ projectId }: { projectId: string }) {
               );
             })}
           </fieldset>
-          <div className={`mt-4 grid gap-4 md:grid-cols-3 ${locked ? 'pointer-events-none opacity-60' : ''}`} aria-disabled={locked}>
-            <div>
-              <div className="mb-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-ink-mute">Resolution</div>
+          <fieldset disabled={locked} className={`mt-4 grid gap-4 md:grid-cols-3 ${locked ? 'opacity-60' : ''}`}>
+            <Field label="Resolution">
               <Segmented value={state.settings.resolution} onChange={(v) => dispatch({ type: 'settings', patch: { resolution: v as OutputSettings['resolution'] } })} size="sm" options={[{ value: '720p', label: '720p' }, { value: '1080p', label: '1080p' }, { value: 'source', label: 'Source' }]} />
-            </div>
-            <div>
-              <div className="mb-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-ink-mute">Frame rate</div>
+            </Field>
+            <Field label="Frame rate">
               <Segmented value={String(state.settings.fps)} onChange={(v) => dispatch({ type: 'settings', patch: { fps: v === 'source' ? 'source' : (Number(v) as 24 | 25 | 30 | 60) } })} size="sm" options={[{ value: 'source', label: 'Src' }, { value: '24', label: '24' }, { value: '30', label: '30' }, { value: '60', label: '60' }]} />
-            </div>
-            <div>
-              <div className="mb-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-ink-mute">Quality</div>
+            </Field>
+            <Field label="Quality">
               <Segmented value={state.settings.quality} onChange={(v) => dispatch({ type: 'settings', patch: { quality: v as OutputSettings['quality'] } })} size="sm" options={[{ value: 'standard', label: 'Standard' }, { value: 'high', label: `High ×${PRICE_TABLE.highQualityMultiplier}` }]} />
-            </div>
-          </div>
+            </Field>
+          </fieldset>
           <div className="mt-4 flex flex-wrap items-center gap-3">
             {terminal ? (
               <Button variant="primary" onClick={() => dispatch({ type: 'reset' })}>
@@ -174,7 +178,7 @@ export function RenderFlow({ projectId }: { projectId: string }) {
         <Panel title="Project" className="rise rise-1 p-4">
           <KV k="Status" v={<Chip tone={statusTone(project.status)}>{project.status}</Chip>} />
           <KV k="Version" v={`v${project.version}`} mono />
-          <KV k="Content hash" v={`${shortHash(project.contentHash)}…`} mono />
+          <KV k="Content hash" v={<span title={project.contentHash}>{shortHash(project.contentHash)}…</span>} mono />
           <KV k="Duration" v={timecode(durationMs)} mono />
           <KV k="Caption pages" v={project.pageCount} mono />
           <KV k="Style" v={`${project.style.preset} · ${project.style.position}`} />
@@ -187,7 +191,7 @@ export function RenderFlow({ projectId }: { projectId: string }) {
               <span className={`mono text-[11px] ${secondsLeft < 60 ? 'text-warn' : 'text-ink-mute'}`}>{locked ? quote.status : secondsLeft > 0 ? `expires in ${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}` : 'expired'}</span>
             </div>
             <KV k="Quote" v={quote.id} mono />
-            <KV k="For version" v={`v${quote.projectVersion} · ${shortHash(quote.contentHash)}…`} mono />
+            <KV k="For version" v={<span title={quote.contentHash}>{`v${quote.projectVersion} · ${shortHash(quote.contentHash)}…`}</span>} mono />
             <KV k="Quoted settings" v={`${quote.settings.outputs.map((o) => o.toUpperCase()).join(' + ')} · ${quote.settings.resolution} · ${quote.settings.fps} fps · ${quote.settings.quality}`} />
             <KV k="Billable" v={`${quote.billableMinutes.toFixed(2)} min`} mono />
             <div className="mt-2 border-b border-line/70 pb-2">

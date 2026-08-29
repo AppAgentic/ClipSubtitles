@@ -25,7 +25,7 @@ export const TaskErrorSchema = z.object({
   message: z.string().max(LIMITS.maxTaskErrorMessageChars),
   retryable: z.boolean(),
   errorRef: z.string().max(64).optional(),
-});
+}).meta({ id: 'TaskError' });
 export type TaskError = z.infer<typeof TaskErrorSchema>;
 
 export const GenerateCaptionsResultSchema = z.object({
@@ -78,7 +78,7 @@ export const TaskResultSchema = z.discriminatedUnion('kind', [
   RenderExportResultSchema,
   ImportSourceResultSchema,
   RetentionSweepResultSchema,
-]);
+]).meta({ id: 'TaskResult' });
 export type TaskResult = z.infer<typeof TaskResultSchema>;
 
 /** Durable task as exposed publicly. Internal lease/worker fields never leave the server. */
@@ -99,7 +99,7 @@ export const TaskSchema = z.object({
   finishedAt: z.iso.datetime().optional(),
   error: TaskErrorSchema.optional(),
   result: TaskResultSchema.optional(),
-});
+}).meta({ id: 'Task' });
 export type Task = z.infer<typeof TaskSchema>;
 
 export const TaskListSchema = z.object({

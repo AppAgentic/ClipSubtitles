@@ -12,7 +12,9 @@
     "build": "next build",
     "start": "next start -p 3100",
     "typecheck": "node scripts/sync-fonts.mjs && tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "e2e": "playwright test",
+    "e2e:install": "playwright install chromium"
   },
   "dependencies": {
     "@clipsubtitles/contracts": "workspace:*",
@@ -26,7 +28,11 @@
     "zod": "^4.5.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.0",
     "@tailwindcss/postcss": "^4.3.3",
+    "@testing-library/react": "^16.3.0",
+    "dom-accessibility-api": "^0.7.0",
+    "jsdom": "^30.0.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
     "tailwindcss": "^4.3.3"
