@@ -97,8 +97,8 @@ export function GatesStory() {
           <span className="tg-gate-n lo-mono">02 · Look</span>
           <h3>Make it yours.</h3>
           <p>
-            Pick one of five caption styles and four motion presets, then preview the current
-            version of your clip before you export.
+            Pick a caption style and motion, then preview the current version of your clip before
+            you export.
           </p>
         </li>
         <li ref={(el) => void (refs.current[2] = el)} data-gate="3" className="tg-gate">

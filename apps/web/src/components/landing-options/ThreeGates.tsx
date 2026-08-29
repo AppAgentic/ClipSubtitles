@@ -136,24 +136,23 @@ export function ThreeGates() {
         <section className="tg-section tg-exports lo-wrap" aria-labelledby="tg-export-title">
           <div className="tg-section-copy">
             <p className="lo-eyebrow tg-eyebrow">Files and price</p>
-            <h2 id="tg-export-title">One approved edit. Four files. One fixed price.</h2>
+            <h2 id="tg-export-title">Your approved edit. The files you need. One fixed price.</h2>
             <p>
               Choose the files you need. You see the exact credit price for that choice before a
               paid render starts, and nothing renders until you approve it.
             </p>
           </div>
           <div className="tg-export-wrap">
-            <ol className="tg-export-list">
-              {EXPORTS.map(([title, body], i) => (
+            <ul className="tg-export-list">
+              {EXPORTS.map(([title, body]) => (
                 <li key={title}>
-                  <span className="lo-mono">0{i + 1}</span>
                   <div>
                     <h3>{title}</h3>
                     <p>{body}</p>
                   </div>
                 </li>
               ))}
-            </ol>
+            </ul>
 
             <div className="tg-quote-card" role="group" aria-labelledby="tg-quote-title">
               <p id="tg-quote-title" className="lo-eyebrow tg-quote-eyebrow">
@@ -203,8 +202,8 @@ export function ThreeGates() {
             <p className="lo-eyebrow tg-eyebrow">Caption styles</p>
             <h2 id="tg-styles-title">Polished captions without the timeline work.</h2>
             <p>
-              Five ready-made looks, four motion presets. Try them here, then reuse the same choices
-              to keep a whole series consistent.
+              Explore ready-made looks and motion presets. Try them here, then reuse the same
+              choices to keep a whole series consistent.
             </p>
           </div>
           <StyleBoard />

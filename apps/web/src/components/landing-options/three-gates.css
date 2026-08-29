@@ -772,16 +772,8 @@
 
 [data-lo='three-gates'] .tg-export-list li {
   display: grid;
-  grid-template-columns: 32px minmax(0, 1fr);
-  gap: 12px;
   padding: 20px 0;
   border-bottom: 1px solid var(--line);
-}
-
-[data-lo='three-gates'] .tg-export-list span {
-  padding-top: 6px;
-  color: var(--warm);
-  font-size: 10px;
 }
 
 [data-lo='three-gates'] .tg-export-list h3,
