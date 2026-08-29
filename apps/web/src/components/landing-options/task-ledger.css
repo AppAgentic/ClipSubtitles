@@ -1,0 +1,494 @@
+/* 04 · Task Ledger — ops console on grid paper. One accent: amber, reserved for the human gate. */
+
+[data-lo='task-ledger'] {
+  --bg: #0f1113;
+  --grid: rgb(255 255 255 / 0.045);
+  --grid-major: rgb(255 255 255 / 0.08);
+  --line: rgb(255 255 255 / 0.1);
+  --line-2: rgb(255 255 255 / 0.18);
+  --ink: #e9ecef;
+  --dim: #9ba3ad;
+  --mute: #616a74;
+  --amber: #f2b544;
+  --amber-ink: #1a1200;
+  --lo-accent: var(--amber);
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(var(--grid-major) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-major) 1px, transparent 1px),
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 120px 120px, 120px 120px, 24px 24px, 24px 24px;
+  color: var(--ink);
+}
+
+[data-lo='task-ledger'] .tl-amber {
+  color: var(--amber);
+}
+
+[data-lo='task-ledger'] .tl-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 60px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--line);
+  background: rgb(15 17 19 / 0.7);
+}
+
+[data-lo='task-ledger'] .tl-brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--ink);
+  text-decoration: none;
+  letter-spacing: 0.04em;
+}
+
+[data-lo='task-ledger'] .tl-top-meta {
+  color: var(--mute);
+}
+
+[data-lo='task-ledger'] .tl-nav {
+  display: flex;
+  gap: 4px;
+}
+
+[data-lo='task-ledger'] .tl-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 12px;
+  color: var(--dim);
+  text-decoration: none;
+}
+
+[data-lo='task-ledger'] .tl-nav a:hover {
+  color: var(--ink);
+}
+
+[data-lo='task-ledger'] .tl-eyebrow {
+  color: var(--mute);
+}
+
+/* Hero */
+[data-lo='task-ledger'] .tl-hero {
+  display: grid;
+  gap: clamp(32px, 5vw, 56px);
+  padding-block: clamp(40px, 6vw, 80px) clamp(56px, 8vw, 112px);
+}
+
+[data-lo='task-ledger'] .tl-hero-copy {
+  max-width: 760px;
+}
+
+[data-lo='task-ledger'] .tl-hero h1 {
+  margin-top: 14px;
+  font-size: clamp(36px, 5.6vw, 72px);
+  line-height: 1;
+  letter-spacing: -0.035em;
+  font-weight: 560;
+  font-variation-settings: 'opsz' 96;
+}
+
+[data-lo='task-ledger'] .tl-hero h1 em,
+[data-lo='task-ledger'] .tl-final h2 em {
+  font-style: normal;
+  color: var(--amber);
+}
+
+[data-lo='task-ledger'] .tl-lede {
+  margin-top: 20px;
+  max-width: 560px;
+  font-size: 17px;
+  color: var(--dim);
+}
+
+[data-lo='task-ledger'] .tl-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+[data-lo='task-ledger'] .tl-btn-primary {
+  background: var(--amber);
+  color: var(--amber-ink);
+}
+
+[data-lo='task-ledger'] .tl-btn-primary:hover {
+  background: #ffc862;
+}
+
+[data-lo='task-ledger'] .tl-btn-ghost {
+  border-color: var(--line-2);
+  color: var(--ink);
+  background: rgb(15 17 19 / 0.6);
+}
+
+[data-lo='task-ledger'] .tl-btn-ghost:hover {
+  border-color: var(--dim);
+}
+
+/* The ledger */
+[data-lo='task-ledger'] .tl-ledger-wrap {
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  background: rgb(15 17 19 / 0.88);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+[data-lo='task-ledger'] .tl-ledger {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+[data-lo='task-ledger'] .tl-ledger th,
+[data-lo='task-ledger'] .tl-ledger td {
+  padding: 14px 18px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+[data-lo='task-ledger'] .tl-ledger thead th {
+  font-weight: 500;
+  color: var(--mute);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+[data-lo='task-ledger'] .tl-row {
+  color: var(--dim);
+  animation: tl-row 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(200ms + var(--i) * 140ms);
+}
+
+@keyframes tl-row {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+[data-lo='task-ledger'] .tl-id {
+  color: var(--ink);
+}
+
+[data-lo='task-ledger'] .tl-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+[data-lo='task-ledger'] .tl-state-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--dim);
+}
+
+[data-lo='task-ledger'] .tl-row-rel .tl-state-dot {
+  background: transparent;
+  border: 1px solid var(--dim);
+}
+
+[data-lo='task-ledger'] .tl-row-gate {
+  color: var(--ink);
+  background: rgb(242 181 68 / 0.06);
+  box-shadow: inset 3px 0 0 var(--amber);
+}
+
+[data-lo='task-ledger'] .tl-row-gate .tl-state,
+[data-lo='task-ledger'] .tl-row-gate .tl-credits {
+  color: var(--amber);
+}
+
+/* Only the approval row pulses. */
+[data-lo='task-ledger'] .tl-row-gate .tl-state-dot {
+  background: var(--amber);
+  animation: tl-pulse 1.6s ease-out infinite;
+}
+
+@keyframes tl-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgb(242 181 68 / 0.6);
+  }
+  100% {
+    box-shadow: 0 0 0 8px rgb(242 181 68 / 0);
+  }
+}
+
+[data-lo='task-ledger'] .tl-detail {
+  color: var(--mute);
+}
+
+[data-lo='task-ledger'] .tl-ledger-foot {
+  padding: 12px 18px;
+  font-size: 11px;
+  color: var(--mute);
+  overflow-wrap: anywhere;
+}
+
+[data-lo='task-ledger'] .tl-ledger-foot a {
+  color: var(--amber);
+  display: inline-block;
+  padding: 8px 0;
+}
+
+/* Sections */
+[data-lo='task-ledger'] .tl-section-head {
+  max-width: 640px;
+  margin-bottom: 32px;
+}
+
+[data-lo='task-ledger'] h2 {
+  margin-top: 10px;
+  font-size: clamp(24px, 3.2vw, 38px);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  font-weight: 560;
+}
+
+[data-lo='task-ledger'] .tl-life,
+[data-lo='task-ledger'] .tl-audit {
+  padding-block: clamp(48px, 7vw, 96px);
+  border-top: 1px solid var(--line);
+}
+
+[data-lo='task-ledger'] .tl-life-grid,
+[data-lo='task-ledger'] .tl-audit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(32px, 5vw, 72px);
+  align-items: start;
+}
+
+/* State graph: edges draw when in view. */
+[data-lo='task-ledger'] .tl-graph {
+  width: 100%;
+  height: auto;
+  color: var(--dim);
+}
+
+[data-lo='task-ledger'] .tl-edges path {
+  stroke-dasharray: 600;
+  stroke-dashoffset: 600;
+}
+
+[data-lo='task-ledger'] [data-inview='true'] .tl-edges path {
+  animation: tl-draw 1.1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+[data-lo='task-ledger'] [data-inview='true'] .tl-edges path:nth-child(2) {
+  animation-delay: 300ms;
+}
+
+[data-lo='task-ledger'] [data-inview='true'] .tl-edges path:nth-child(3) {
+  animation-delay: 400ms;
+}
+
+[data-lo='task-ledger'] [data-inview='true'] .tl-edges path:nth-child(4) {
+  animation-delay: 500ms;
+}
+
+[data-lo='task-ledger'] [data-inview='true'] .tl-edges path:nth-child(5) {
+  animation-delay: 900ms;
+}
+
+@keyframes tl-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+[data-lo='task-ledger'] .tl-nodes rect {
+  fill: rgb(15 17 19 / 0.9);
+  stroke: var(--line-2);
+}
+
+[data-lo='task-ledger'] .tl-nodes .tl-node-ok {
+  stroke: var(--ink);
+}
+
+[data-lo='task-ledger'] .tl-nodes text {
+  fill: var(--ink);
+}
+
+[data-lo='task-ledger'] .tl-nodes .tl-node-note {
+  fill: var(--mute);
+}
+
+/* Credit flow with a travelling chip: reserve → settle, then reset. */
+[data-lo='task-ledger'] .tl-flow {
+  display: grid;
+  font-size: 12.5px;
+}
+
+[data-lo='task-ledger'] .tl-flow li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr);
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+[data-lo='task-ledger'] .tl-flow-k {
+  color: var(--ink);
+}
+
+[data-lo='task-ledger'] .tl-flow-v {
+  color: var(--mute);
+  overflow-wrap: anywhere;
+  padding-right: 44px;
+}
+
+[data-lo='task-ledger'] .tl-chip {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid var(--amber);
+  color: var(--amber);
+  font-size: 11px;
+}
+
+[data-lo='task-ledger'] .tl-chip-reserve {
+  animation: tl-chip-go 4s ease-in-out infinite;
+}
+
+[data-lo='task-ledger'] .tl-chip-settle {
+  background: var(--amber);
+  color: var(--amber-ink);
+  animation: tl-chip-land 4s ease-in-out infinite;
+}
+
+@keyframes tl-chip-go {
+  0%,
+  35% {
+    opacity: 1;
+    transform: translateY(-50%);
+  }
+  55%,
+  100% {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+@keyframes tl-chip-land {
+  0%,
+  45% {
+    opacity: 0;
+    transform: translateY(-24px);
+  }
+  62%,
+  100% {
+    opacity: 1;
+    transform: translateY(-50%);
+  }
+}
+
+[data-lo='task-ledger'] .tl-flow-note,
+[data-lo='task-ledger'] .tl-rules {
+  margin-top: 18px;
+  font-size: 14px;
+  color: var(--dim);
+}
+
+/* Audit */
+[data-lo='task-ledger'] .tl-code {
+  margin-top: 22px;
+  padding: 18px 20px;
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  background: rgb(15 17 19 / 0.9);
+  font-size: 12.5px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--dim);
+}
+
+[data-lo='task-ledger'] .tl-c {
+  color: var(--mute);
+}
+
+[data-lo='task-ledger'] .tl-redact {
+  padding: 0 6px;
+  border-radius: 4px;
+  background: var(--ink);
+  color: var(--bg);
+}
+
+[data-lo='task-ledger'] .tl-rules {
+  display: grid;
+  font-size: 12.5px;
+}
+
+[data-lo='task-ledger'] .tl-rules li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+[data-lo='task-ledger'] .tl-rules li span:last-child {
+  color: var(--amber);
+  overflow-wrap: anywhere;
+}
+
+/* Final */
+[data-lo='task-ledger'] .tl-final {
+  padding-top: clamp(56px, 9vw, 120px);
+  border-top: 1px solid var(--line);
+}
+
+[data-lo='task-ledger'] .tl-final h2 {
+  font-size: clamp(34px, 5.6vw, 68px);
+  letter-spacing: -0.04em;
+}
+
+[data-lo='task-ledger'] .tl-foot {
+  margin-top: 40px;
+  font-size: 11px;
+  line-height: 1.9;
+  color: var(--mute);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  [data-lo='task-ledger'] .tl-life-grid,
+  [data-lo='task-ledger'] .tl-audit-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  [data-lo='task-ledger'] .tl-top-meta {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-lo='task-ledger'] .tl-edges path {
+    stroke-dashoffset: 0;
+  }
+  [data-lo='task-ledger'] .tl-chip {
+    animation: none !important;
+    opacity: 1;
+    transform: translateY(-50%);
+  }
+}

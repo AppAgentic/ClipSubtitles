@@ -1,0 +1,228 @@
+/*
+ * Landing options — shared base.
+ * Every selector is scoped under [data-lo] (the option root) or .lo-switcher so
+ * nothing here can reach the studio UI. Each option ships its own scoped sheet.
+ */
+
+[data-lo] {
+  --lo-accent: #ff7a1a;
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  overflow-x: clip;
+  font-family: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+[data-lo] *,
+[data-lo] *::before,
+[data-lo] *::after {
+  box-sizing: border-box;
+}
+
+[data-lo] h1,
+[data-lo] h2,
+[data-lo] h3,
+[data-lo] p,
+[data-lo] ul,
+[data-lo] ol,
+[data-lo] figure,
+[data-lo] pre {
+  margin: 0;
+}
+
+[data-lo] ul,
+[data-lo] ol {
+  padding: 0;
+  list-style: none;
+}
+
+[data-lo] a {
+  color: inherit;
+}
+
+[data-lo] button {
+  font: inherit;
+  color: inherit;
+}
+
+[data-lo] :focus-visible {
+  outline: 2px solid var(--lo-accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+[data-lo] .lo-mono {
+  font-family: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+/* The caption artifact uses the renderer's own typeface (Inter). */
+[data-lo] .lo-cap {
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+[data-lo] .lo-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+[data-lo] .lo-wrap {
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: clamp(20px, 4vw, 48px);
+}
+
+/* Minimum 44px touch targets for every interactive element on these pages. */
+[data-lo] .lo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 22px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+[data-lo] .lo-btn:active {
+  transform: translateY(1px);
+}
+
+[data-lo] .lo-eyebrow {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* Persistent option switcher — fixed, compact, out of the way. */
+.lo-switcher {
+  --lo-switch-bg: rgb(14 14 16 / 0.86);
+  --lo-switch-ink: #f2efe9;
+  --lo-switch-line: rgb(255 255 255 / 0.12);
+  --lo-switch-hover: rgb(255 255 255 / 0.08);
+  position: fixed;
+  z-index: 60;
+  left: 50%;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  max-width: calc(100vw - 20px);
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--lo-switch-line);
+  background: var(--lo-switch-bg);
+  color: var(--lo-switch-ink);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 18px 50px -20px rgb(0 0 0 / 0.7);
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.lo-switcher::-webkit-scrollbar {
+  display: none;
+}
+
+.lo-switcher a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 12px;
+  border-radius: 999px;
+  color: inherit;
+  text-decoration: none;
+  opacity: 0.66;
+  white-space: nowrap;
+  transition: opacity 160ms ease, background-color 160ms ease;
+}
+
+.lo-switcher a:hover {
+  opacity: 1;
+  background: var(--lo-switch-hover);
+}
+
+.lo-switcher a[aria-current='page'] {
+  opacity: 1;
+  background: var(--lo-switch-hover);
+}
+
+.lo-switcher a:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: -2px;
+  opacity: 1;
+}
+
+.lo-switcher .lo-dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--dot);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.25);
+}
+
+.lo-switcher .lo-switch-home {
+  padding-inline: 14px;
+  border-right: 1px solid var(--lo-switch-line);
+  border-radius: 999px 0 0 999px;
+  margin-right: 2px;
+}
+
+@media (max-width: 720px) {
+  .lo-switcher a .lo-switch-label {
+    display: none;
+  }
+  .lo-switcher a[aria-current='page'] .lo-switch-label {
+    display: inline;
+  }
+  .lo-switcher .lo-switch-home .lo-switch-label {
+    display: inline;
+  }
+}
+
+/* Leave room above the switcher on every option. */
+[data-lo] > footer,
+[data-lo] .lo-end {
+  padding-bottom: 96px;
+}
+
+/* Reduced motion: every option's animation completes instantly (end state) and
+ * infinite loops are collapsed. Options add explicit static fallbacks where a
+ * loop's end state would otherwise be empty. */
+@media (prefers-reduced-motion: reduce) {
+  [data-lo] *,
+  [data-lo] *::before,
+  [data-lo] *::after {
+    animation-duration: 0.001ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}

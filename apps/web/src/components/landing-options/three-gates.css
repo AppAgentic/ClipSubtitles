@@ -1,0 +1,459 @@
+/* 05 · Three Gates — deep ink, one warm accent, vast negative space. */
+
+[data-lo='three-gates'] {
+  --ink: #07080b;
+  --ink-2: #0e1016;
+  --line: rgb(255 255 255 / 0.08);
+  --text: #ecebe6;
+  --dim: #9b9a94;
+  --mute: #5f5f5a;
+  --warm: #e6a26b;
+  --warm-ink: #1c1006;
+  --lo-accent: var(--warm);
+  background: var(--ink);
+  color: var(--text);
+}
+
+[data-lo='three-gates'] .tg-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 72px;
+}
+
+[data-lo='three-gates'] .tg-brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+}
+
+[data-lo='three-gates'] .tg-nav {
+  display: flex;
+  gap: 4px;
+}
+
+[data-lo='three-gates'] .tg-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 12px;
+  color: var(--dim);
+  text-decoration: none;
+  font-size: 14px;
+}
+
+[data-lo='three-gates'] .tg-nav a:hover {
+  color: var(--text);
+}
+
+[data-lo='three-gates'] .tg-eyebrow {
+  color: var(--mute);
+}
+
+/* Hero: one statement, lots of air. */
+[data-lo='three-gates'] .tg-hero {
+  min-height: calc(100vh - 72px);
+  display: grid;
+  align-content: center;
+  gap: 24px;
+  padding-block: clamp(40px, 8vw, 96px);
+}
+
+[data-lo='three-gates'] .tg-hero h1 {
+  max-width: 12ch;
+  font-size: clamp(42px, 8vw, 112px);
+  line-height: 0.95;
+  letter-spacing: -0.045em;
+  font-weight: 500;
+  font-variation-settings: 'opsz' 96;
+}
+
+[data-lo='three-gates'] .tg-hero h1 em,
+[data-lo='three-gates'] .tg-final h2 em {
+  font-style: normal;
+  color: var(--warm);
+}
+
+[data-lo='three-gates'] .tg-lede {
+  max-width: 54ch;
+  font-size: 18px;
+  color: var(--dim);
+}
+
+[data-lo='three-gates'] .tg-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+[data-lo='three-gates'] .tg-btn-primary {
+  background: var(--warm);
+  color: var(--warm-ink);
+}
+
+[data-lo='three-gates'] .tg-btn-primary:hover {
+  background: #f0b884;
+}
+
+[data-lo='three-gates'] .tg-btn-ghost {
+  border-color: rgb(255 255 255 / 0.2);
+  color: var(--text);
+}
+
+[data-lo='three-gates'] .tg-btn-ghost:hover {
+  background: var(--ink-2);
+}
+
+[data-lo='three-gates'] .tg-scroll {
+  margin-top: 40px;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--mute);
+}
+
+/* Story: sticky artifact left, gates right. */
+[data-lo='three-gates'] .tg-story {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(32px, 6vw, 96px);
+  align-items: start;
+}
+
+[data-lo='three-gates'] .tg-artifact {
+  position: sticky;
+  top: 0;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 24px;
+  min-height: 100vh;
+}
+
+[data-lo='three-gates'] .tg-frame {
+  position: relative;
+  width: min(100%, 220px);
+  aspect-ratio: 9 / 16;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  background: var(--ink-2);
+  transition: transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 700ms ease;
+}
+
+[data-lo='three-gates'] .tg-story[data-gate='2'] .tg-frame {
+  box-shadow: 0 0 0 1px rgb(230 162 107 / 0.5), 0 40px 80px -40px rgb(230 162 107 / 0.5);
+}
+
+[data-lo='three-gates'] .tg-story[data-gate='3'] .tg-frame {
+  transform: translateY(-16px) scale(0.92);
+}
+
+[data-lo='three-gates'] .tg-frame-video {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(70% 40% at 45% 30%, rgb(230 162 107 / 0.22), transparent 70%), linear-gradient(180deg, #1a1c24, #07080b);
+}
+
+[data-lo='three-gates'] .tg-frame-readout {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  font-size: 9.5px;
+  color: rgb(236 235 230 / 0.6);
+}
+
+[data-lo='three-gates'] .tg-caption {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 26%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0 0.26em;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.15;
+  text-align: center;
+  color: #fff;
+  paint-order: stroke fill;
+  -webkit-text-stroke: 0.05em #000;
+  text-shadow: 0 2px 10px rgb(0 0 0 / 0.6);
+  transition: opacity 500ms ease;
+}
+
+[data-lo='three-gates'] .tg-story[data-gate='2'] .tg-caption {
+  opacity: 0.35;
+}
+
+[data-lo='three-gates'] .tg-word-edited {
+  position: relative;
+  transition: color 400ms ease;
+}
+
+[data-lo='three-gates'] .tg-story[data-gate='1'] .tg-word-edited,
+[data-lo='three-gates'] .tg-story[data-gate='3'] .tg-word-edited {
+  color: var(--warm);
+}
+
+[data-lo='three-gates'] .tg-word-edited::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 2px;
+  background: var(--warm);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 500ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+[data-lo='three-gates'] .tg-story[data-gate='1'] .tg-word-edited::after {
+  transform: scaleX(1);
+}
+
+/* Quote sheet slides up inside the frame at gate 2. */
+[data-lo='three-gates'] .tg-quote {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 8%;
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--warm);
+  background: rgb(7 8 11 / 0.9);
+  color: var(--dim);
+  font-size: 9px;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 500ms ease, transform 600ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+[data-lo='three-gates'] .tg-story[data-gate='2'] .tg-quote {
+  opacity: 1;
+  transform: none;
+}
+
+[data-lo='three-gates'] .tg-quote-cost {
+  font-size: 16px;
+  color: var(--warm);
+}
+
+/* Outputs separate with a soft rise at gate 3. */
+[data-lo='three-gates'] .tg-outputs {
+  display: flex;
+  gap: 8px;
+  height: 36px;
+}
+
+[data-lo='three-gates'] .tg-outputs li {
+  display: grid;
+  place-items: center;
+  padding: 0 12px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid var(--warm);
+  color: var(--warm);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  opacity: 0;
+  transform: translateY(10px);
+  filter: blur(3px);
+  transition: opacity 500ms ease, transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1), filter 500ms ease;
+  transition-delay: calc(var(--i) * 90ms);
+}
+
+[data-lo='three-gates'] .tg-story[data-gate='3'] .tg-outputs li {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+/* Gates charge as they approach. */
+[data-lo='three-gates'] .tg-gates {
+  display: grid;
+}
+
+[data-lo='three-gates'] .tg-gate {
+  position: relative;
+  min-height: 90vh;
+  display: grid;
+  align-content: center;
+  gap: 12px;
+  padding-left: 28px;
+}
+
+[data-lo='three-gates'] .tg-gate::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--line);
+}
+
+[data-lo='three-gates'] .tg-gate::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 1px;
+  height: 0;
+  background: var(--warm);
+  box-shadow: 0 0 14px var(--warm);
+  transform: translateY(-50%);
+  transition: height 900ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+[data-lo='three-gates'] .tg-gate[data-charged='true']::after {
+  height: 60%;
+}
+
+[data-lo='three-gates'] .tg-gate-n {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mute);
+  transition: color 500ms ease;
+}
+
+[data-lo='three-gates'] .tg-gate[data-charged='true'] .tg-gate-n {
+  color: var(--warm);
+}
+
+[data-lo='three-gates'] .tg-gate h3 {
+  font-size: clamp(36px, 5vw, 64px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-weight: 500;
+}
+
+[data-lo='three-gates'] .tg-gate p {
+  max-width: 46ch;
+  font-size: 16.5px;
+  color: var(--dim);
+}
+
+/* Rest */
+[data-lo='three-gates'] .tg-rest {
+  padding-block: clamp(64px, 10vw, 140px);
+  border-top: 1px solid var(--line);
+}
+
+[data-lo='three-gates'] .tg-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin-top: 20px;
+  font-size: 12.5px;
+  color: var(--dim);
+}
+
+[data-lo='three-gates'] .tg-tools li {
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 500ms ease, transform 600ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition-delay: calc(var(--i) * 60ms);
+}
+
+[data-lo='three-gates'] [data-inview='true'] .tg-tools li {
+  opacity: 1;
+  transform: none;
+}
+
+[data-lo='three-gates'] .tg-guarantees {
+  display: grid;
+  gap: 14px;
+  margin-top: 48px;
+  max-width: 62ch;
+  font-size: 15px;
+  color: var(--dim);
+}
+
+[data-lo='three-gates'] .tg-guarantees li {
+  padding-left: 20px;
+  position: relative;
+}
+
+[data-lo='three-gates'] .tg-guarantees li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.65em;
+  width: 8px;
+  height: 1px;
+  background: var(--warm);
+}
+
+/* Final */
+[data-lo='three-gates'] .tg-final {
+  display: grid;
+  gap: 28px;
+  padding-block: clamp(64px, 10vw, 140px) 0;
+  border-top: 1px solid var(--line);
+}
+
+[data-lo='three-gates'] .tg-final h2 {
+  font-size: clamp(36px, 6.4vw, 88px);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+  font-weight: 500;
+}
+
+@media (max-width: 860px) {
+  [data-lo='three-gates'] .tg-story {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  [data-lo='three-gates'] .tg-artifact {
+    z-index: 1;
+    min-height: 0;
+    padding: 12px 0;
+    gap: 12px;
+    background: linear-gradient(180deg, var(--ink) 80%, transparent);
+  }
+  [data-lo='three-gates'] .tg-frame {
+    width: 150px;
+  }
+  [data-lo='three-gates'] .tg-caption {
+    font-size: 14px;
+  }
+  [data-lo='three-gates'] .tg-quote {
+    font-size: 8px;
+    padding: 6px 8px;
+  }
+  [data-lo='three-gates'] .tg-quote-cost {
+    font-size: 12px;
+  }
+  [data-lo='three-gates'] .tg-outputs {
+    height: 28px;
+  }
+  [data-lo='three-gates'] .tg-outputs li {
+    height: 26px;
+    padding: 0 9px;
+    font-size: 10px;
+  }
+  [data-lo='three-gates'] .tg-gate {
+    min-height: 70vh;
+  }
+  [data-lo='three-gates'] .tg-hero {
+    min-height: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-lo='three-gates'] .tg-gate::after {
+    height: 60%;
+  }
+  [data-lo='three-gates'] .tg-tools li {
+    opacity: 1;
+    transform: none;
+  }
+}
