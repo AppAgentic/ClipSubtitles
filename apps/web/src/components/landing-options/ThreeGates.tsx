@@ -109,7 +109,7 @@ export function ThreeGates() {
         <section id="tg-how" className="tg-how lo-wrap" aria-labelledby="tg-how-title">
           <div className="tg-section-head">
             <p className="lo-eyebrow tg-eyebrow">How it works</p>
-            <h2 id="tg-how-title">One clip. Three quick checks.</h2>
+            <h2 id="tg-how-title">Upload your clip. Leave with polished captions.</h2>
           </div>
           <GatesStory />
         </section>
