@@ -190,6 +190,9 @@ export class SqliteStore implements DataStore {
   updateAsset(id: string, patch: assets.AssetPatch, now: string) {
     return this.run((db) => assets.updateAsset(db, id, patch, now));
   }
+  claimAssetForImport(id: string, now: string) {
+    return this.run((db) => assets.claimAssetForImport(db, id, now));
+  }
   getAsset(workspaceId: string, id: string) {
     return this.run((db) => assets.getAsset(db, workspaceId, id));
   }
@@ -213,6 +216,15 @@ export class SqliteStore implements DataStore {
   }
   getUpload(workspaceId: string, id: string) {
     return this.run((db) => assets.getUpload(db, workspaceId, id));
+  }
+  listUploadsForProject(projectId: string) {
+    return this.run((db) => assets.listUploadsForProject(db, projectId));
+  }
+  listExpiredDirectUploads(now: string, limit?: number) {
+    return this.run((db) => assets.listExpiredDirectUploads(db, now, limit));
+  }
+  markUploadPurged(id: string, now: string) {
+    return this.run((db) => assets.markUploadPurged(db, id, now));
   }
   completeUpload(id: string, now: string) {
     return this.run((db) => assets.completeUpload(db, id, now));

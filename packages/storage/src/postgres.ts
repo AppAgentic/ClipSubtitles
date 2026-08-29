@@ -277,4 +277,17 @@ CREATE TABLE task_dispatch_outbox (
 CREATE INDEX task_dispatch_pending ON task_dispatch_outbox(delivered_at, available_at, updated_at);
 `,
   },
+  {
+    version: 2,
+    name: 'hardened_direct_uploads',
+    sql: `
+ALTER TABLE uploads ADD COLUMN transport TEXT NOT NULL DEFAULT 'proxy';
+ALTER TABLE uploads ADD COLUMN storage_key TEXT;
+ALTER TABLE uploads ADD COLUMN expected_bytes BIGINT;
+ALTER TABLE uploads ADD COLUMN expected_mime_type TEXT;
+ALTER TABLE uploads ADD COLUMN expected_sha256 TEXT;
+ALTER TABLE uploads ADD COLUMN purged_at TEXT;
+CREATE INDEX uploads_expired_direct ON uploads(transport, completed_at, purged_at, expires_at);
+`,
+  },
 ];

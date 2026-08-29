@@ -1,0 +1,11 @@
+{
+  "rules": [
+    {
+      "allowed": {
+        "origins": ["https://clipsubtitles.com"],
+        "methods": ["PUT"],
+        "headers": ["Content-Type"]
+      }
+    }
+  ]
+}

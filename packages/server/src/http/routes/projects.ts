@@ -1,6 +1,8 @@
 import { createRoute, z } from '@hono/zod-openapi';
 import {
   CaptionProjectSchema,
+  CompleteDirectUploadRequestSchema,
+  CreateDirectUploadTargetRequestSchema,
   CreatePreviewRequestSchema,
   CreateProjectRequestSchema,
   CreateProjectResponseSchema,
@@ -15,15 +17,18 @@ import {
   RenderQuoteSchema,
   TaskSchema,
   UploadTargetSchema,
+  UploadIdSchema,
 } from '@clipsubtitles/contracts';
 import { authenticate, principalKey, rateLimit, requireScope } from '../../auth/middleware';
 import type { AppContext } from '../../context';
 import { createRenderQuote, startGeneration, startPreview, startRender } from '../../services/captions';
-import { createProject, createUploadTarget, deleteProject, getProjectView, listProjects, patchProject } from '../../services/projects';
+import { createDirectUploadTarget, createProject, createUploadTarget, deleteProject, getProjectView, listProjects, patchProject } from '../../services/projects';
+import { completeDirectUpload } from '../../services/uploads';
 import { idempotencyKeyFrom, withIdempotency } from '../idempotent';
 import { SECURITY, errorResponses, jsonBody, jsonResponse, type Api } from '../openapi';
 
 const ProjectParams = z.object({ projectId: ProjectIdSchema });
+const ProjectUploadParams = z.object({ projectId: ProjectIdSchema, uploadId: UploadIdSchema });
 
 function parseInclude(include: string | undefined): { includePages: boolean; includeWords: boolean } {
   const parts = (include ?? 'pages').split(',').map((s) => s.trim());
@@ -56,6 +61,65 @@ export function registerProjectRoutes(api: Api, ctx: AppContext): void {
         createProject(ctx, principal, body),
       );
       return c.json(out.body, out.status as 201);
+    },
+  );
+
+  api.openapi(
+    createRoute({
+      method: 'post',
+      path: '/v1/projects/{projectId}/direct-upload-targets',
+      tags: ['Projects'],
+      summary: 'Issue an exact-size direct object-store PUT, with protected proxy fallback',
+      security: SECURITY,
+      middleware: [auth, limited, write] as const,
+      request: { params: ProjectParams, body: jsonBody(CreateDirectUploadTargetRequestSchema) },
+      responses: {
+        201: jsonResponse(UploadTargetSchema, 'Direct or fallback upload target'),
+        ...errorResponses('PAYLOAD_TOO_LARGE', 'CONFLICT'),
+      },
+    }),
+    async (c) => {
+      const { projectId } = c.req.valid('param');
+      return c.json(
+        await createDirectUploadTarget(ctx, c.get('principal'), projectId, c.req.valid('json')),
+        201,
+      );
+    },
+  );
+
+  api.openapi(
+    createRoute({
+      method: 'post',
+      path: '/v1/projects/{projectId}/uploads/{uploadId}/complete',
+      tags: ['Projects'],
+      summary: 'Snapshot a direct upload and enqueue durable media verification',
+      security: SECURITY,
+      middleware: [auth, limited, write] as const,
+      request: {
+        params: ProjectUploadParams,
+        body: jsonBody(CompleteDirectUploadRequestSchema),
+      },
+      responses: {
+        202: jsonResponse(z.object({ task: TaskSchema }), 'Upload verification queued'),
+        ...errorResponses(
+          'PAYLOAD_TOO_LARGE',
+          'UNSUPPORTED_MEDIA',
+          'CONFLICT',
+          'RETENTION_EXPIRED',
+        ),
+      },
+    }),
+    async (c) => {
+      const { projectId, uploadId } = c.req.valid('param');
+      const body = c.req.valid('json');
+      return c.json(
+        {
+          task: await completeDirectUpload(ctx, c.get('principal'), projectId, uploadId, {
+            ...(body.sha256 ? { sha256: body.sha256 } : {}),
+          }),
+        },
+        202,
+      );
     },
   );
 

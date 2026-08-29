@@ -7,7 +7,7 @@ import { AppShell } from '@/components/shell/AppShell';
 import { Chip, LinkButton, statusTone } from '@/components/ui/primitives';
 import { useToast } from '@/components/ui/Toast';
 import { UploadZone } from '@/components/upload/UploadZone';
-import { api, errorMessage, uploadToTarget } from '@/lib/api';
+import { api, bestUploadTarget, errorMessage, uploadToTarget } from '@/lib/api';
 import { titleCase } from '@/lib/format';
 
 export default function UploadPage() {
@@ -30,7 +30,7 @@ function Upload() {
     setBusy(true);
     setProgress(0);
     try {
-      const target = await api.createUploadTarget(params.projectId);
+      const target = await bestUploadTarget(params.projectId, file);
       await uploadToTarget(target, file, setProgress);
       toast.push('ok', 'Source stored. Your agent can now call generate_captions.');
       router.push(`/projects/${params.projectId}?generate=1`);

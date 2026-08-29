@@ -41,7 +41,10 @@ The economical production target is three independently scaling linux/amd64
 Cloud Run images: public API, private push worker, and web. Cloud Tasks invokes
 the worker one job per instance; a transactional outbox repairs enqueue races.
 R2 is the preferred media store because provider-native signed downloads avoid
-GCS public-egress charges; GCS remains a supported fallback. Cloud-backed files
+GCS public-egress charges. Supported browser media also uses an exact-size R2
+staging PUT; authenticated completion snapshots the reusable signed key before a
+durable worker hashes, probes, and internally copies it to the final source key.
+GCS and unknown MIME types retain the bounded API-streaming fallback. Cloud-backed files
 are materialized into unique atomic scratch paths only while FFmpeg needs them,
 then released in `finally` cleanup.
 
@@ -50,7 +53,7 @@ the serialized `SqliteStore`; production uses pooled `PostgresStore` transaction
 pinned with `AsyncLocalStorage`, guarded updates, row locks, and `SKIP LOCKED`
 task claims. The PostgreSQL 17 migration/concurrency suite covers migration
 startup, rollback/pinning, billing, idempotency, revision numbering, leases,
-outbox redelivery, and optimistic edits. Terraform still defaults
+outbox redelivery, direct-upload completion, and optimistic edits. Terraform still defaults
 `deploy_services=false` until the dedicated project, secrets, and plan are approved.
 
 ## Request path
@@ -63,7 +66,7 @@ outbox redelivery, and optimistic edits. Terraform still defaults
 
 ## Tasks
 
-`tasks` rows are claimed with a lease (`claimNextTask`), heart-beaten with progress and a cooperative `cancel_requested` flag, and completed/failed/cancelled exactly once. Retryable failures re-queue with backoff until `max_attempts`; expired leases are reclaimed on worker maintenance (re-queued, failed, or cancelled with reservation release). Handlers: `import_source` (DNS-pinned bounded fetch), `generate_captions` (extract → VAD → provider chain → normalize → segment → commit as a new revision against the *current* version), `render_preview`, `render_export` (snapshot of exact words/pages/style captured at quote time), `retention_sweep`.
+`tasks` rows are claimed with a lease (`claimNextTask`), heart-beaten with progress and a cooperative `cancel_requested` flag, and completed/failed/cancelled exactly once. Retryable failures re-queue with backoff until `max_attempts`; expired leases are reclaimed on worker maintenance (re-queued, failed, or cancelled with reservation release). Handlers: `import_source` (DNS-pinned bounded fetch), `finalize_upload` (immutable snapshot → SHA-256 → FFprobe → final provider copy), `generate_captions` (extract → VAD → provider chain → normalize → segment → commit as a new revision against the *current* version), `render_preview`, `render_export` (snapshot of exact words/pages/style captured at quote time), `retention_sweep`.
 
 ## Billing invariants
 

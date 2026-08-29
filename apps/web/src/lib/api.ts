@@ -1,24 +1,26 @@
-import type {
-  ApiError,
-  CaptionProject,
-  Connection,
-  CreatePreviewRequest,
-  CreateProjectRequest,
-  CreateProjectResponse,
-  CreditBalance,
-  ErrorCode,
-  Export,
-  GenerateCaptionsRequest,
-  LedgerEntry,
-  Me,
-  OutputSettings,
-  PatchOp,
-  ProjectSummary,
-  RenderQuote,
-  Task,
-  TranscriptWord,
-  UploadTarget,
-  Workspace,
+import {
+  SUPPORTED_SOURCE_MIME_TYPES,
+  type CreateDirectUploadTargetRequest,
+  type ApiError,
+  type CaptionProject,
+  type Connection,
+  type CreatePreviewRequest,
+  type CreateProjectRequest,
+  type CreateProjectResponse,
+  type CreditBalance,
+  type ErrorCode,
+  type Export,
+  type GenerateCaptionsRequest,
+  type LedgerEntry,
+  type Me,
+  type OutputSettings,
+  type PatchOp,
+  type ProjectSummary,
+  type RenderQuote,
+  type Task,
+  type TranscriptWord,
+  type UploadTarget,
+  type Workspace,
 } from '@clipsubtitles/contracts';
 
 /** Public API error surfaced to the UI. Messages are already safe for display. */
@@ -77,6 +79,8 @@ export const api = {
   },
   createProject: (body: CreateProjectRequest) => request<CreateProjectResponse>('/v1/projects', json(body)),
   createUploadTarget: (id: string) => request<UploadTarget>(`/v1/projects/${id}/upload-targets`, { method: 'POST' }),
+  createDirectUploadTarget: (id: string, body: CreateDirectUploadTargetRequest) =>
+    request<UploadTarget>(`/v1/projects/${id}/direct-upload-targets`, json(body)),
   deleteProject: (id: string) => request<void>(`/v1/projects/${id}`, { method: 'DELETE' }),
   patchProject: (id: string, expectedVersion: number, ops: PatchOp[], opts: { keepalive?: boolean } = {}) =>
     request<{ project: CaptionProject; applied: number; newRevision: boolean }>(`/v1/projects/${id}`, {
@@ -123,12 +127,25 @@ export async function loadAllWords(projectId: string, total: number): Promise<Tr
 }
 
 /** Upload with progress via XHR (fetch cannot report upload progress). Same-origin path keeps the cookie session out of it: the URL is signed. */
-export function uploadToTarget(target: UploadTarget, file: File, onProgress: (fraction: number) => void): Promise<void> {
-  return new Promise((resolve, reject) => {
+export async function bestUploadTarget(projectId: string, file: File): Promise<UploadTarget> {
+  const direct = directUploadRequest(file);
+  if (direct) return api.createDirectUploadTarget(projectId, direct);
+  return api.createUploadTarget(projectId);
+}
+
+export function directUploadRequest(file: File): CreateDirectUploadTargetRequest | undefined {
+  const mimeType = file.type.toLowerCase();
+  if (!(SUPPORTED_SOURCE_MIME_TYPES as readonly string[]).includes(mimeType)) return undefined;
+  return { bytes: file.size, mimeType: mimeType as CreateDirectUploadTargetRequest['mimeType'] };
+}
+
+export async function uploadToTarget(target: UploadTarget, file: File, onProgress: (fraction: number) => void): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     const url = new URL(target.url);
-    xhr.open(target.method, `${url.pathname}${url.search}`);
-    xhr.setRequestHeader('content-type', file.type || 'application/octet-stream');
+    xhr.open(target.method, target.transport === 'direct' ? target.url : `${url.pathname}${url.search}`);
+    const headers = target.transport === 'direct' ? target.headers : { 'content-type': file.type || 'application/octet-stream' };
+    for (const [name, value] of Object.entries(headers)) xhr.setRequestHeader(name, value);
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) onProgress(e.loaded / e.total);
     };
@@ -148,6 +165,32 @@ export function uploadToTarget(target: UploadTarget, file: File, onProgress: (fr
     xhr.onerror = () => reject(new ApiClientError(0, { code: 'INTERNAL', message: 'Network error during upload.', retryable: true }));
     xhr.send(file);
   });
+  if (target.transport !== 'direct') return;
+  onProgress(0.92);
+  const complete = new URL(target.completeUrl);
+  const accepted = await request<{ task: Task }>(`${complete.pathname}${complete.search}`, json({}));
+  const deadline = Date.now() + 10 * 60_000;
+  let pollDelayMs = 500;
+  for (;;) {
+    const current = await api.getTask(accepted.task.id);
+    if (current.task.status === 'succeeded') {
+      onProgress(1);
+      return;
+    }
+    if (current.task.status === 'failed' || current.task.status === 'cancelled') {
+      throw new ApiClientError(422, current.task.error ?? { code: 'TASK_FAILED', message: 'Upload verification failed.', retryable: false });
+    }
+    if (Date.now() >= deadline) {
+      throw new ApiClientError(408, {
+        code: 'INTERNAL',
+        message: 'Upload verification is taking longer than expected. The task will continue safely in the background.',
+        retryable: true,
+      });
+    }
+    onProgress(Math.min(0.99, 0.92 + current.task.progress * 0.0007));
+    await new Promise((resolve) => setTimeout(resolve, pollDelayMs));
+    pollDelayMs = Math.min(3_000, Math.round(pollDelayMs * 1.5));
+  }
 }
 
 export function isUnauthenticated(err: unknown): boolean {

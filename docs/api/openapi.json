@@ -754,6 +754,47 @@
               "scale"
             ]
           },
+          "motion": {
+            "type": "object",
+            "properties": {
+              "preset": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "soft-rise",
+                  "spring-pop",
+                  "karaoke-slide"
+                ]
+              },
+              "enterDurationMs": {
+                "type": "integer",
+                "minimum": 80,
+                "maximum": 1200
+              },
+              "exitDurationMs": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 600
+              },
+              "wordTransitionMs": {
+                "type": "integer",
+                "minimum": 60,
+                "maximum": 600
+              }
+            },
+            "default": {
+              "preset": "soft-rise",
+              "enterDurationMs": 260,
+              "exitDurationMs": 120,
+              "wordTransitionMs": 180
+            },
+            "required": [
+              "preset",
+              "enterDurationMs",
+              "exitDurationMs",
+              "wordTransitionMs"
+            ]
+          },
           "safeMarginPct": {
             "type": "number",
             "minimum": 0.02,
@@ -956,6 +997,7 @@
             "type": "string",
             "enum": [
               "import_source",
+              "finalize_upload",
               "generate_captions",
               "render_preview",
               "render_export",
@@ -1281,6 +1323,38 @@
               "kind": {
                 "type": "string",
                 "enum": [
+                  "finalize_upload"
+                ]
+              },
+              "projectId": {
+                "type": "string",
+                "pattern": "^proj_[0-9a-hjkmnp-tv-z]{16,32}$",
+                "description": "project identifier"
+              },
+              "assetId": {
+                "type": "string",
+                "pattern": "^asset_[0-9a-hjkmnp-tv-z]{16,32}$",
+                "description": "asset identifier"
+              },
+              "durationMs": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 86400000
+              }
+            },
+            "required": [
+              "kind",
+              "projectId",
+              "assetId",
+              "durationMs"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
                   "retention_sweep"
                 ]
               },
@@ -1410,52 +1484,136 @@
         ]
       },
       "UploadTarget": {
-        "type": "object",
-        "properties": {
-          "uploadId": {
-            "type": "string",
-            "pattern": "^upl_[0-9a-hjkmnp-tv-z]{16,32}$",
-            "description": "upload identifier"
-          },
-          "method": {
-            "type": "string",
-            "enum": [
-              "PUT"
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "uploadId": {
+                "type": "string",
+                "pattern": "^upl_[0-9a-hjkmnp-tv-z]{16,32}$",
+                "description": "upload identifier"
+              },
+              "method": {
+                "type": "string",
+                "enum": [
+                  "PUT"
+                ]
+              },
+              "url": {
+                "type": "string",
+                "maxLength": 4096,
+                "description": "Signed, short-lived upload URL (single PUT, bounded size)"
+              },
+              "maxBytes": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "acceptedMimeTypes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 20
+              },
+              "expiresAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "webUploadUrl": {
+                "type": "string",
+                "maxLength": 2048
+              },
+              "transport": {
+                "type": "string",
+                "enum": [
+                  "proxy"
+                ]
+              }
+            },
+            "required": [
+              "uploadId",
+              "method",
+              "url",
+              "maxBytes",
+              "acceptedMimeTypes",
+              "expiresAt",
+              "webUploadUrl",
+              "transport"
             ]
           },
-          "url": {
-            "type": "string",
-            "maxLength": 2048,
-            "description": "Signed, short-lived upload URL (single PUT, bounded size)"
-          },
-          "maxBytes": {
-            "type": "integer",
-            "exclusiveMinimum": 0
-          },
-          "acceptedMimeTypes": {
-            "type": "array",
-            "items": {
-              "type": "string"
+          {
+            "type": "object",
+            "properties": {
+              "uploadId": {
+                "type": "string",
+                "pattern": "^upl_[0-9a-hjkmnp-tv-z]{16,32}$",
+                "description": "upload identifier"
+              },
+              "method": {
+                "type": "string",
+                "enum": [
+                  "PUT"
+                ]
+              },
+              "url": {
+                "type": "string",
+                "maxLength": 4096,
+                "description": "Signed, short-lived upload URL (single PUT, bounded size)"
+              },
+              "maxBytes": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "acceptedMimeTypes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 20
+              },
+              "expiresAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "webUploadUrl": {
+                "type": "string",
+                "maxLength": 2048
+              },
+              "transport": {
+                "type": "string",
+                "enum": [
+                  "direct"
+                ]
+              },
+              "expectedBytes": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "headers": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "completeUrl": {
+                "type": "string",
+                "maxLength": 2048
+              }
             },
-            "maxItems": 20
-          },
-          "expiresAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "webUploadUrl": {
-            "type": "string",
-            "maxLength": 2048
+            "required": [
+              "uploadId",
+              "method",
+              "url",
+              "maxBytes",
+              "acceptedMimeTypes",
+              "expiresAt",
+              "webUploadUrl",
+              "transport",
+              "expectedBytes",
+              "headers",
+              "completeUrl"
+            ]
           }
-        },
-        "required": [
-          "uploadId",
-          "method",
-          "url",
-          "maxBytes",
-          "acceptedMimeTypes",
-          "expiresAt",
-          "webUploadUrl"
         ]
       },
       "ApiError": {
@@ -1561,6 +1719,40 @@
             "maxLength": 200,
             "description": "Original file name when an upload target is requested"
           },
+          "upload": {
+            "type": "object",
+            "properties": {
+              "bytes": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "mimeType": {
+                "type": "string",
+                "enum": [
+                  "video/mp4",
+                  "video/quicktime",
+                  "video/webm",
+                  "video/x-matroska",
+                  "audio/mpeg",
+                  "audio/wav",
+                  "audio/x-wav",
+                  "audio/mp4",
+                  "audio/aac",
+                  "audio/ogg"
+                ]
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "bytes",
+              "mimeType"
+            ],
+            "additionalProperties": false,
+            "description": "Known browser file metadata; enables an exact-size direct object-store target when supported"
+          },
           "language": {
             "type": "string",
             "minLength": 2,
@@ -1574,6 +1766,49 @@
             "maxLength": 128,
             "pattern": "^[A-Za-z0-9._:-]+$",
             "description": "Client-generated idempotency key (8-128 chars)"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateDirectUploadTargetRequest": {
+        "type": "object",
+        "properties": {
+          "bytes": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "mimeType": {
+            "type": "string",
+            "enum": [
+              "video/mp4",
+              "video/quicktime",
+              "video/webm",
+              "video/x-matroska",
+              "audio/mpeg",
+              "audio/wav",
+              "audio/x-wav",
+              "audio/mp4",
+              "audio/aac",
+              "audio/ogg"
+            ]
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "required": [
+          "bytes",
+          "mimeType"
+        ],
+        "additionalProperties": false
+      },
+      "CompleteDirectUploadRequest": {
+        "type": "object",
+        "properties": {
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
           }
         },
         "additionalProperties": false
@@ -2192,6 +2427,36 @@
                         "minimum": 1,
                         "maximum": 1.3,
                         "description": "Scale applied to the active word"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "motion": {
+                    "type": "object",
+                    "properties": {
+                      "preset": {
+                        "type": "string",
+                        "enum": [
+                          "none",
+                          "soft-rise",
+                          "spring-pop",
+                          "karaoke-slide"
+                        ]
+                      },
+                      "enterDurationMs": {
+                        "type": "integer",
+                        "minimum": 80,
+                        "maximum": 1200
+                      },
+                      "exitDurationMs": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 600
+                      },
+                      "wordTransitionMs": {
+                        "type": "integer",
+                        "minimum": 60,
+                        "maximum": 600
                       }
                     },
                     "additionalProperties": false
@@ -3197,6 +3462,309 @@
           },
           "404": {
             "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectId}/direct-upload-targets": {
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Issue an exact-size direct object-store PUT, with protected proxy fallback",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^proj_[0-9a-hjkmnp-tv-z]{16,32}$",
+              "description": "project identifier"
+            },
+            "required": true,
+            "description": "project identifier",
+            "name": "projectId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Request body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDirectUploadTargetRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Direct or fallback upload target",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadTarget"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "PAYLOAD_TOO_LARGE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectId}/uploads/{uploadId}/complete": {
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Snapshot a direct upload and enqueue durable media verification",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^proj_[0-9a-hjkmnp-tv-z]{16,32}$",
+              "description": "project identifier"
+            },
+            "required": true,
+            "description": "project identifier",
+            "name": "projectId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^upl_[0-9a-hjkmnp-tv-z]{16,32}$",
+              "description": "upload identifier"
+            },
+            "required": true,
+            "description": "upload identifier",
+            "name": "uploadId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Request body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteDirectUploadRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Upload verification queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "task": {
+                      "$ref": "#/components/schemas/Task"
+                    }
+                  },
+                  "required": [
+                    "task"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "RETENTION_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "PAYLOAD_TOO_LARGE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "UNSUPPORTED_MEDIA",
             "content": {
               "application/json": {
                 "schema": {

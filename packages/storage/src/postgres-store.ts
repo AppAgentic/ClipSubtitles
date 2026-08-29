@@ -611,6 +611,15 @@ export class PostgresStore implements DataStore {
     });
   }
 
+  async claimAssetForImport(id: string, now: string): Promise<boolean> {
+    const row = await this.one<Sql>(
+      `UPDATE source_assets SET status = 'importing', updated_at = $2
+       WHERE id = $1 AND status = 'pending_upload' RETURNING id`,
+      [id, now],
+    );
+    return Boolean(row);
+  }
+
   async getAsset(workspaceId: string, id: string): Promise<AssetRecord | null> {
     return maybe(
       await this.one<Sql>('SELECT * FROM source_assets WHERE id = $1 AND workspace_id = $2', [
@@ -657,15 +666,20 @@ export class PostgresStore implements DataStore {
 
   async createUpload(input: Parameters<DataStore['createUpload']>[0]): Promise<UploadRecord> {
     const row = await this.one<Sql>(
-      `INSERT INTO uploads (id, workspace_id, project_id, asset_id, token_hash, max_bytes, created_at, expires_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      `INSERT INTO uploads (id, workspace_id, project_id, asset_id, token_hash, max_bytes, transport, storage_key, expected_bytes, expected_mime_type, expected_sha256, created_at, expires_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
       [
-        newId('upload'),
+        input.id ?? newId('upload'),
         input.workspaceId,
         input.projectId,
         input.assetId,
         input.tokenHash,
         input.maxBytes,
+        input.transport ?? 'proxy',
+        input.storageKey ?? null,
+        input.expectedBytes ?? null,
+        input.expectedMimeType ?? null,
+        input.expectedSha256 ?? null,
         input.now,
         input.expiresAt,
       ],
@@ -687,6 +701,30 @@ export class PostgresStore implements DataStore {
         workspaceId,
       ]),
       toUpload,
+    );
+  }
+
+  async listUploadsForProject(projectId: string): Promise<UploadRecord[]> {
+    return pgRows(
+      await this.many<Sql>('SELECT * FROM uploads WHERE project_id = $1 ORDER BY created_at', [
+        projectId,
+      ]),
+    ).map(toUpload);
+  }
+
+  async listExpiredDirectUploads(now: string, limit = 100): Promise<UploadRecord[]> {
+    return pgRows(
+      await this.many<Sql>(
+        "SELECT * FROM uploads WHERE transport = 'direct' AND completed_at IS NULL AND purged_at IS NULL AND expires_at < $1 ORDER BY expires_at LIMIT $2",
+        [now, limit],
+      ),
+    ).map(toUpload);
+  }
+
+  async markUploadPurged(id: string, now: string): Promise<boolean> {
+    return (
+      (await this.run('UPDATE uploads SET purged_at = $2 WHERE id = $1 AND purged_at IS NULL', [id, now]))
+        .changes > 0
     );
   }
 

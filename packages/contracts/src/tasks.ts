@@ -6,6 +6,7 @@ import { LanguageTagSchema, MsSchema } from './transcript';
 
 export const TASK_KINDS = [
   'import_source',
+  'finalize_upload',
   'generate_captions',
   'render_preview',
   'render_export',
@@ -66,6 +67,13 @@ export const ImportSourceResultSchema = z.object({
   durationMs: MsSchema,
 });
 
+export const FinalizeUploadResultSchema = z.object({
+  kind: z.literal('finalize_upload'),
+  projectId: ProjectIdSchema,
+  assetId: AssetIdSchema,
+  durationMs: MsSchema,
+});
+
 export const RetentionSweepResultSchema = z.object({
   kind: z.literal('retention_sweep'),
   purgedAssets: z.number().int().nonnegative(),
@@ -77,6 +85,7 @@ export const TaskResultSchema = z.discriminatedUnion('kind', [
   RenderPreviewResultSchema,
   RenderExportResultSchema,
   ImportSourceResultSchema,
+  FinalizeUploadResultSchema,
   RetentionSweepResultSchema,
 ]).meta({ id: 'TaskResult' });
 export type TaskResult = z.infer<typeof TaskResultSchema>;

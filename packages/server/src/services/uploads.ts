@@ -1,15 +1,48 @@
 import type { Readable } from 'node:stream';
 import { SUPPORTED_SOURCE_MIME_TYPES } from '@clipsubtitles/contracts';
-import { ObjectTooLargeError, type AssetRecord } from '@clipsubtitles/storage';
+import type { Task } from '@clipsubtitles/contracts';
+import { newId } from '@clipsubtitles/core';
+import {
+  ObjectTooLargeError,
+  toPublicTask,
+  type AssetRecord,
+  type ObjectStat,
+  type UploadRecord,
+} from '@clipsubtitles/storage';
 import { probeMedia, type MediaProbe } from '@clipsubtitles/transcription';
 import { hashToken } from '../auth/tokens';
 import type { AppContext } from '../context';
+import type { Principal } from '../auth/principal';
 import { ApiError } from '../errors';
 import { audit } from './audit';
+import { dispatchTaskBestEffort } from './task-dispatch';
 
 export function sourceStorageKey(workspaceId: string, assetId: string, fileName: string): string {
   const ext = (fileName.match(/\.[A-Za-z0-9]{1,5}$/)?.[0] ?? '.bin').toLowerCase();
   return `${workspaceId}/sources/${assetId}/source${ext}`;
+}
+
+export function directUploadPrefix(workspaceId: string, uploadId: string): string {
+  // Bucket-global prefix lets one R2 lifecycle rule delete every abandoned
+  // staging object while the next segment preserves workspace isolation.
+  return `staging/${workspaceId}/${uploadId}`;
+}
+
+function assertDirectObjectMatches(upload: UploadRecord, object: ObjectStat | null): void {
+  if (!object) throw new ApiError('CONFLICT', 'The direct upload has not reached storage yet.');
+  if (object.bytes !== upload.expectedBytes)
+    throw new ApiError(
+      'PAYLOAD_TOO_LARGE',
+      'The uploaded byte length does not match its authorization.',
+    );
+  if (object.metadata?.['upload-id'] && object.metadata['upload-id'] !== upload.id)
+    throw new ApiError('CONFLICT', 'The stored upload metadata does not match its authorization.');
+  if (
+    upload.expectedMimeType &&
+    object.contentType &&
+    object.contentType.split(';')[0]?.trim().toLowerCase() !== upload.expectedMimeType
+  )
+    throw new ApiError('UNSUPPORTED_MEDIA', 'The stored content type does not match its authorization.');
 }
 
 /**
@@ -19,9 +52,16 @@ export function sourceStorageKey(workspaceId: string, assetId: string, fileName:
 export async function finalizeSourceAsset(
   ctx: AppContext,
   asset: AssetRecord,
-  info: { storageKey: string; bytes: number; sha256: string; mimeType?: string },
+  info: {
+    storageKey: string;
+    bytes: number;
+    sha256: string;
+    mimeType?: string;
+    /** Already-materialized equivalent bytes, used by direct-upload workers. */
+    materializedPath?: string;
+  },
 ): Promise<AssetRecord> {
-  const localPath = await ctx.store.materialize(info.storageKey);
+  const localPath = info.materializedPath ?? (await ctx.store.materialize(info.storageKey));
   let probe: MediaProbe;
   try {
     probe = await probeMedia(localPath, {
@@ -34,7 +74,8 @@ export async function finalizeSourceAsset(
       internal: err,
     });
   } finally {
-    await ctx.store.releaseMaterialized?.(localPath).catch(() => undefined);
+    if (!info.materializedPath)
+      await ctx.store.releaseMaterialized?.(localPath).catch(() => undefined);
   }
   if (!probe.hasAudio && !probe.hasVideo) {
     await failAsset(ctx, asset, info.storageKey);
@@ -163,4 +204,132 @@ export async function receiveUpload(
     metadata: { bytes: stored.bytes, durationMs: ready.durationMs },
   });
   return ready;
+}
+
+/**
+ * Snapshot a browser-to-R2 upload and enqueue durable verification. The signed
+ * staging PUT remains reusable until expiry, so the worker never reads that key
+ * directly: each completion attempt first makes a provider-side copy to a
+ * server-only random key.
+ */
+export async function completeDirectUpload(
+  ctx: AppContext,
+  principal: Principal,
+  projectId: string,
+  uploadId: string,
+  input: { sha256?: string },
+): Promise<Task> {
+  const upload = await ctx.db.getUpload(principal.workspaceId, uploadId);
+  if (!upload || upload.projectId !== projectId || upload.transport !== 'direct' || !upload.storageKey)
+    throw new ApiError('NOT_FOUND', 'Upload target not found.');
+  if (upload.expiresAt <= ctx.clock.iso())
+    throw new ApiError('RETENTION_EXPIRED', 'The upload target has expired. Request a new one.');
+  if (upload.expectedSha256 && input.sha256 && upload.expectedSha256 !== input.sha256)
+    throw new ApiError('CONFLICT', 'The completion checksum differs from the upload target.');
+  if (upload.completedAt) {
+    const existing = await ctx.db.findTaskByIdempotencyKey(
+      principal.workspaceId,
+      'finalize_upload',
+      upload.id,
+    );
+    if (!existing) throw new ApiError('INTERNAL');
+    return toPublicTask(existing);
+  }
+
+  const asset = await ctx.db.getAsset(principal.workspaceId, upload.assetId);
+  if (!asset || asset.projectId !== projectId || asset.status !== 'pending_upload')
+    throw new ApiError('CONFLICT', 'This project already has a source.');
+  const staged = await ctx.store.stat(upload.storageKey);
+  assertDirectObjectMatches(upload, staged);
+
+  const ext = upload.storageKey.match(/\.[A-Za-z0-9]{1,5}$/)?.[0] ?? '.bin';
+  const verificationKey = `${directUploadPrefix(upload.workspaceId, upload.id)}/verify-${newId('asset')}${ext}`;
+  await ctx.store.copy(upload.storageKey, verificationKey);
+  const snapshot = await ctx.store.stat(verificationKey);
+  try {
+    // The signed staging key remains writable until expiry. Validate the
+    // immutable copy itself, not only the object observed before the copy.
+    assertDirectObjectMatches(upload, snapshot);
+  } catch (err) {
+    await ctx.store.delete(verificationKey).catch(() => false);
+    throw err;
+  }
+
+  let accepted = false;
+  try {
+    const task = await ctx.db.transaction(async () => {
+      const fresh = await ctx.db.getUpload(principal.workspaceId, upload.id);
+      if (!fresh) throw new ApiError('NOT_FOUND');
+      if (fresh.completedAt) {
+        const existing = await ctx.db.findTaskByIdempotencyKey(
+          principal.workspaceId,
+          'finalize_upload',
+          upload.id,
+        );
+        if (!existing) throw new ApiError('INTERNAL');
+        return existing;
+      }
+      const claimTime = ctx.clock.iso();
+      if (!(await ctx.db.claimAssetForImport(asset.id, claimTime))) {
+        // A concurrent completion of this same target is an idempotent replay.
+        // The conditional asset update only returns after the winner commits,
+        // so its task is visible here. A different target winning remains a conflict.
+        const winnerUpload = await ctx.db.getUpload(principal.workspaceId, upload.id);
+        if (winnerUpload?.completedAt) {
+          const existing = await ctx.db.findTaskByIdempotencyKey(
+            principal.workspaceId,
+            'finalize_upload',
+            upload.id,
+          );
+          if (existing) return existing;
+        }
+        throw new ApiError('CONFLICT', 'Another upload already supplied this project source.');
+      }
+      if (!(await ctx.db.completeUpload(upload.id, claimTime))) {
+        const existing = await ctx.db.findTaskByIdempotencyKey(
+          principal.workspaceId,
+          'finalize_upload',
+          upload.id,
+        );
+        if (!existing) throw new ApiError('CONFLICT', 'The upload completion raced another request.');
+        return existing;
+      }
+      await ctx.db.updateProjectMeta(projectId, { status: 'importing' }, claimTime);
+      const queued = await ctx.db.enqueueTask({
+        workspaceId: principal.workspaceId,
+        projectId,
+        kind: 'finalize_upload',
+        idempotencyKey: upload.id,
+        input: {
+          projectId,
+          assetId: asset.id,
+          uploadId: upload.id,
+          stagingKey: upload.storageKey,
+          verificationKey,
+          expectedBytes: upload.expectedBytes,
+          mimeType: upload.expectedMimeType,
+          expectedSha256: upload.expectedSha256 ?? input.sha256,
+        },
+        now: ctx.clock.iso(),
+        maxAttempts: 3,
+      });
+      accepted = true;
+      return queued;
+    });
+    if (!accepted) await ctx.store.delete(verificationKey).catch(() => false);
+    else {
+      await dispatchTaskBestEffort(ctx, task.id);
+      await audit(ctx, {
+        principal,
+        action: 'source.direct_upload.accepted',
+        targetType: 'asset',
+        targetId: asset.id,
+        metadata: { bytes: upload.expectedBytes, uploadId: upload.id },
+      });
+    }
+    return toPublicTask(task);
+  } catch (err) {
+    if (!accepted) await ctx.store.delete(verificationKey).catch(() => false);
+    throw err;
+  }
 }

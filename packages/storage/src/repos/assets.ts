@@ -34,9 +34,15 @@ export interface UploadRecord {
   projectId: string;
   assetId: string;
   maxBytes: number;
+  transport: 'proxy' | 'direct';
+  storageKey?: string;
+  expectedBytes?: number;
+  expectedMimeType?: string;
+  expectedSha256?: string;
   createdAt: string;
   expiresAt: string;
   completedAt?: string;
+  purgedAt?: string;
 }
 
 export function toAsset(r: Row): AssetRecord {
@@ -76,11 +82,22 @@ export function toUpload(r: Row): UploadRecord {
     projectId: String(r.project_id),
     assetId: String(r.asset_id),
     maxBytes: num(r.max_bytes) ?? 0,
+    transport: (text(r.transport) ?? 'proxy') as 'proxy' | 'direct',
     createdAt: String(r.created_at),
     expiresAt: String(r.expires_at),
   };
+  const storageKey = text(r.storage_key);
+  const expectedBytes = num(r.expected_bytes);
+  const expectedMimeType = text(r.expected_mime_type);
+  const expectedSha256 = text(r.expected_sha256);
+  if (storageKey) u.storageKey = storageKey;
+  if (expectedBytes !== undefined) u.expectedBytes = expectedBytes;
+  if (expectedMimeType) u.expectedMimeType = expectedMimeType;
+  if (expectedSha256) u.expectedSha256 = expectedSha256;
   const completed = text(r.completed_at);
   if (completed) u.completedAt = completed;
+  const purged = text(r.purged_at);
+  if (purged) u.purgedAt = purged;
   return u;
 }
 
@@ -153,6 +170,17 @@ export function updateAsset(db: Db, id: string, patch: AssetPatch, now: string):
   });
 }
 
+export function claimAssetForImport(db: Db, id: string, now: string): boolean {
+  return (
+    run(
+      db,
+      "UPDATE source_assets SET status = 'importing', updated_at = ? WHERE id = ? AND status = 'pending_upload'",
+      now,
+      id,
+    ).changes === 1
+  );
+}
+
 export function getAsset(db: Db, workspaceId: string, id: string): AssetRecord | null {
   const r = one(db, 'SELECT * FROM source_assets WHERE id = ? AND workspace_id = ?', id, workspaceId);
   return r ? toAsset(r) : null;
@@ -182,22 +210,42 @@ export function markAssetPurged(db: Db, id: string, now: string): boolean {
 
 export function createUpload(
   db: Db,
-  input: { workspaceId: string; projectId: string; assetId: string; tokenHash: string; maxBytes: number; now: string; expiresAt: string },
+  input: { id?: string; workspaceId: string; projectId: string; assetId: string; tokenHash: string; maxBytes: number; transport?: 'proxy' | 'direct'; storageKey?: string; expectedBytes?: number; expectedMimeType?: string; expectedSha256?: string; now: string; expiresAt: string },
 ): UploadRecord {
-  const id = newId('upload');
+  const id = input.id ?? newId('upload');
   run(
     db,
-    'INSERT INTO uploads (id, workspace_id, project_id, asset_id, token_hash, max_bytes, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    `INSERT INTO uploads (id, workspace_id, project_id, asset_id, token_hash, max_bytes, transport, storage_key, expected_bytes, expected_mime_type, expected_sha256, created_at, expires_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     id,
     input.workspaceId,
     input.projectId,
     input.assetId,
     input.tokenHash,
     input.maxBytes,
+    input.transport ?? 'proxy',
+    input.storageKey ?? null,
+    input.expectedBytes ?? null,
+    input.expectedMimeType ?? null,
+    input.expectedSha256 ?? null,
     input.now,
     input.expiresAt,
   );
   return toUpload(one(db, 'SELECT * FROM uploads WHERE id = ?', id) as Row);
+}
+
+export function listExpiredDirectUploads(db: Db, now: string, limit = 100): UploadRecord[] {
+  return many(
+    db,
+    "SELECT * FROM uploads WHERE transport = 'direct' AND completed_at IS NULL AND purged_at IS NULL AND expires_at < ? ORDER BY expires_at LIMIT ?",
+    now,
+    limit,
+  ).map(toUpload);
+}
+
+export function markUploadPurged(db: Db, id: string, now: string): boolean {
+  return run(db, 'UPDATE uploads SET purged_at = ? WHERE id = ? AND purged_at IS NULL', now, id)
+    .changes > 0;
 }
 
 export function findUploadByTokenHash(db: Db, tokenHash: string): UploadRecord | null {
@@ -208,6 +256,12 @@ export function findUploadByTokenHash(db: Db, tokenHash: string): UploadRecord |
 export function getUpload(db: Db, workspaceId: string, id: string): UploadRecord | null {
   const r = one(db, 'SELECT * FROM uploads WHERE id = ? AND workspace_id = ?', id, workspaceId);
   return r ? toUpload(r) : null;
+}
+
+export function listUploadsForProject(db: Db, projectId: string): UploadRecord[] {
+  return many(db, 'SELECT * FROM uploads WHERE project_id = ? ORDER BY created_at', projectId).map(
+    toUpload,
+  );
 }
 
 /** Marks an upload complete exactly once. Returns false when already completed. */

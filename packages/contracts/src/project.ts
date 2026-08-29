@@ -40,17 +40,52 @@ export const SourceAssetSchema = z.object({
 }).meta({ id: 'SourceAsset' });
 export type SourceAsset = z.infer<typeof SourceAssetSchema>;
 
-export const UploadTargetSchema = z.object({
+const UploadTargetBaseSchema = z.object({
   uploadId: UploadIdSchema,
   method: z.literal('PUT'),
-  url: z.string().max(2048).describe('Signed, short-lived upload URL (single PUT, bounded size)'),
+  url: z.string().max(4096).describe('Signed, short-lived upload URL (single PUT, bounded size)'),
   maxBytes: z.number().int().positive(),
   acceptedMimeTypes: z.array(z.string()).max(20),
   expiresAt: z.iso.datetime(),
   /** Human upload page for agent flows where the client cannot send binaries. */
   webUploadUrl: z.string().max(2048),
-}).meta({ id: 'UploadTarget' });
+});
+
+export const ProxyUploadTargetSchema = UploadTargetBaseSchema.extend({
+  transport: z.literal('proxy'),
+});
+
+export const DirectUploadTargetSchema = UploadTargetBaseSchema.extend({
+  transport: z.literal('direct'),
+  expectedBytes: z.number().int().positive(),
+  headers: z
+    .record(z.string(), z.string())
+    .refine((headers) => Object.keys(headers).length <= 10, 'Too many upload headers'),
+  completeUrl: z.string().max(2048),
+});
+
+export const UploadTargetSchema = z
+  .discriminatedUnion('transport', [ProxyUploadTargetSchema, DirectUploadTargetSchema])
+  .meta({ id: 'UploadTarget' });
 export type UploadTarget = z.infer<typeof UploadTargetSchema>;
+
+export const CreateDirectUploadTargetRequestSchema = z
+  .object({
+    bytes: z.number().int().positive(),
+    mimeType: z.enum(SUPPORTED_SOURCE_MIME_TYPES),
+    sha256: z.string().regex(/^[a-f0-9]{64}$/).optional(),
+  })
+  .strict()
+  .meta({ id: 'CreateDirectUploadTargetRequest' });
+export type CreateDirectUploadTargetRequest = z.infer<
+  typeof CreateDirectUploadTargetRequestSchema
+>;
+
+export const CompleteDirectUploadRequestSchema = z
+  .object({ sha256: z.string().regex(/^[a-f0-9]{64}$/).optional() })
+  .strict()
+  .meta({ id: 'CompleteDirectUploadRequest' });
+export type CompleteDirectUploadRequest = z.infer<typeof CompleteDirectUploadRequestSchema>;
 
 export const TitleSchema = z.string().trim().min(1).max(LIMITS.titleMaxChars);
 
@@ -63,10 +98,18 @@ export const CreateProjectRequestSchema = z
       .optional()
       .describe('Bounded remote media URL (http/https, public host, size-capped)'),
     fileName: z.string().max(200).optional().describe('Original file name when an upload target is requested'),
+    upload: CreateDirectUploadTargetRequestSchema.optional().describe(
+      'Known browser file metadata; enables an exact-size direct object-store target when supported',
+    ),
     language: LanguageTagSchema.optional(),
     idempotencyKey: IdempotencyKeySchema.optional(),
   })
-  .strict().meta({ id: 'CreateProjectRequest' });
+  .strict()
+  .refine((value) => !(value.sourceUrl && value.upload), {
+    message: 'sourceUrl and upload metadata are mutually exclusive',
+    path: ['upload'],
+  })
+  .meta({ id: 'CreateProjectRequest' });
 export type CreateProjectRequest = z.infer<typeof CreateProjectRequestSchema>;
 
 export const GenerateCaptionsRequestSchema = z

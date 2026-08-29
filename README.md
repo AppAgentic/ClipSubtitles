@@ -75,6 +75,11 @@ Everything runs with the defaults; every integration is config-gated:
 - `TRUSTED_PROXIES=` — comma-separated proxy IPs/CIDRs whose `X-Forwarded-For`/`X-Real-IP` are honoured for client-IP rate limiting. Empty (default) never trusts forwarding headers.
 - Limits/retention: upload size, source duration, private-URL policy, retention days, signed-URL/quote TTLs, rate limits, initial credit grant.
 
+With R2, supported browser files automatically use the hardened direct-upload
+path (exact-size staging PUT → authenticated snapshot → durable hash/FFprobe
+worker → provider-side final copy). Other stores and unknown MIME types retain
+the bounded API-streaming fallback. See `docs/direct-upload-operations.md`.
+
 ## Guarantees the code enforces
 
 - Ownership is derived from the verified credential; tool/REST inputs never carry a user or workspace id.

@@ -1,9 +1,11 @@
 import type { AppContext } from '../context';
 import { audit } from './audit';
+import { directUploadPrefix } from './uploads';
 
 export interface SweepResult {
   purgedAssets: number;
   purgedExports: number;
+  purgedUploads: number;
   failedDeletes: number;
   expiredQuotes: number;
   purgedIdempotencyKeys: number;
@@ -14,12 +16,14 @@ export async function runRetentionSweep(ctx: AppContext): Promise<SweepResult> {
   const nowIso = ctx.clock.iso();
   let purgedAssets = 0;
   let purgedExports = 0;
+  let purgedUploads = 0;
   let failedDeletes = 0;
   const maxItems = ctx.config.limits.retentionSweepMaxItems;
   const assetQuota = Math.ceil(maxItems / 2);
   const exportQuota = Math.floor(maxItems / 2);
   let assets = await ctx.db.listExpiredAssets(nowIso, assetQuota);
   let exports = await ctx.db.listExpiredExports(nowIso, exportQuota);
+  const uploads = await ctx.db.listExpiredDirectUploads(nowIso, Math.min(maxItems, 100));
   // Guarantee both media classes a share of every bounded sweep, then let the
   // other class consume unused capacity. A large asset backlog cannot starve
   // short-lived exports (and vice versa).
@@ -56,19 +60,31 @@ export async function runRetentionSweep(ctx: AppContext): Promise<SweepResult> {
       });
     }
   });
+  await mapConcurrent(uploads, 16, async (upload) => {
+    try {
+      await ctx.store.deletePrefix(directUploadPrefix(upload.workspaceId, upload.id));
+      if (await ctx.db.markUploadPurged(upload.id, nowIso)) purgedUploads += 1;
+    } catch (err) {
+      failedDeletes += 1;
+      ctx.logger.warn('expired direct-upload cleanup failed', {
+        uploadId: upload.id,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  });
   const expiredQuotes = await ctx.db.expireOpenQuotes(nowIso);
   await ctx.db.purgeExpiredRevokedTokens(nowIso);
   const purgedIdempotencyKeys = await ctx.db.purgeIdempotencyKeys(
     new Date(ctx.clock.now() - 7 * 86_400_000).toISOString(),
   );
-  if (purgedAssets || purgedExports || failedDeletes) {
+  if (purgedAssets || purgedExports || purgedUploads || failedDeletes) {
     await audit(ctx, {
       actorType: 'system',
       action: 'retention.sweep',
-      metadata: { purgedAssets, purgedExports, failedDeletes, expiredQuotes },
+      metadata: { purgedAssets, purgedExports, purgedUploads, failedDeletes, expiredQuotes },
     });
   }
-  return { purgedAssets, purgedExports, failedDeletes, expiredQuotes, purgedIdempotencyKeys };
+  return { purgedAssets, purgedExports, purgedUploads, failedDeletes, expiredQuotes, purgedIdempotencyKeys };
 }
 
 async function mapConcurrent<T>(

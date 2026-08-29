@@ -6,7 +6,7 @@ import { AppShell } from '@/components/shell/AppShell';
 import { Button, Field, Panel, TextInput } from '@/components/ui/primitives';
 import { useToast } from '@/components/ui/Toast';
 import { UploadZone } from '@/components/upload/UploadZone';
-import { api, errorMessage, uploadToTarget } from '@/lib/api';
+import { api, directUploadRequest, errorMessage, uploadToTarget } from '@/lib/api';
 
 export default function NewProjectPage() {
   return <AppShell render={() => <NewProject />} />;
@@ -32,7 +32,12 @@ function NewProject() {
     setBusy(true);
     setProgress(0);
     try {
-      const created = await api.createProject({ ...(title ? { title } : {}), fileName: file.name });
+      const upload = directUploadRequest(file);
+      const created = await api.createProject({
+        ...(title ? { title } : {}),
+        fileName: file.name,
+        ...(upload ? { upload } : {}),
+      });
       if (!created.uploadTarget) throw new Error('No upload target returned.');
       await uploadToTarget(created.uploadTarget, file, setProgress);
       toast.push('ok', 'Source stored. Generate captions when ready.');

@@ -1,6 +1,7 @@
 import {
   SUPPORTED_SOURCE_MIME_TYPES,
   type CaptionProject,
+  type CreateDirectUploadTargetRequest,
   type CreateProjectRequest,
   type CreateProjectResponse,
   type PatchProjectRequest,
@@ -27,6 +28,7 @@ import { ApiError } from '../errors';
 import { audit } from './audit';
 import { releaseForTask } from './billing';
 import { dispatchTaskBestEffort } from './task-dispatch';
+import { directUploadPrefix } from './uploads';
 import { guessFileName, sanitizeFileName, validateSourceUrl } from './source-policy';
 import {
   buildProjectSummary,
@@ -36,7 +38,13 @@ import {
   type ProjectViewOptions,
 } from './views';
 
-const UPLOAD_TTL_SECONDS = 3600;
+const PROXY_UPLOAD_TTL_SECONDS = 3600;
+const DIRECT_UPLOAD_TTL_SECONDS = 900;
+const MAX_OUTSTANDING_DIRECT_UPLOADS_PER_PROJECT = 3;
+
+function sourceExtension(fileName: string | undefined): string {
+  return (fileName?.match(/\.[A-Za-z0-9]{1,5}$/)?.[0] ?? '.bin').toLowerCase();
+}
 
 export async function requireProject(
   ctx: AppContext,
@@ -52,21 +60,67 @@ async function uploadTarget(
   ctx: AppContext,
   project: ProjectRecord,
   assetId: string,
+  fileName?: string,
+  direct?: CreateDirectUploadTargetRequest,
 ): Promise<UploadTarget> {
   const token = randomToken(32);
   const now = ctx.clock.now();
-  const expiresAtSeconds = Math.floor(now / 1000) + UPLOAD_TTL_SECONDS;
+  const canUploadDirect = Boolean(direct && ctx.store.directUploadAuthorization);
+  if (direct && direct.bytes > ctx.config.limits.maxUploadBytes)
+    throw new ApiError('PAYLOAD_TOO_LARGE');
+  const ttlSeconds = canUploadDirect ? DIRECT_UPLOAD_TTL_SECONDS : PROXY_UPLOAD_TTL_SECONDS;
+  const expiresAtSeconds = Math.floor(now / 1000) + ttlSeconds;
+  const uploadId = newId('upload');
+  const storageKey = canUploadDirect
+    ? `${directUploadPrefix(project.workspaceId, uploadId)}/incoming${sourceExtension(fileName)}`
+    : undefined;
   const upload = await ctx.db.createUpload({
+    id: uploadId,
     workspaceId: project.workspaceId,
     projectId: project.id,
     assetId,
     tokenHash: hashToken(token),
     maxBytes: ctx.config.limits.maxUploadBytes,
+    ...(canUploadDirect && direct && storageKey
+      ? {
+          transport: 'direct' as const,
+          storageKey,
+          expectedBytes: direct.bytes,
+          expectedMimeType: direct.mimeType,
+          ...(direct.sha256 ? { expectedSha256: direct.sha256 } : {}),
+        }
+      : {}),
     now: ctx.clock.iso(),
     expiresAt: new Date(expiresAtSeconds * 1000).toISOString(),
   });
+  if (canUploadDirect && direct && storageKey && ctx.store.directUploadAuthorization) {
+    const authorization = await ctx.store.directUploadAuthorization(storageKey, {
+      expiresSeconds: ttlSeconds,
+      contentLength: direct.bytes,
+      contentType: direct.mimeType,
+      metadata: {
+        'upload-id': upload.id,
+        'expected-bytes': String(direct.bytes),
+        ...(direct.sha256 ? { 'expected-sha256': direct.sha256 } : {}),
+      },
+    });
+    return {
+      uploadId: upload.id,
+      transport: 'direct',
+      method: 'PUT',
+      url: authorization.url,
+      headers: authorization.headers,
+      expectedBytes: direct.bytes,
+      completeUrl: `${ctx.config.apiPublicUrl}/v1/projects/${project.id}/uploads/${upload.id}/complete`,
+      maxBytes: ctx.config.limits.maxUploadBytes,
+      acceptedMimeTypes: [...SUPPORTED_SOURCE_MIME_TYPES],
+      expiresAt: new Date(expiresAtSeconds * 1000).toISOString(),
+      webUploadUrl: `${ctx.config.webPublicUrl}/projects/${project.id}/upload`,
+    };
+  }
   return {
     uploadId: upload.id,
+    transport: 'proxy',
     method: 'PUT',
     url: signContentUrl({
       secret: ctx.config.auth.localSecret,
@@ -140,7 +194,13 @@ export async function createProject(
         now,
       });
       await ctx.db.updateProjectMeta(project.id, { sourceAssetId: asset.id }, now);
-      response.uploadTarget = await uploadTarget(ctx, project, asset.id);
+      response.uploadTarget = await uploadTarget(
+        ctx,
+        project,
+        asset.id,
+        asset.fileName,
+        input.upload,
+      );
     }
     const fresh = (await ctx.db.getProject(principal.workspaceId, project.id)) as ProjectRecord;
     response.project = await buildProjectView(ctx, fresh, { includePages: false });
@@ -179,7 +239,40 @@ export async function createUploadTarget(
       await ctx.db.updateAsset(asset.id, { status: 'pending_upload' }, now);
       await ctx.db.updateProjectMeta(project.id, { status: 'awaiting_source' }, now);
     }
-    return uploadTarget(ctx, project, asset.id);
+    return uploadTarget(ctx, project, asset.id, asset.fileName);
+  });
+}
+
+/** Prefer a direct R2 PUT when the active store supports it; otherwise return the protected proxy target. */
+export async function createDirectUploadTarget(
+  ctx: AppContext,
+  principal: Principal,
+  projectId: string,
+  input: CreateDirectUploadTargetRequest,
+): Promise<UploadTarget> {
+  return ctx.db.transaction(async () => {
+    const project = await requireProject(ctx, principal, projectId);
+    const asset = project.sourceAssetId ? await ctx.db.getAssetById(project.sourceAssetId) : null;
+    if (!asset || asset.status === 'ready' || asset.status === 'importing')
+      throw new ApiError('CONFLICT', 'This project already has a source.');
+    const now = ctx.clock.iso();
+    const outstanding = (await ctx.db.listUploadsForProject(project.id)).filter(
+      (upload) =>
+        upload.transport === 'direct' &&
+        !upload.completedAt &&
+        !upload.purgedAt &&
+        upload.expiresAt > now,
+    );
+    if (outstanding.length >= MAX_OUTSTANDING_DIRECT_UPLOADS_PER_PROJECT)
+      throw new ApiError(
+        'CONFLICT',
+        'Too many active upload targets. Reuse one or wait for it to expire.',
+      );
+    if (asset.status === 'failed') {
+      await ctx.db.updateAsset(asset.id, { status: 'pending_upload' }, now);
+      await ctx.db.updateProjectMeta(project.id, { status: 'awaiting_source' }, now);
+    }
+    return uploadTarget(ctx, project, asset.id, asset.fileName, input);
   });
 }
 
@@ -302,6 +395,12 @@ export async function deleteProject(
     if (asset.storageKey) await ctx.store.delete(asset.storageKey);
     if (asset.truthKey) await ctx.store.delete(asset.truthKey);
     await ctx.db.markAssetPurged(asset.id, now);
+  }
+  for (const upload of await ctx.db.listUploadsForProject(project.id)) {
+    if (upload.transport === 'direct') {
+      await ctx.store.deletePrefix(directUploadPrefix(upload.workspaceId, upload.id));
+      await ctx.db.markUploadPurged(upload.id, now);
+    }
   }
   for (const e of await ctx.db.listExportsForProjectAll(project.id)) {
     await ctx.store.delete(e.storageKey);

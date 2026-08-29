@@ -59,14 +59,17 @@ suite('PostgreSQL persistence under concurrency', () => {
     const rows = await store.db.pool.query<{ version: number; count: number }>(
       'SELECT version, count(*)::int AS count FROM schema_migrations GROUP BY version ORDER BY version',
     );
-    expect(rows.rows).toEqual([{ version: 1, count: 1 }]);
+    expect(rows.rows).toEqual([
+      { version: 1, count: 1 },
+      { version: 2, count: 1 },
+    ]);
     // Re-running the migrator is a no-op, not a duplicate apply.
     const third = await PostgresStore.open({ connectionString });
     try {
       const again = await third.db.pool.query<{ n: number }>(
         'SELECT count(*)::int AS n FROM schema_migrations',
       );
-      expect(again.rows[0]?.n).toBe(1);
+      expect(again.rows[0]?.n).toBe(2);
     } finally {
       await third.close();
     }
@@ -115,6 +118,25 @@ suite('PostgreSQL persistence under concurrency', () => {
       expect(await second.getProjectById(project.id)).toBeNull();
     });
     expect((await second.getProjectById(idInside))?.id).toBe(idInside);
+  });
+
+  it('atomically lets one competing upload claim a pending source asset', async () => {
+    const workspaceId = await newWorkspace();
+    const projectId = await newProject(workspaceId);
+    const asset = await store.createAsset({
+      workspaceId,
+      projectId,
+      status: 'pending_upload',
+      origin: 'upload',
+      fileName: 'source.mp4',
+      now: NOW,
+    });
+    const claims = await Promise.all([
+      store.claimAssetForImport(asset.id, NOW),
+      second.claimAssetForImport(asset.id, later(1)),
+    ]);
+    expect(claims.sort()).toEqual([false, true]);
+    expect((await store.getAssetById(asset.id))?.status).toBe('importing');
   });
 
   it('claims a request idempotency key exactly once under concurrency', async () => {

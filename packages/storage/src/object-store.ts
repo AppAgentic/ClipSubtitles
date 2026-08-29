@@ -6,6 +6,7 @@ import type { Readable } from 'node:stream';
 import { PassThrough } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import {
+  CopyObjectCommand,
   DeleteObjectCommand,
   DeleteObjectsCommand,
   GetObjectCommand,
@@ -22,6 +23,17 @@ import { Storage, type StorageOptions } from '@google-cloud/storage';
 export interface StoredObject {
   bytes: number;
   sha256: string;
+}
+
+export interface ObjectStat {
+  bytes: number;
+  contentType?: string;
+  metadata?: Record<string, string>;
+}
+
+export interface DirectUploadAuthorization {
+  url: string;
+  headers: Record<string, string>;
 }
 
 /**
@@ -43,7 +55,9 @@ export interface ObjectStore {
   ): Promise<StoredObject>;
   get(key: string): Promise<Buffer>;
   exists(key: string): Promise<boolean>;
-  stat(key: string): Promise<{ bytes: number } | null>;
+  stat(key: string): Promise<ObjectStat | null>;
+  /** Provider-side copy. Cloud stores must not stream bytes through the caller. */
+  copy(sourceKey: string, destinationKey: string): Promise<void>;
   delete(key: string): Promise<boolean>;
   /** Every key under `prefix/` (recursive, sorted). Lets cleanup find blobs no database row references. */
   list(prefix: string): Promise<string[]>;
@@ -59,6 +73,16 @@ export interface ObjectStore {
     key: string,
     opts: { expiresSeconds: number; fileName?: string; download?: boolean; contentType?: string },
   ): Promise<string>;
+  /** Optional single-object browser PUT authorization (implemented by R2/S3). */
+  directUploadAuthorization?(
+    key: string,
+    opts: {
+      expiresSeconds: number;
+      contentLength: number;
+      contentType: string;
+      metadata?: Record<string, string>;
+    },
+  ): Promise<DirectUploadAuthorization>;
 }
 
 export class ObjectKeyError extends Error {
@@ -189,6 +213,11 @@ export class FileObjectStore implements ObjectStore {
     } catch {
       return null;
     }
+  }
+
+  async copy(sourceKey: string, destinationKey: string): Promise<void> {
+    const destination = await this.ensureDir(destinationKey);
+    await copyFile(this.localPath(sourceKey), destination);
   }
 
   async delete(key: string): Promise<boolean> {
@@ -346,11 +375,28 @@ export class GcsObjectStore implements ObjectStore {
   async stat(key: string): Promise<{ bytes: number } | null> {
     try {
       const [metadata] = await this.bucket.file(this.objectName(key)).getMetadata();
-      return { bytes: Number(metadata.size ?? 0) };
+      return {
+        bytes: Number(metadata.size ?? 0),
+        ...(metadata.contentType ? { contentType: String(metadata.contentType) } : {}),
+        ...(metadata.metadata && typeof metadata.metadata === 'object'
+          ? {
+              metadata: Object.fromEntries(
+                Object.entries(metadata.metadata).map(([name, value]) => [name, String(value)]),
+              ),
+            }
+          : {}),
+      };
     } catch (err) {
       if ((err as { code?: number }).code === 404) return null;
       throw err;
     }
+  }
+
+  async copy(sourceKey: string, destinationKey: string): Promise<void> {
+    await this.bucket
+      .file(this.objectName(sourceKey))
+      .copy(this.bucket.file(this.objectName(destinationKey)));
+    await rm(this.cachePath(destinationKey), { force: true }).catch(() => undefined);
   }
 
   async delete(key: string): Promise<boolean> {
@@ -427,6 +473,9 @@ export class S3ObjectStore implements ObjectStore {
       endpoint: options.endpoint,
       forcePathStyle: true,
       credentials: { accessKeyId: options.accessKeyId, secretAccessKey: options.secretAccessKey },
+      // Otherwise current AWS SDK v3 presigning can hoist an empty-body CRC32
+      // into a URL that is later used with the real browser body.
+      requestChecksumCalculation: 'WHEN_REQUIRED',
       ...options.clientConfig,
     });
   }
@@ -538,12 +587,52 @@ export class S3ObjectStore implements ObjectStore {
       const response = await this.client.send(
         new HeadObjectCommand({ Bucket: this.options.bucket, Key: this.objectName(key) }),
       );
-      return { bytes: Number(response.ContentLength ?? 0) };
+      return {
+        bytes: Number(response.ContentLength ?? 0),
+        ...(response.ContentType ? { contentType: response.ContentType } : {}),
+        ...(response.Metadata ? { metadata: response.Metadata } : {}),
+      };
     } catch (err) {
       const status = (err as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode;
       if (status === 404 || (err as { name?: string }).name === 'NotFound') return null;
       throw err;
     }
+  }
+
+  async copy(sourceKey: string, destinationKey: string): Promise<void> {
+    const source = `${this.options.bucket}/${this.objectName(sourceKey)}`;
+    await this.client.send(
+      new CopyObjectCommand({
+        Bucket: this.options.bucket,
+        Key: this.objectName(destinationKey),
+        CopySource: encodeURIComponent(source).replace(/%2F/g, '/'),
+        MetadataDirective: 'COPY',
+      }),
+    );
+    await rm(this.cachePath(destinationKey), { force: true }).catch(() => undefined);
+  }
+
+  async directUploadAuthorization(
+    key: string,
+    opts: {
+      expiresSeconds: number;
+      contentLength: number;
+      contentType: string;
+      metadata?: Record<string, string>;
+    },
+  ): Promise<DirectUploadAuthorization> {
+    const url = await getSignedUrl(
+      this.client,
+      new PutObjectCommand({
+        Bucket: this.options.bucket,
+        Key: this.objectName(key),
+        ContentLength: opts.contentLength,
+        ContentType: opts.contentType,
+        ...(opts.metadata ? { Metadata: opts.metadata } : {}),
+      }),
+      { expiresIn: opts.expiresSeconds },
+    );
+    return { url, headers: { 'content-type': opts.contentType } };
   }
 
   async delete(key: string): Promise<boolean> {

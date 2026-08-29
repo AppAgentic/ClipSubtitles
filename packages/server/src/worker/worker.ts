@@ -9,6 +9,7 @@ import { runRetentionSweep } from '../services/retention';
 import { isCancellation, toTaskError } from './errors';
 import { generateCaptionsHandler } from './handlers/generate-captions';
 import { importSourceHandler } from './handlers/import-source';
+import { finalizeUploadHandler } from './handlers/finalize-upload';
 import { renderExportHandler, renderPreviewHandler } from './handlers/render';
 
 export interface HandlerTools {
@@ -33,6 +34,7 @@ const BACKOFF_MS = [2_000, 10_000, 60_000];
 
 export const DEFAULT_HANDLERS: Record<TaskKind, TaskHandler> = {
   import_source: importSourceHandler,
+  finalize_upload: finalizeUploadHandler,
   generate_captions: generateCaptionsHandler,
   render_preview: renderPreviewHandler,
   render_export: renderExportHandler,

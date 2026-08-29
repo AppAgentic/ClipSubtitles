@@ -331,4 +331,17 @@ INSERT INTO task_dispatch_outbox (task_id, available_at, created_at, updated_at)
 ALTER TABLE task_dispatch_outbox ADD COLUMN generation INTEGER NOT NULL DEFAULT 0;
 `,
   },
+  {
+    version: 5,
+    name: 'hardened_direct_uploads',
+    sql: `
+ALTER TABLE uploads ADD COLUMN transport TEXT NOT NULL DEFAULT 'proxy';
+ALTER TABLE uploads ADD COLUMN storage_key TEXT;
+ALTER TABLE uploads ADD COLUMN expected_bytes INTEGER;
+ALTER TABLE uploads ADD COLUMN expected_mime_type TEXT;
+ALTER TABLE uploads ADD COLUMN expected_sha256 TEXT;
+ALTER TABLE uploads ADD COLUMN purged_at TEXT;
+CREATE INDEX uploads_expired_direct ON uploads(transport, completed_at, purged_at, expires_at);
+`,
+  },
 ];

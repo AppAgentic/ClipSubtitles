@@ -23,6 +23,10 @@ export async function listTasks(ctx: AppContext, principal: Principal, opts: { p
 }
 
 export async function cancelTask(ctx: AppContext, principal: Principal, taskId: string): Promise<Task> {
+  const existing = await ctx.db.getTask(principal.workspaceId, taskId);
+  // Source verification is a short integrity boundary. Cancelling it would
+  // strand the project in importing with a private snapshot still allocated.
+  if (existing?.kind === 'finalize_upload') throw new ApiError('TASK_NOT_CANCELLABLE');
   const result = await ctx.db.requestCancel(principal.workspaceId, taskId, ctx.clock.iso());
   if (result.outcome === 'not_found' || !result.task) throw new ApiError('NOT_FOUND');
   if (result.outcome === 'not_cancellable') throw new ApiError('TASK_NOT_CANCELLABLE');

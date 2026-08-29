@@ -149,22 +149,33 @@ export interface DataStore {
     now: string;
   }): Promise<AssetRecord>;
   updateAsset(id: string, patch: AssetPatch, now: string): Promise<AssetRecord | null>;
+  /** Atomically move one pending upload asset into importing; exactly one competing upload may win. */
+  claimAssetForImport(id: string, now: string): Promise<boolean>;
   getAsset(workspaceId: string, id: string): Promise<AssetRecord | null>;
   getAssetById(id: string): Promise<AssetRecord | null>;
   listAssetsForProject(projectId: string): Promise<AssetRecord[]>;
   listExpiredAssets(now: string, limit?: number): Promise<AssetRecord[]>;
   markAssetPurged(id: string, now: string): Promise<boolean>;
   createUpload(input: {
+    id?: string;
     workspaceId: string;
     projectId: string;
     assetId: string;
     tokenHash: string;
     maxBytes: number;
+    transport?: 'proxy' | 'direct';
+    storageKey?: string;
+    expectedBytes?: number;
+    expectedMimeType?: string;
+    expectedSha256?: string;
     now: string;
     expiresAt: string;
   }): Promise<UploadRecord>;
   findUploadByTokenHash(tokenHash: string): Promise<UploadRecord | null>;
   getUpload(workspaceId: string, id: string): Promise<UploadRecord | null>;
+  listUploadsForProject(projectId: string): Promise<UploadRecord[]>;
+  listExpiredDirectUploads(now: string, limit?: number): Promise<UploadRecord[]>;
+  markUploadPurged(id: string, now: string): Promise<boolean>;
   completeUpload(id: string, now: string): Promise<boolean>;
 
   // --- durable tasks and the dispatch outbox ----------------------------------

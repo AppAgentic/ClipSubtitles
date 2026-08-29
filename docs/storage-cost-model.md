@@ -11,9 +11,10 @@ taxes, and support plans.
 - 25 MB export retained for 7 days
 - One full-equivalent source playback in the editor
 - Three full export downloads
-- Direct object-store downloads. The current secure upload path streams through
-  the API; a second scenario models a future direct upload with equivalent byte
-  and content-type enforcement.
+- Direct object-store downloads. The protected fallback streams uploads through
+  the API. The optimized direct R2 path is implemented locally with an exact-size
+  staging PUT, authenticated snapshot, and durable hash/FFprobe finalization;
+  production CORS/lifecycle readback remains an external gate.
 - Cloud Run and Cloud Storage colocated in one region
 
 ## Unit economics
@@ -59,16 +60,17 @@ The current R2 path is still approximately 24–29% cheaper under this workload.
 Direct source upload raises the modeled saving to approximately 77–82%. The first
 customer download roughly offsets the Cloud Run-to-R2 export upload; any additional
 export download, or any source playback, moves the network economics in R2's favour.
-Provider-signed playback/download is implemented. Direct source upload is a separate
-hardening task because it must retain the current exact-once token claim, maximum
-byte limit, content-type policy, and post-upload media probe.
+Provider-signed playback/download and hardened direct source upload are implemented.
+The direct path preserves one-time authenticated completion, exact signed length,
+content-type policy, late-overwrite isolation, SHA-256, and post-upload media probe.
 
 ## Decision
 
 Use R2 Standard for production source and export media, with Cloud Storage retained
-as a supported fallback. The safe API-streamed upload is acceptable for launch and
-still cheaper in the baseline; move to direct upload only after its enforcement and
-abandoned-upload cleanup tests pass. Benchmark worker-to-R2 throughput from the
+as a supported fallback. The safe API-streamed upload remains available. Direct-upload
+enforcement, late-overwrite isolation, checksum failure, project deletion, and
+abandoned-upload cleanup are covered locally; enable it in production only after R2
+CORS/lifecycle provider readback and a deployed-origin smoke. Benchmark worker-to-R2 throughput from the
 chosen Cloud Run region before launch. Keep objects private, use short-lived signed
 URLs, lifecycle cleanup in the application, and scoped credentials held in Secret
 Manager.

@@ -19,6 +19,18 @@ export const ImportSourceInputSchema = z.object({
 });
 export type ImportSourceInput = z.infer<typeof ImportSourceInputSchema>;
 
+export const FinalizeUploadInputSchema = z.object({
+  projectId: z.string(),
+  assetId: z.string(),
+  uploadId: z.string(),
+  stagingKey: z.string(),
+  verificationKey: z.string(),
+  expectedBytes: z.number().int().positive(),
+  mimeType: z.string(),
+  expectedSha256: z.string().regex(/^[a-f0-9]{64}$/).optional(),
+});
+export type FinalizeUploadInput = z.infer<typeof FinalizeUploadInputSchema>;
+
 export const GenerateCaptionsInputSchema = z.object({
   projectId: z.string(),
   assetId: z.string(),
