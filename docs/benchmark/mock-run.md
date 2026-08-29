@@ -1,9 +1,9 @@
 # Transcription benchmark report
 
-Started: 2026-08-29T03:40:38.617Z  
-Providers: mock, mock-noisy, mock-drifty, mock-flaky  
-Repeats: 1  
-Live evidence: **no**
+- Started: 2026-08-29T03:40:38.617Z
+- Providers: mock, mock-noisy, mock-drifty, mock-flaky
+- Repeats: 1
+- Live evidence: **no**
 
 > **No provider winner is claimed.** Only mock providers ran, so this report only demonstrates that the harness, fixtures, and scorer behave as designed. Run with live credentials to produce evidence.
 

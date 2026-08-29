@@ -14,10 +14,10 @@ export function renderMarkdown(run: BenchmarkRun): string {
   const lines: string[] = [];
   lines.push('# Transcription benchmark report');
   lines.push('');
-  lines.push(`Started: ${run.startedAt}  `);
-  lines.push(`Providers: ${run.providerIds.join(', ') || '(none)'}  `);
-  lines.push(`Repeats: ${run.repeats}  `);
-  lines.push(`Live evidence: **${run.live ? 'yes' : 'no'}**`);
+  lines.push(`- Started: ${run.startedAt}`);
+  lines.push(`- Providers: ${run.providerIds.join(', ') || '(none)'}`);
+  lines.push(`- Repeats: ${run.repeats}`);
+  lines.push(`- Live evidence: **${run.live ? 'yes' : 'no'}**`);
   lines.push('');
   if (!run.live) {
     lines.push(
