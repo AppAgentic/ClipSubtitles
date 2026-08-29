@@ -750,105 +750,21 @@
   letter-spacing: -0.03em;
 }
 
-/* Files + price */
-[data-lo='three-gates'] .tg-exports,
 [data-lo='three-gates'] .tg-audience,
 [data-lo='three-gates'] .tg-faq {
   grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
 }
 
-[data-lo='three-gates'] .tg-export-wrap {
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(260px, 0.9fr);
-  gap: clamp(24px, 4vw, 48px);
-  align-items: start;
-  min-width: 0;
-}
-
-[data-lo='three-gates'] .tg-export-list {
-  display: grid;
-  border-top: 1px solid var(--line);
-}
-
-[data-lo='three-gates'] .tg-export-list li {
-  display: grid;
-  padding: 20px 0;
-  border-bottom: 1px solid var(--line);
-}
-
-[data-lo='three-gates'] .tg-export-list h3,
 [data-lo='three-gates'] .tg-audience-grid h3 {
   font-size: 21px;
   font-weight: 500;
   letter-spacing: -0.025em;
 }
 
-[data-lo='three-gates'] .tg-export-list p,
 [data-lo='three-gates'] .tg-audience-grid p {
   margin-top: 6px;
   color: var(--dim);
   font-size: 15.5px;
-}
-
-[data-lo='three-gates'] .tg-quote-card {
-  display: grid;
-  gap: 16px;
-  padding: 22px;
-  border: 1px solid rgb(230 162 107 / 0.45);
-  border-radius: 20px;
-  background: var(--ink-2);
-}
-
-[data-lo='three-gates'] .tg-quote-eyebrow {
-  color: var(--warm);
-}
-
-[data-lo='three-gates'] .tg-quote-lines {
-  display: grid;
-  margin: 0;
-  border-top: 1px solid var(--line);
-  font-size: 14px;
-}
-
-[data-lo='three-gates'] .tg-quote-lines > div {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--line);
-}
-
-[data-lo='three-gates'] .tg-quote-lines dt {
-  color: var(--dim);
-}
-
-[data-lo='three-gates'] .tg-quote-lines dd {
-  margin: 0;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-[data-lo='three-gates'] .tg-quote-total {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  padding: 14px 16px;
-  border-radius: 12px;
-  background: var(--warm);
-  color: var(--warm-ink);
-  font-weight: 500;
-}
-
-[data-lo='three-gates'] .tg-quote-total strong {
-  font-size: 20px;
-  font-weight: 650;
-  letter-spacing: -0.02em;
-}
-
-[data-lo='three-gates'] .tg-quote-foot {
-  font-size: 13px;
-  color: var(--dim);
 }
 
 /* Audience */
@@ -963,9 +879,6 @@
   [data-lo='three-gates'] .tg-board {
     grid-template-columns: minmax(0, 1fr);
   }
-  [data-lo='three-gates'] .tg-export-wrap {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 
 @media (max-width: 860px) {
@@ -1045,16 +958,6 @@
   }
   [data-lo='three-gates'] .tg-frame-board {
     width: min(100%, 200px);
-  }
-  [data-lo='three-gates'] .tg-quote-card {
-    padding: 18px;
-  }
-  [data-lo='three-gates'] .tg-quote-lines > div {
-    flex-direction: column;
-    gap: 2px;
-  }
-  [data-lo='three-gates'] .tg-quote-lines dd {
-    text-align: left;
   }
 }
 

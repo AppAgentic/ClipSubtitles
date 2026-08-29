@@ -5,19 +5,6 @@ import { OptionSwitcher } from './OptionSwitcher';
 import { CaptionFrame, PAGE_ONE, StyleBoard } from './StyleBoard';
 import './three-gates.css';
 
-const EXPORTS: Array<[string, string]> = [
-  ['Captioned MP4', 'Your video with the captions burned in. Post it as it is.'],
-  [
-    'Transparent overlay',
-    'A ProRes 4444 MOV of just the captions, so you can drop them over your own edit.',
-  ],
-  [
-    'SRT',
-    'A standard subtitle file with the same words and timing, for platforms that add captions themselves.',
-  ],
-  ['VTT', 'Web captions for video players and sites, with the same words and timing.'],
-];
-
 const AUDIENCES: Array<[string, string]> = [
   [
     'Creators & editors',
@@ -47,11 +34,6 @@ const FAQS: Array<[string, string]> = [
     'You see a fixed credit price for the quality and files you chose before a paid render starts, like the example above. SRT and VTT files are free.',
   ],
 ];
-
-const SAMPLE_MINUTES = SAMPLE.billableMinutes; // 0.4
-const RATE_PER_MIN = Math.round(SAMPLE.creditCost / SAMPLE.billableMinutes); // 10 credits/min for 1080p MP4
-const QUALITY = `${Math.min(SAMPLE.width, SAMPLE.height)}p`; // 1080p: the short side of the 1080×1920 sample
-const OUTPUT_LABEL = Object.fromEntries(OUTPUTS.map((o) => [o.kind, o.label]));
 
 export function ThreeGates() {
   return (
@@ -132,71 +114,7 @@ export function ThreeGates() {
           <GatesStory />
         </section>
 
-        {/* 3 · Files and price */}
-        <section className="tg-section tg-exports lo-wrap" aria-labelledby="tg-export-title">
-          <div className="tg-section-copy">
-            <p className="lo-eyebrow tg-eyebrow">Files and price</p>
-            <h2 id="tg-export-title">Your approved edit. The files you need. One fixed price.</h2>
-            <p>
-              Choose the files you need. You see the exact credit price for that choice before a
-              paid render starts, and nothing renders until you approve it.
-            </p>
-          </div>
-          <div className="tg-export-wrap">
-            <ul className="tg-export-list">
-              {EXPORTS.map(([title, body]) => (
-                <li key={title}>
-                  <div>
-                    <h3>{title}</h3>
-                    <p>{body}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-
-            <div className="tg-quote-card" role="group" aria-labelledby="tg-quote-title">
-              <p id="tg-quote-title" className="lo-eyebrow tg-quote-eyebrow">
-                Example quote · sample clip
-              </p>
-              <dl className="tg-quote-lines">
-                <div>
-                  <dt>Clip</dt>
-                  <dd>
-                    {SAMPLE.title} · {SAMPLE_MINUTES} min
-                  </dd>
-                </div>
-                <div>
-                  <dt>Quality</dt>
-                  <dd>{QUALITY}</dd>
-                </div>
-                <div>
-                  <dt>Files</dt>
-                  <dd>{SAMPLE.outputs.map((k) => OUTPUT_LABEL[k]).join(' + ')}</dd>
-                </div>
-                <div>
-                  <dt>
-                    MP4 · {SAMPLE_MINUTES} min × {RATE_PER_MIN} credits/min
-                  </dt>
-                  <dd>{SAMPLE.creditCost} credits</dd>
-                </div>
-                <div>
-                  <dt>SRT</dt>
-                  <dd>free</dd>
-                </div>
-              </dl>
-              <p className="tg-quote-total">
-                <span>Price you approve</span>
-                <strong>{SAMPLE.creditCost} credits</strong>
-              </p>
-              <p className="tg-quote-foot">
-                Example only. Every paid render shows its own fixed price first. SRT and VTT files
-                are free.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* 4 · Styles: real controls */}
+        {/* 3 · Styles: real controls */}
         <section className="tg-section tg-styles lo-wrap" aria-labelledby="tg-styles-title">
           <div className="tg-section-copy">
             <p className="lo-eyebrow tg-eyebrow">Caption styles</p>
@@ -217,7 +135,7 @@ export function ThreeGates() {
           </Link>
         </section>
 
-        {/* 5 · Audience */}
+        {/* 4 · Audience */}
         <section className="tg-section tg-audience lo-wrap" aria-labelledby="tg-audience-title">
           <div className="tg-section-copy">
             <p className="lo-eyebrow tg-eyebrow">Built for repeat video work</p>
@@ -242,7 +160,7 @@ export function ThreeGates() {
           </div>
         </section>
 
-        {/* 6 · FAQ */}
+        {/* 5 · FAQ */}
         <section className="tg-section tg-faq lo-wrap" aria-labelledby="tg-faq-title">
           <div className="tg-section-copy">
             <p className="lo-eyebrow tg-eyebrow">Questions</p>
@@ -261,7 +179,7 @@ export function ThreeGates() {
           </div>
         </section>
 
-        {/* 7 · Final */}
+        {/* 6 · Final */}
         <section className="tg-final lo-wrap lo-end" aria-labelledby="tg-h4">
           <h2 id="tg-h4">
             Your words. Your look. <em>Ready to post.</em>
