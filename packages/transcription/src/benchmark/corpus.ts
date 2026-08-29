@@ -225,7 +225,8 @@ export function truthFromCase(c: BenchmarkCase): CaseTruth {
   let cursor = 400; // leading silence
   let speaker = 0;
   for (let i = 0; i < tokens.length; i += 1) {
-    const t = tokens[i]!;
+    const t = tokens[i];
+    if (!t) continue;
     const lengthFactor = Math.max(0.5, Math.min(2.2, t.text.replace(/[\p{P}]/gu, '').length / 5));
     const durationMs = Math.max(120, Math.round(avgWordMs * lengthFactor * 0.8));
     const word: TruthWord = { text: t.text, startMs: cursor, endMs: cursor + durationMs };

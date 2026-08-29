@@ -21,15 +21,16 @@ export const StylePresetIdSchema = z.enum(['clean', 'bold-pop', 'lower-third', '
 export type StylePresetId = z.infer<typeof StylePresetIdSchema>;
 
 /**
- * All sizes are fractions of the video height (resolution independent) so the
- * browser overlay, canvas rasterizer, and Remotion composition agree exactly.
+ * All sizes are fractions of the SHORTER frame side (resolution and
+ * orientation independent) so the browser overlay, canvas rasterizer, and
+ * Remotion composition agree exactly. Vertical offsets are fractions of height.
  */
 export const StyleConfigSchema = z.object({
   preset: StylePresetIdSchema,
   position: CaptionPositionSchema,
   fontFamily: FontFamilySchema,
   fontWeight: FontWeightSchema,
-  fontSizePct: z.number().min(0.02).max(0.12).describe('Font size as fraction of video height'),
+  fontSizePct: z.number().min(0.02).max(0.12).describe('Font size as fraction of the shorter frame side'),
   lineHeight: z.number().min(1).max(1.8),
   maxLines: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   maxCharsPerLine: z.number().int().min(10).max(60),
@@ -37,7 +38,7 @@ export const StyleConfigSchema = z.object({
   textTransform: TextTransformSchema,
   textColor: HexColorSchema,
   stroke: z.object({
-    widthPct: z.number().min(0).max(0.02).describe('Outline width as fraction of video height'),
+    widthPct: z.number().min(0).max(0.02).describe('Outline width as fraction of the shorter frame side'),
     color: HexColorSchema,
   }),
   shadow: z.object({

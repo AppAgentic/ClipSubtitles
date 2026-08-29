@@ -47,6 +47,11 @@ export interface CaptionLayout {
   lines: LayoutLine[];
 }
 
+/** Captions keep at least this fraction of the width clear on each side. */
+export const HORIZONTAL_MARGIN_PCT = 0.05;
+/** Fit-to-width never shrinks text below this fraction of the styled size. */
+export const MIN_FIT_SCALE = 0.55;
+
 export function displayText(text: string, transform: StyleConfig['textTransform']): string {
   return transform === 'uppercase' ? text.toLocaleUpperCase() : text;
 }
@@ -65,7 +70,7 @@ export function createApproxMeasurer(): TextMeasurer {
       else if (/[mw]/.test(ch)) w += 0.85;
       else w += 0.55;
     }
-    const weightBoost = 1 + Math.max(0, font.weight - 400) / 4000;
+    const weightBoost = 1 + Math.max(0, font.weight - 400) / 8000;
     return w * font.sizePx * weightBoost;
   };
 }
@@ -87,27 +92,42 @@ export function layoutCaption(input: LayoutInput): CaptionLayout {
   const { page, words, style, frame, measure } = input;
   const H = frame.height;
   const W = frame.width;
-  const fontPx = Math.max(8, Math.round(style.fontSizePct * H));
-  const font: FontSpec = { family: style.fontFamily, weight: style.fontWeight, sizePx: fontPx };
-  const lineHeightPx = Math.round(fontPx * style.lineHeight);
-  const spaceWidth = measure(' ', font);
-  const padX = style.background.enabled ? style.background.paddingXPct * H : 0;
-  const padY = style.background.enabled ? style.background.paddingYPct * H : 0;
+  // Sizes scale with the shorter side so portrait and landscape frames get the same visual weight.
+  const S = Math.min(W, H);
   const activeWordIndex = input.activeWordIndex ?? null;
+  const padX = style.background.enabled ? style.background.paddingXPct * S : 0;
+  const padY = style.background.enabled ? style.background.paddingYPct * S : 0;
+  // Horizontal safe area: captions never run into the frame edge.
+  const availableWidth = Math.max(16, W * (1 - 2 * HORIZONTAL_MARGIN_PCT) - padX * 2);
 
-  const measuredLines = page.lines.map((line) => {
-    const boxes: Array<{ wordIndex: number; text: string; width: number }> = [];
-    for (let i = line.startWordIndex; i <= line.endWordIndex; i += 1) {
-      const word = words[i];
-      if (!word) continue;
-      const text = displayText(word.text, style.textTransform);
-      boxes.push({ wordIndex: i, text, width: measure(text, font) });
-    }
-    const width = boxes.reduce((sum, b, idx) => sum + b.width + (idx > 0 ? spaceWidth : 0), 0);
-    return { boxes, width };
-  });
+  const measureLines = (font: FontSpec) => {
+    const spaceWidth = measure(' ', font);
+    const lines = page.lines.map((line) => {
+      const boxes: Array<{ wordIndex: number; text: string; width: number }> = [];
+      for (let i = line.startWordIndex; i <= line.endWordIndex; i += 1) {
+        const word = words[i];
+        if (!word) continue;
+        const text = displayText(word.text, style.textTransform);
+        boxes.push({ wordIndex: i, text, width: measure(text, font) });
+      }
+      const width = boxes.reduce((sum, b, idx) => sum + b.width + (idx > 0 ? spaceWidth : 0), 0);
+      return { boxes, width };
+    });
+    return { lines, spaceWidth, contentWidth: Math.max(0, ...lines.map((l) => l.width)) };
+  };
 
-  const contentWidth = Math.max(0, ...measuredLines.map((l) => l.width));
+  let fontPx = Math.max(8, Math.round(style.fontSizePct * S));
+  let font: FontSpec = { family: style.fontFamily, weight: style.fontWeight, sizePx: fontPx };
+  let measured = measureLines(font);
+  // Fit to width: shrink (never below MIN_FIT_SCALE) when the widest line would overflow the safe area.
+  if (measured.contentWidth > availableWidth) {
+    const scale = Math.max(MIN_FIT_SCALE, availableWidth / measured.contentWidth);
+    fontPx = Math.max(8, Math.floor(fontPx * scale));
+    font = { ...font, sizePx: fontPx };
+    measured = measureLines(font);
+  }
+  const { lines: measuredLines, spaceWidth, contentWidth } = measured;
+  const lineHeightPx = Math.round(fontPx * style.lineHeight);
   const contentHeight = lineHeightPx * Math.max(1, measuredLines.length);
   const blockWidth = contentWidth + padX * 2;
   const blockHeight = contentHeight + padY * 2;
@@ -165,7 +185,7 @@ export function layoutCaption(input: LayoutInput): CaptionLayout {
     frame,
     font,
     lineHeightPx,
-    strokePx: style.stroke.widthPct * H,
+    strokePx: style.stroke.widthPct * S,
     strokeColor: style.stroke.color,
     textColor: style.textColor,
     textTransform: style.textTransform,
@@ -176,12 +196,12 @@ export function layoutCaption(input: LayoutInput): CaptionLayout {
           y: blockTop,
           width: blockWidth,
           height: blockHeight,
-          radius: style.background.radiusPct * H,
+          radius: style.background.radiusPct * S,
           color: style.background.color,
         }
       : null,
     shadow: style.shadow.enabled
-      ? { color: style.shadow.color, blurPx: style.shadow.blurPct * H, offsetYPx: style.shadow.offsetYPct * H }
+      ? { color: style.shadow.color, blurPx: style.shadow.blurPct * S, offsetYPx: style.shadow.offsetYPct * S }
       : null,
     highlight: style.highlight,
     activeWordIndex,

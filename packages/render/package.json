@@ -23,6 +23,7 @@
     "@napi-rs/canvas": "^1.0.8"
   },
   "devDependencies": {
+    "@clipsubtitles/transcription": "workspace:*",
     "tsx": "^4.23.12"
   }
 }

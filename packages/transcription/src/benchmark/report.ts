@@ -43,11 +43,11 @@ export function renderMarkdown(run: BenchmarkRun): string {
   lines.push('');
   lines.push(`Baseline for accuracy comparison: \`${run.baselineId}\`.`);
   lines.push('');
-  lines.push('| Provider | No cumulative drift | Drift within tolerance | Failure rate ok | Better than baseline | Entity accuracy ok | Passes |');
-  lines.push('|---|---|---|---|---|---|---|');
+  lines.push('| Provider | Live evidence | No cumulative drift | Drift within tolerance | Failure rate ok | Better than baseline | Entity accuracy ok | Passes | Notes |');
+  lines.push('|---|---|---|---|---|---|---|---|---|');
   for (const g of run.gates) {
     lines.push(
-      `| ${g.providerId} | ${yesNo(g.noCumulativeDrift)} | ${yesNo(g.driftWithinTolerance)} | ${yesNo(g.failureRateOk)} | ${yesNo(g.betterThanBaseline)} | ${yesNo(g.entityAccuracyOk)} | ${g.passes ? 'yes' : 'no'} |`,
+      `| ${g.providerId} | ${yesNo(g.liveEvidence)} | ${yesNo(g.noCumulativeDrift)} | ${yesNo(g.driftWithinTolerance)} | ${yesNo(g.failureRateOk)} | ${yesNo(g.betterThanBaseline)} | ${yesNo(g.entityAccuracyOk)} | ${g.passes ? 'yes' : 'no'} | ${g.reasons.join('; ') || '—'} |`,
     );
   }
   lines.push('');

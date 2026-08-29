@@ -11,3 +11,4 @@ export * from './state';
 export * from './patch';
 export * from './subtitles';
 export * from './pricing';
+export * from './test-utils';

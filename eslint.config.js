@@ -34,8 +34,13 @@ export default tseslint.config(
   },
   {
     // CLI entrypoints and scripts are allowed to print.
-    files: ['**/src/bin/**', '**/scripts/**', '**/src/benchmark/cli.ts', '**/*.config.*'],
+    files: ['**/src/bin/**', '**/scripts/**', '**/src/benchmark/cli.ts', '**/src/benchmark/build-fixtures.ts', '**/*.config.*'],
     rules: { 'no-console': 'off' },
+  },
+  {
+    // Tests assert on fixtures they built; non-null assertions are the idiomatic way to index them.
+    files: ['**/*.test.ts', '**/src/test/**', '**/test-utils.ts', '**/src/bin/smoke*.ts', '**/src/bin/mcp-conformance.ts'],
+    rules: { '@typescript-eslint/no-non-null-assertion': 'off' },
   },
   {
     files: ['**/*.js', '**/*.mjs', '**/*.cjs'],

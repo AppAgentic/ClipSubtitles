@@ -43,6 +43,22 @@ describe('normalizeWords', () => {
     expect(words[0]?.confidence).toBe(1);
   });
 
+  it('compresses dense late input into the media duration while staying monotonic', () => {
+    const raw = Array.from({ length: 30 }, (_, i) => ({ text: `w${i}`, startMs: 900 + i * 60, endMs: 900 + i * 60 + 50 }));
+    const words = normalizeWords(raw, { durationMs: 1000 });
+    expect(words).toHaveLength(30);
+    expect(words[words.length - 1]!.endMs).toBeLessThanOrEqual(1000);
+    expect(words[0]!.startMs).toBeGreaterThanOrEqual(0);
+    for (let i = 0; i < words.length; i += 1) {
+      expect(words[i]!.endMs).toBeGreaterThan(words[i]!.startMs);
+      if (i > 0) expect(words[i]!.startMs).toBeGreaterThanOrEqual(words[i - 1]!.endMs);
+    }
+    expect(words.map((w) => w.text)).toEqual(raw.map((w) => w.text));
+    // Natural fits are left untouched.
+    const fine = normalizeWords([{ text: 'a', startMs: 0, endMs: 100 }, { text: 'b', startMs: 200, endMs: 300 }], { durationMs: 1000 });
+    expect(fine.map((w) => [w.startMs, w.endMs])).toEqual([[0, 100], [200, 300]]);
+  });
+
   it('uses deterministic ids when provided', () => {
     const words = normalizeWords([{ text: 'a', startMs: 0, endMs: 1 }], { wordId: (i) => `w_${'0'.repeat(25)}${i}` });
     expect(words[0]?.id).toBe(`w_${'0'.repeat(25)}0`);

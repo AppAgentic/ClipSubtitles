@@ -190,7 +190,9 @@ function median(values: number[]): number {
   if (!values.length) return 0;
   const sorted = [...values].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 ? sorted[mid]! : (sorted[mid - 1]! + sorted[mid]!) / 2;
+  const hi = sorted[mid] ?? 0;
+  const lo = sorted[mid - 1] ?? hi;
+  return sorted.length % 2 ? hi : (lo + hi) / 2;
 }
 
 export function aggregateScores(scores: readonly CaseScore[]): ProviderAggregate[] {
@@ -241,7 +243,11 @@ export interface GateResult {
   failureRateOk: boolean;
   betterThanBaseline: boolean | null;
   entityAccuracyOk: boolean | null;
+  /** Live (non-mock) evidence was collected for this provider. */
+  liveEvidence: boolean;
+  /** Overall pass requires live evidence AND a baseline comparison; never inferred from missing data. */
   passes: boolean;
+  reasons: string[];
 }
 
 export const GATE_THRESHOLDS = {
@@ -251,15 +257,33 @@ export const GATE_THRESHOLDS = {
   minEntityAccuracy: 0.9,
 } as const;
 
-/** Acceptance gates from the plan, evaluated per provider against the baseline aggregate. */
+export function isMockProviderId(id: string): boolean {
+  return id.startsWith('mock');
+}
+
+/**
+ * Acceptance gates from the plan, evaluated per provider against the baseline
+ * aggregate. A provider can only pass with LIVE evidence and a baseline to
+ * compare against; missing evidence never counts in a provider's favour.
+ */
 export function evaluateGates(aggregates: readonly ProviderAggregate[], baselineId: string): GateResult[] {
   const baseline = aggregates.find((a) => a.providerId === baselineId) ?? null;
   return aggregates.map((a) => {
+    const reasons: string[] = [];
+    const liveEvidence = !isMockProviderId(a.providerId);
     const noCumulativeDrift = a.maxDriftSlopeMsPerMin <= GATE_THRESHOLDS.maxDriftSlopeMsPerMin;
     const driftWithinTolerance = a.meanDriftAbsMs <= GATE_THRESHOLDS.maxMeanDriftAbsMs;
     const failureRateOk = a.failureRate <= GATE_THRESHOLDS.maxFailureRate;
     const betterThanBaseline = baseline && baseline.providerId !== a.providerId ? a.meanWer <= baseline.meanWer : null;
     const entityAccuracyOk = a.entityAccuracy === null ? null : a.entityAccuracy >= GATE_THRESHOLDS.minEntityAccuracy;
+    if (!liveEvidence) reasons.push('mock provider: no live evidence');
+    if (betterThanBaseline === null) reasons.push(a.providerId === baselineId ? 'provider is the baseline' : `baseline "${baselineId}" did not run`);
+    else if (!betterThanBaseline) reasons.push('worse WER than baseline');
+    if (!noCumulativeDrift) reasons.push('cumulative timestamp drift');
+    if (!driftWithinTolerance) reasons.push('mean timestamp offset too large');
+    if (!failureRateOk) reasons.push('failure rate too high');
+    if (entityAccuracyOk === null) reasons.push('no entity accuracy evidence');
+    else if (!entityAccuracyOk) reasons.push('entity accuracy below threshold');
     return {
       providerId: a.providerId,
       noCumulativeDrift,
@@ -267,7 +291,9 @@ export function evaluateGates(aggregates: readonly ProviderAggregate[], baseline
       failureRateOk,
       betterThanBaseline,
       entityAccuracyOk,
-      passes: noCumulativeDrift && driftWithinTolerance && failureRateOk && (betterThanBaseline ?? true) && (entityAccuracyOk ?? true),
+      liveEvidence,
+      passes: liveEvidence && betterThanBaseline === true && noCumulativeDrift && driftWithinTolerance && failureRateOk && entityAccuracyOk === true,
+      reasons,
     };
   });
 }

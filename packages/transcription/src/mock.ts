@@ -32,17 +32,19 @@ export interface NoiseProfile {
   dropPunctuation: boolean;
 }
 
+export const ACCURATE_MOCK_PROFILE: NoiseProfile = {
+  id: 'mock',
+  displayName: 'Mock (ground truth)',
+  wer: 0,
+  driftMsPerSecond: 0,
+  jitterMs: 0,
+  latencyMsPerMinute: 1500,
+  failRate: 0,
+  dropPunctuation: false,
+};
+
 export const MOCK_PROFILES: Record<string, NoiseProfile> = {
-  mock: {
-    id: 'mock',
-    displayName: 'Mock (ground truth)',
-    wer: 0,
-    driftMsPerSecond: 0,
-    jitterMs: 0,
-    latencyMsPerMinute: 1500,
-    failRate: 0,
-    dropPunctuation: false,
-  },
+  mock: ACCURATE_MOCK_PROFILE,
   'mock-noisy': {
     id: 'mock-noisy',
     displayName: 'Mock (noisy words)',
@@ -132,7 +134,7 @@ export class MockTranscriptionProvider implements TranscriptionProvider {
   private readonly placeholder: boolean;
 
   constructor(options: MockProviderOptions = {}) {
-    this.profile = options.profile ?? MOCK_PROFILES.mock!;
+    this.profile = options.profile ?? ACCURATE_MOCK_PROFILE;
     this.id = this.profile.id;
     this.displayName = this.profile.displayName;
     this.model = `${this.profile.id}-v1`;

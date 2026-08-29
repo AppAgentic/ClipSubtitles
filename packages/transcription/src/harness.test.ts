@@ -90,7 +90,8 @@ describe('audio + fixtures + benchmark end to end', () => {
     expect(noisy.meanWer).toBeGreaterThan(mock.meanWer);
     expect(drifty.maxDriftSlopeMsPerMin).toBeGreaterThan(mock.maxDriftSlopeMsPerMin);
     expect(run.gates.find((g) => g.providerId === 'mock-drifty')?.noCumulativeDrift).toBe(false);
-    expect(run.gates.find((g) => g.providerId === 'mock')?.passes).toBe(true);
+    // Mock runs demonstrate the harness only; no provider can pass without live evidence.
+    expect(run.gates.every((g) => g.passes === false && g.liveEvidence === false)).toBe(true);
 
     const md = renderMarkdown(run);
     expect(md).toContain('No provider winner is claimed');

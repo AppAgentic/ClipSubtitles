@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { createApproxMeasurer, hexToRgba, layoutCaption } from './layout';
-import { DEFAULT_SEGMENTATION, stylePreset } from './presets';
+import { HORIZONTAL_MARGIN_PCT, MIN_FIT_SCALE, createApproxMeasurer, hexToRgba, layoutCaption } from './layout';
+import { DEFAULT_SEGMENTATION, segmentationForStyle, stylePreset } from './presets';
 import { segmentWords } from './segmentation';
 import { activeWordIndexAt, pageAtMs, visualStates } from './state';
 import { wordsFromText } from './test-utils';
@@ -39,11 +39,39 @@ describe('layoutCaption', () => {
 
   it('marks the active word and applies uppercase transform', () => {
     const style = stylePreset('bold-pop');
-    const layout = layoutCaption({ page, words, style, frame, measure, activeWordIndex: 1 });
+    const boldPages = segmentWords(words, segmentationForStyle(style));
+    const layout = layoutCaption({ page: boldPages[0]!, words, style, frame, measure, activeWordIndex: 1 });
     const active = layout.lines.flatMap((l) => l.words).filter((w) => w.active);
     expect(active).toHaveLength(1);
     expect(active[0]?.text).toBe('THAT');
-    expect(layout.font.sizePx).toBe(Math.round(style.fontSizePct * frame.height));
+    // Sizes scale with the shorter side; the preset line length fits the safe width without shrinking.
+    expect(layout.font.sizePx).toBe(Math.round(style.fontSizePct * Math.min(frame.width, frame.height)));
+  });
+
+  it('shrinks text to fit the horizontal safe area when a line would overflow', () => {
+    const narrow = { width: 240, height: 426 };
+    const style = { ...stylePreset('clean'), maxCharsPerLine: 60 };
+    const oneLine = segmentWords(words, { ...DEFAULT_SEGMENTATION, maxCharsPerLine: 60, maxCharsPerPage: 120, maxWordsPerPage: 30 });
+    expect(oneLine).toHaveLength(1);
+    const layout = layoutCaption({ page: oneLine[0]!, words, style, frame: narrow, measure });
+    const styled = Math.round(style.fontSizePct * Math.min(narrow.width, narrow.height));
+    expect(layout.font.sizePx).toBeLessThan(styled);
+    expect(layout.font.sizePx).toBeGreaterThanOrEqual(Math.floor(styled * MIN_FIT_SCALE));
+    for (const line of layout.lines) {
+      expect(line.x).toBeGreaterThanOrEqual(narrow.width * HORIZONTAL_MARGIN_PCT - 1);
+      expect(line.x + line.width).toBeLessThanOrEqual(narrow.width * (1 - HORIZONTAL_MARGIN_PCT) + 1);
+    }
+  });
+
+  it('every preset keeps its longest allowed line inside the safe width at 1080p', () => {
+    for (const id of ['clean', 'bold-pop', 'lower-third', 'karaoke', 'minimal'] as const) {
+      const style = stylePreset(id);
+      const text = Array.from({ length: style.maxCharsPerLine }, (_, i) => (i % 5 === 4 ? ' ' : 'M')).join('').trim();
+      const w = wordsFromText(text.replace(/\s+/g, ' '));
+      const p = segmentWords(w, { ...segmentationForStyle(style), maxWordsPerPage: 30 });
+      const layout = layoutCaption({ page: p[0]!, words: w, style, frame, measure });
+      expect(layout.font.sizePx).toBeGreaterThanOrEqual(Math.floor(style.fontSizePct * 1080 * 0.85));
+    }
   });
 
   it('hexToRgba handles alpha', () => {

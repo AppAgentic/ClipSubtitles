@@ -39,10 +39,7 @@ function price(env: ProviderEnv, id: string): number | null {
 export function createProviderRegistry(env: ProviderEnv, deps: { truthSources?: TruthSource[] } = {}): ProviderRegistry {
   const mockOpts = deps.truthSources ? { truthSources: deps.truthSources } : {};
   const all: TranscriptionProvider[] = [
-    new MockTranscriptionProvider({ ...mockOpts, profile: MOCK_PROFILES.mock! }),
-    new MockTranscriptionProvider({ ...mockOpts, profile: MOCK_PROFILES['mock-noisy']! }),
-    new MockTranscriptionProvider({ ...mockOpts, profile: MOCK_PROFILES['mock-drifty']! }),
-    new MockTranscriptionProvider({ ...mockOpts, profile: MOCK_PROFILES['mock-flaky']! }),
+    ...Object.values(MOCK_PROFILES).map((profile) => new MockTranscriptionProvider({ ...mockOpts, profile })),
     new GeminiTranscribeProvider({
       ...(env.GEMINI_API_KEY ? { apiKey: env.GEMINI_API_KEY } : {}),
       ...(env.GEMINI_TRANSCRIBE_MODEL ? { model: env.GEMINI_TRANSCRIBE_MODEL } : {}),
@@ -75,6 +72,9 @@ export function createProviderRegistry(env: ProviderEnv, deps: { truthSources?: 
     const p = byId(id);
     if (p) chain.push(p);
   }
-  if (chain.length === 0) chain.push(all[0]!);
+  if (chain.length === 0) {
+    const fallback = byId('mock');
+    if (fallback) chain.push(fallback);
+  }
   return { all, byId, chain };
 }

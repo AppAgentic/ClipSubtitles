@@ -13,7 +13,7 @@ export interface SegmentationConstraints {
 
 const SENTENCE_END = /[.!?…]["')\]]?$/u;
 const CLAUSE_END = /[,;:—–-]["')\]]?$/u;
-const OPEN_QUOTE = /^["'(\[¿¡]/u;
+const OPEN_QUOTE = /^["'([¿¡]/u;
 
 /** Words that usually begin a new clause — a good place to break BEFORE them. */
 const CLAUSE_STARTERS = new Set([
@@ -153,8 +153,8 @@ export function segmentWords(
         const b = boundary[i];
         if (b) cost += b.score;
       }
-      const total = best[j]! + cost + 1; // +1 per page: fewer pages when equal
-      if (total < best[i]!) {
+      const total = (best[j] ?? INF) + cost + 1; // +1 per page: fewer pages when equal
+      if (total < (best[i] ?? INF)) {
         best[i] = total;
         from[i] = j;
       }

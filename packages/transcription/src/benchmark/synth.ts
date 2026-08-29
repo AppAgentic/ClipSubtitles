@@ -40,7 +40,6 @@ export function synthesizeCaseAudio(c: BenchmarkCase, truth: TruthTranscript, du
     if (e <= s) continue;
     const variant = (hashSeed(w.text.toLowerCase()) % 9) - 4;
     const freq = c.audio.pitchHz * (1 + variant * 0.05);
-    const len = e - s;
     const ramp = Math.max(1, Math.floor(sampleRate * 0.012));
     for (let i = s; i < e; i += 1) {
       const t = (i - s) / sampleRate;

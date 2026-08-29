@@ -116,8 +116,8 @@ export function alignTextToTimedWords(text: string, timed: readonly TimedToken[]
     // Run of unanchored tokens [idx, runEnd)
     let runEnd = idx;
     while (runEnd < tokens.length && !anchors[runEnd]) runEnd += 1;
-    const prevEnd = out.length ? out[out.length - 1]!.endMs : 0;
-    const nextStart = runEnd < tokens.length ? anchors[runEnd]!.startMs : durationMs;
+    const prevEnd = out[out.length - 1]?.endMs ?? 0;
+    const nextStart = anchors[runEnd]?.startMs ?? durationMs;
     const span = Math.max((runEnd - idx) * 60, nextStart - prevEnd);
     const per = span / (runEnd - idx);
     for (let k = idx; k < runEnd; k += 1) {

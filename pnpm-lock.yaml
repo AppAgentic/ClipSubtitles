@@ -101,6 +101,9 @@ importers:
         specifier: ^1.0.8
         version: 1.0.8
     devDependencies:
+      '@clipsubtitles/transcription':
+        specifier: workspace:*
+        version: link:../transcription
       tsx:
         specifier: ^4.23.12
         version: 4.23.12

@@ -64,6 +64,25 @@ describe('scoreTranscript', () => {
     const gates = evaluateGates(aggregates, 'good');
     expect(gates.find((g) => g.providerId === 'drifty')?.noCumulativeDrift).toBe(false);
     expect(gates.find((g) => g.providerId === 'flaky')?.failureRateOk).toBe(false);
-    expect(gates.find((g) => g.providerId === 'good')?.betterThanBaseline).toBeNull();
+    const baselineGate = gates.find((g) => g.providerId === 'good')!;
+    expect(baselineGate.betterThanBaseline).toBeNull();
+    // The baseline itself never "passes": there is nothing to compare it against.
+    expect(baselineGate.passes).toBe(false);
+    expect(baselineGate.reasons).toContain('provider is the baseline');
+  });
+
+  it('never passes a provider without live evidence or without a baseline', () => {
+    const perfect = scoreTranscript(truth, truth.words, { ...meta, providerId: 'mock' });
+    const noBaseline = evaluateGates(aggregateScores([perfect]), 'whisper');
+    expect(noBaseline[0]?.passes).toBe(false);
+    expect(noBaseline[0]?.liveEvidence).toBe(false);
+    expect(noBaseline[0]?.reasons).toEqual(expect.arrayContaining(['mock provider: no live evidence', 'baseline "whisper" did not run']));
+
+    const live = scoreTranscript(truth, truth.words, { ...meta, providerId: 'gemini' });
+    const baseline = scoreTranscript(truth, truth.words.slice(1), { ...meta, providerId: 'whisper' });
+    const withBaseline = evaluateGates(aggregateScores([live, baseline]), 'whisper');
+    expect(withBaseline.find((g) => g.providerId === 'gemini')?.passes).toBe(true);
+    const liveNoBaseline = evaluateGates(aggregateScores([live]), 'whisper');
+    expect(liveNoBaseline[0]?.passes).toBe(false);
   });
 });

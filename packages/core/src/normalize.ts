@@ -67,12 +67,6 @@ export function normalizeWords(raw: readonly RawWord[], opts: NormalizeOptions =
     let end = Math.round(Number.isFinite(w.endMs) ? w.endMs : start + minWordMs);
     if (start < cursor) start = cursor;
     if (end < start + minWordMs) end = start + minWordMs;
-    if (opts.durationMs !== undefined) {
-      const max = Math.max(opts.durationMs, minWordMs);
-      if (start > max - minWordMs) start = Math.max(cursor, max - minWordMs);
-      if (end > max) end = Math.max(start + minWordMs, max);
-      if (start >= end) end = start + minWordMs;
-    }
     cursor = end;
     const word: TranscriptWord = {
       id: opts.wordId ? opts.wordId(i) : newId('word'),
@@ -87,7 +81,36 @@ export function normalizeWords(raw: readonly RawWord[], opts: NormalizeOptions =
     if (w.language) word.language = w.language.slice(0, LIMITS.maxLanguageTagChars);
     words.push(word);
   }
-  return words;
+  return opts.durationMs === undefined ? words : fitToDuration(words, opts.durationMs);
+}
+
+/**
+ * Keep every word inside [0, durationMs] while preserving order and strictly
+ * positive durations. When the words cannot fit at their natural length (dense
+ * late input), all timings are compressed proportionally — never dropped.
+ */
+export function fitToDuration(words: readonly TranscriptWord[], durationMs: number): TranscriptWord[] {
+  const n = words.length;
+  if (n === 0) return [];
+  const max = Math.max(1, Math.round(durationMs));
+  const last = words[n - 1];
+  if (!last || last.endMs <= max) return [...words];
+  // Proportional compression keeps relative pacing; the minimum slot guarantees monotonic, non-zero words.
+  const factor = max / last.endMs;
+  const slot = Math.max(1, Math.floor(max / n));
+  const out: TranscriptWord[] = [];
+  let cursor = 0;
+  for (let i = 0; i < n; i += 1) {
+    const w = words[i];
+    if (!w) continue;
+    // Later words can never start after their reserved slot, so everything fits by construction.
+    const latestStart = max - slot * (n - i);
+    const start = Math.min(latestStart, Math.max(cursor, Math.round(w.startMs * factor)));
+    const end = Math.min(max - slot * (n - i - 1), Math.max(start + 1, Math.round(w.endMs * factor)));
+    out.push({ ...w, startMs: start, endMs: end });
+    cursor = end;
+  }
+  return out;
 }
 
 /** Re-run timing repair only (after explicit edits), keeping ids and text. */
