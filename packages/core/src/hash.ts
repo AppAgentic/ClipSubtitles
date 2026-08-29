@@ -1,5 +1,5 @@
-import { createHash } from 'node:crypto';
 import type { CaptionPage, StyleConfig, TranscriptWord } from '@clipsubtitles/contracts';
+import { sha256Hex as sha256 } from './sha256';
 
 /**
  * Canonical JSON: recursively sorted object keys, no whitespace, `undefined`
@@ -23,7 +23,7 @@ function sortValue(value: unknown): unknown {
 }
 
 export function sha256Hex(input: string | Uint8Array): string {
-  return createHash('sha256').update(input).digest('hex');
+  return sha256(input);
 }
 
 export interface ContentHashInput {

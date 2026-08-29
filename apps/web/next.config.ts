@@ -13,6 +13,8 @@ const nextConfig: NextConfig = {
       { source: '/v1/:path*', destination: `${apiOrigin}/v1/:path*` },
       { source: '/auth/:path*', destination: `${apiOrigin}/auth/:path*` },
       { source: '/api/mcp', destination: `${apiOrigin}/api/mcp` },
+      // Local-only helpers (fixtures, dev tokens, dev OAuth). The API only serves them in mock mode.
+      { source: '/dev/:path*', destination: `${apiOrigin}/dev/:path*` },
       { source: '/api/mcp/:path*', destination: `${apiOrigin}/api/mcp/:path*` },
       { source: '/.well-known/:path*', destination: `${apiOrigin}/.well-known/:path*` },
       { source: '/openapi.json', destination: `${apiOrigin}/openapi.json` },

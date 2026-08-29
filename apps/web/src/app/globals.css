@@ -1,0 +1,254 @@
+@import 'tailwindcss';
+
+/* Caption typeface — identical files to the renderer (synced from @expo-google-fonts/inter). */
+@font-face { font-family: 'Inter'; font-weight: 400; font-style: normal; font-display: swap; src: url('/fonts/Inter_400Regular.ttf') format('truetype'); }
+@font-face { font-family: 'Inter'; font-weight: 500; font-style: normal; font-display: swap; src: url('/fonts/Inter_500Medium.ttf') format('truetype'); }
+@font-face { font-family: 'Inter'; font-weight: 600; font-style: normal; font-display: swap; src: url('/fonts/Inter_600SemiBold.ttf') format('truetype'); }
+@font-face { font-family: 'Inter'; font-weight: 700; font-style: normal; font-display: swap; src: url('/fonts/Inter_700Bold.ttf') format('truetype'); }
+@font-face { font-family: 'Inter'; font-weight: 800; font-style: normal; font-display: swap; src: url('/fonts/Inter_800ExtraBold.ttf') format('truetype'); }
+@font-face { font-family: 'Inter'; font-weight: 900; font-style: normal; font-display: swap; src: url('/fonts/Inter_900Black.ttf') format('truetype'); }
+
+@theme {
+  --color-bg: #0b0a09;
+  --color-bg-elev: #12110f;
+  --color-panel: #171513;
+  --color-panel-2: #1e1b18;
+  --color-line: #2a2622;
+  --color-line-strong: #3d3831;
+  --color-ink: #f3eee4;
+  --color-ink-dim: #a9a094;
+  --color-ink-mute: #6f685f;
+  --color-signal: #ff7a1a;
+  --color-signal-soft: #ffa15c;
+  --color-signal-ink: #1c0c00;
+  --color-phosphor: #a8f27f;
+  --color-warn: #ffd166;
+  --color-danger: #ff5f5f;
+  --color-info: #7cc4ff;
+  --font-display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --font-caption: 'Inter', ui-sans-serif, sans-serif;
+  --radius-panel: 14px;
+  --shadow-glow: 0 0 0 1px rgb(255 122 26 / 0.35), 0 10px 40px -10px rgb(255 122 26 / 0.45);
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: 14px;
+  line-height: 1.45;
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+/* Darkroom atmosphere: warm vignette + film grain. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(1200px 700px at 12% -10%, rgb(255 122 26 / 0.10), transparent 60%),
+    radial-gradient(900px 600px at 110% 110%, rgb(124 196 255 / 0.06), transparent 60%);
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: -50%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  mix-blend-mode: overlay;
+  animation: grain 1.6s steps(6) infinite;
+}
+
+@keyframes grain {
+  0% { transform: translate(0, 0); }
+  20% { transform: translate(-2%, 1%); }
+  40% { transform: translate(1%, -2%); }
+  60% { transform: translate(-1%, 2%); }
+  80% { transform: translate(2%, -1%); }
+  100% { transform: translate(0, 0); }
+}
+
+#app {
+  position: relative;
+  z-index: 1;
+  min-height: 100%;
+}
+
+::selection {
+  background: rgb(255 122 26 / 0.35);
+}
+
+*:focus-visible {
+  outline: 2px solid var(--color-signal);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Scrollbars that belong to the instrument. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-strong) transparent;
+}
+
+/* Tabular figures for every number in the UI. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+/* Page load: staggered reveal for top-level regions. */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.rise {
+  animation: rise 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.rise-1 { animation-delay: 0.05s; }
+.rise-2 { animation-delay: 0.12s; }
+.rise-3 { animation-delay: 0.2s; }
+.rise-4 { animation-delay: 0.28s; }
+
+@keyframes pulse-signal {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(255 122 26 / 0.55); }
+  50% { box-shadow: 0 0 0 6px rgb(255 122 26 / 0); }
+}
+
+.record-dot {
+  animation: pulse-signal 1.4s ease-out infinite;
+}
+
+/* Range inputs styled as instrument sliders. */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 22px;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type='range']::-webkit-slider-runnable-track {
+  height: 2px;
+  background: linear-gradient(to right, var(--color-signal) var(--fill, 0%), var(--color-line-strong) var(--fill, 0%));
+  border-radius: 1px;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -6px;
+  border-radius: 50%;
+  background: var(--color-ink);
+  border: 2px solid var(--color-bg);
+  box-shadow: 0 0 0 1px var(--color-line-strong);
+}
+
+input[type='range']::-moz-range-track {
+  height: 2px;
+  background: var(--color-line-strong);
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-ink);
+  border: 2px solid var(--color-bg);
+}
+
+input[type='color'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 28px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type='color']::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+
+input[type='color']::-webkit-color-swatch {
+  border: none;
+  border-radius: 3px;
+}
+
+/* Caption overlay text: stroke behind fill, like the rasterizer. */
+.caption-word {
+  position: absolute;
+  white-space: pre;
+  font-family: var(--font-caption);
+  paint-order: stroke fill;
+  -webkit-font-smoothing: antialiased;
+  transform-origin: center center;
+}
+
+/* Drop zone dashed frame drawn with a moving dash (marching ants) on hover. */
+@keyframes ants {
+  to { stroke-dashoffset: -24; }
+}
+
+.ants rect {
+  animation: ants 1.2s linear infinite;
+}
+
+/* Respect reduced-motion: no grain drift, no reveals, no pulsing, no marching ants. */
+@media (prefers-reduced-motion: reduce) {
+  body::after {
+    animation: none;
+  }
+  .rise,
+  .record-dot,
+  .ants rect {
+    animation: none !important;
+  }
+  .rise {
+    opacity: 1;
+    transform: none;
+  }
+  * {
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Tables scroll inside their panel on narrow viewports instead of breaking the page. */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-scroll > table {
+  min-width: 640px;
+}

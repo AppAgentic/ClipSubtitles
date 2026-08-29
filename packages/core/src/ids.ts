@@ -1,5 +1,5 @@
-import { randomBytes } from 'node:crypto';
 import { ID_PREFIXES, type IdKind } from '@clipsubtitles/contracts';
+import { randomBytes } from './sha256';
 
 /** Crockford base32, lowercase, no i/l/o/u — matches the contract id regex. */
 const ALPHABET = '0123456789abcdefghjkmnpqrstvwxyz';

@@ -5,15 +5,21 @@
   "description": "ClipSubtitles precision web editor and recovery library (Next.js)",
   "type": "module",
   "scripts": {
+    "fonts:sync": "node scripts/sync-fonts.mjs",
+    "predev": "node scripts/sync-fonts.mjs",
+    "prebuild": "node scripts/sync-fonts.mjs",
     "dev": "next dev -p 3100",
     "build": "next build",
     "start": "next start -p 3100",
-    "typecheck": "tsc -p tsconfig.json",
+    "typecheck": "node scripts/sync-fonts.mjs && tsc -p tsconfig.json",
     "test": "vitest run"
   },
   "dependencies": {
     "@clipsubtitles/contracts": "workspace:*",
     "@clipsubtitles/core": "workspace:*",
+    "@expo-google-fonts/inter": "^0.4.2",
+    "@fontsource-variable/bricolage-grotesque": "^5.3.0",
+    "@fontsource/ibm-plex-mono": "^5.3.0",
     "next": "^16.3.3",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

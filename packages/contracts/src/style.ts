@@ -65,6 +65,13 @@ export const StyleConfigSchema = z.object({
 });
 export type StyleConfig = z.infer<typeof StyleConfigSchema>;
 
-/** Partial style used by PATCH/update operations. Unknown keys are rejected. */
-export const StylePatchSchema = StyleConfigSchema.partial().strict();
+/** Partial style used by PATCH/update operations (partial at both levels). Unknown keys are rejected. */
+export const StylePatchSchema = StyleConfigSchema.partial()
+  .extend({
+    stroke: StyleConfigSchema.shape.stroke.partial().strict().optional(),
+    shadow: StyleConfigSchema.shape.shadow.partial().strict().optional(),
+    background: StyleConfigSchema.shape.background.partial().strict().optional(),
+    highlight: StyleConfigSchema.shape.highlight.partial().strict().optional(),
+  })
+  .strict();
 export type StylePatch = z.infer<typeof StylePatchSchema>;
