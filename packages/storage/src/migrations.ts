@@ -276,4 +276,34 @@ CREATE TABLE audit_events (
 CREATE INDEX audit_workspace ON audit_events(workspace_id, created_at);
 `,
   },
+  {
+    version: 2,
+    name: 'ledger_idempotency_per_workspace',
+    // idempotency_key was globally UNIQUE, so one workspace's legitimate provider
+    // key (promo code, webhook event id) silently denied the same key in another
+    // workspace. SQLite cannot alter a constraint in place: rebuild the table.
+    sql: `
+CREATE TABLE credit_ledger_v2 (
+  id TEXT PRIMARY KEY,
+  workspace_id TEXT NOT NULL REFERENCES workspaces(id),
+  kind TEXT NOT NULL,
+  amount INTEGER NOT NULL,
+  available_after INTEGER NOT NULL,
+  reserved_after INTEGER NOT NULL,
+  task_id TEXT,
+  quote_id TEXT,
+  reservation_id TEXT,
+  idempotency_key TEXT NOT NULL,
+  note TEXT,
+  created_at TEXT NOT NULL,
+  UNIQUE(workspace_id, idempotency_key)
+);
+INSERT INTO credit_ledger_v2 (id, workspace_id, kind, amount, available_after, reserved_after, task_id, quote_id, reservation_id, idempotency_key, note, created_at)
+  SELECT id, workspace_id, kind, amount, available_after, reserved_after, task_id, quote_id, reservation_id, idempotency_key, note, created_at
+  FROM credit_ledger ORDER BY rowid;
+DROP TABLE credit_ledger;
+ALTER TABLE credit_ledger_v2 RENAME TO credit_ledger;
+CREATE INDEX ledger_workspace ON credit_ledger(workspace_id, created_at);
+`,
+  },
 ];

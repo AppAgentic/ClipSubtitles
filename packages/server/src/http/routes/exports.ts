@@ -35,7 +35,7 @@ function checkSignature(ctx: AppContext, kind: 'asset' | 'export' | 'upload', id
 export function registerExportRoutes(api: Api, ctx: AppContext): void {
   const auth = authenticate(ctx, { modes: ['bearer', 'session'] });
   const limited = rateLimit(ctx, 'api', principalKey);
-  const anon = rateLimit(ctx, 'anonymous', (c) => `ip:${clientIp(c)}`);
+  const anon = rateLimit(ctx, 'anonymous', (c) => `ip:${clientIp(c, ctx.config.trustedProxies)}`);
 
   api.openapi(
     createRoute({
@@ -125,7 +125,7 @@ export function registerExportRoutes(api: Api, ctx: AppContext): void {
       path: '/v1/uploads/{uploadToken}',
       tags: ['Projects'],
       summary: 'Upload the source media in a single bounded PUT to a signed upload target',
-      middleware: [rateLimit(ctx, 'uploads', (c) => `ws:${c.req.query('ws') ?? clientIp(c)}`)] as const,
+      middleware: [rateLimit(ctx, 'uploads', (c) => `ws:${c.req.query('ws') ?? clientIp(c, ctx.config.trustedProxies)}`)] as const,
       request: { params: z.object({ uploadToken: z.string().min(16).max(128) }), query: SignedQuery },
       responses: { 200: jsonResponse(z.object({ asset: SourceAssetSchema }), 'Source stored and probed'), ...errorResponses('PAYLOAD_TOO_LARGE', 'UNSUPPORTED_MEDIA', 'CONFLICT', 'RETENTION_EXPIRED') },
     }),

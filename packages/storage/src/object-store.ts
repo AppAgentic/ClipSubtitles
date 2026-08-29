@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { createReadStream, createWriteStream, existsSync } from 'node:fs';
-import { copyFile, mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
@@ -23,6 +23,10 @@ export interface ObjectStore {
   exists(key: string): Promise<boolean>;
   stat(key: string): Promise<{ bytes: number } | null>;
   delete(key: string): Promise<boolean>;
+  /** Every key under `prefix/` (recursive, sorted). Lets cleanup find blobs no database row references. */
+  list(prefix: string): Promise<string[]>;
+  /** Delete every object under `prefix/`; returns how many were removed. */
+  deletePrefix(prefix: string): Promise<number>;
   /** Local filesystem path for tools (ffmpeg) that need a file. */
   localPath(key: string): string;
   readStream(key: string): Readable;
@@ -147,6 +151,32 @@ export class FileObjectStore implements ObjectStore {
     if (!existsSync(p)) return false;
     await rm(p, { force: true });
     return true;
+  }
+
+  async list(prefix: string): Promise<string[]> {
+    const root = this.localPath(prefix);
+    const out: string[] = [];
+    const walk = async (dir: string, rel: string): Promise<void> => {
+      let entries: Array<{ name: string; isDirectory(): boolean; isFile(): boolean }>;
+      try {
+        entries = await readdir(dir, { withFileTypes: true });
+      } catch {
+        return;
+      }
+      for (const entry of entries) {
+        const next = rel ? `${rel}/${entry.name}` : entry.name;
+        if (entry.isDirectory()) await walk(path.join(dir, entry.name), next);
+        else if (entry.isFile()) out.push(`${prefix}/${next}`);
+      }
+    };
+    await walk(root, '');
+    return out.sort();
+  }
+
+  async deletePrefix(prefix: string): Promise<number> {
+    const keys = await this.list(prefix);
+    await rm(this.localPath(prefix), { recursive: true, force: true });
+    return keys.length;
   }
 
   readStream(key: string): Readable {

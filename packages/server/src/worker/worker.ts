@@ -14,6 +14,7 @@ import {
 import type { AppContext } from '../context';
 import { audit } from '../services/audit';
 import { releaseForTask, settleForTask } from '../services/billing';
+import { discardOutputsForTaskId } from '../services/outputs';
 import { runRetentionSweep } from '../services/retention';
 import { isCancellation, toTaskError } from './errors';
 import { generateCaptionsHandler } from './handlers/generate-captions';
@@ -128,6 +129,8 @@ export class TaskWorker {
     const reclaimed = reclaimExpiredLeases(this.ctx.db, this.ctx.clock.iso());
     for (const id of reclaimed.failed) releaseForTask(this.ctx, id, 'worker lease lost');
     for (const id of reclaimed.cancelled) releaseForTask(this.ctx, id, 'cancelled after lease loss');
+    // Terminal render tasks keep no outputs: rows and row-less blobs alike are removed.
+    for (const id of [...reclaimed.failed, ...reclaimed.cancelled]) await discardOutputsForTaskId(this.ctx, id);
     expireOpenQuotes(this.ctx.db, this.ctx.clock.iso());
     if (force || now - this.lastRetention >= this.retentionEveryMs) {
       this.lastRetention = now;
@@ -192,8 +195,9 @@ export class TaskWorker {
         return;
       }
       if (controller.signal.reason === 'cancel' || (controller.signal.aborted && isCancellation(err))) {
-        markCancelled(this.ctx.db, { id: task.id, workerId: this.workerId, now: this.ctx.clock.iso() });
+        const cancelled = markCancelled(this.ctx.db, { id: task.id, workerId: this.workerId, now: this.ctx.clock.iso() });
         if (task.kind === 'render_export') releaseForTask(this.ctx, task.id, 'cancelled');
+        if (cancelled) await discardOutputsForTaskId(this.ctx, task.id);
         audit(this.ctx, { workspaceId: task.workspaceId, actorType: 'worker', actorId: this.workerId, action: `task.${task.kind}.cancelled`, targetType: 'task', targetId: task.id });
         log.info('task cancelled');
         return;
@@ -208,6 +212,7 @@ export class TaskWorker {
         backoffMs: BACKOFF_MS[Math.min(BACKOFF_MS.length - 1, Math.max(0, task.attempts - 1))] ?? 2_000,
       });
       if (outcome.outcome === 'failed' && task.kind === 'render_export') releaseForTask(this.ctx, task.id, 'render failed');
+      if (outcome.outcome === 'failed') await discardOutputsForTaskId(this.ctx, task.id);
       audit(this.ctx, {
         workspaceId: task.workspaceId,
         actorType: 'worker',

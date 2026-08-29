@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { z } from 'zod';
+import { createProxyTrust } from './auth/client-ip';
 
 const boolish = z
   .string()
@@ -47,6 +48,8 @@ const EnvSchema = z.object({
   MAX_JSON_BODY_BYTES: intish(1024 * 1024, 1024),
   WORKER_POLL_MS: intish(500, 50),
   WORKER_LEASE_MS: intish(60_000, 5_000),
+  /** Comma-separated proxy IPs/CIDRs whose forwarding headers may be trusted. Empty = never trust X-Forwarded-For / X-Real-IP. */
+  TRUSTED_PROXIES: z.string().default(''),
 });
 
 export interface WorkOSConfig {
@@ -93,6 +96,12 @@ export interface AppConfig {
     maxJsonBodyBytes: number;
   };
   worker: { pollMs: number; leaseMs: number };
+  /**
+   * Proxy addresses/CIDRs whose X-Forwarded-For / X-Real-IP headers are
+   * honoured for client-IP resolution. Empty (the default) means the socket
+   * peer is always the client — forwarding headers are never trusted.
+   */
+  trustedProxies: string[];
 }
 
 export class ConfigError extends Error {
@@ -125,6 +134,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     throw new ConfigError('AUTH_LOCAL_SECRET must be set to a strong secret in production.');
   }
   if (e.AUTH_LOCAL_SECRET.length < 32) throw new ConfigError('AUTH_LOCAL_SECRET must be at least 32 characters.');
+  const trustedProxies = e.TRUSTED_PROXIES.split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  try {
+    createProxyTrust(trustedProxies);
+  } catch (err) {
+    throw new ConfigError(`TRUSTED_PROXIES: ${err instanceof Error ? err.message : String(err)}`);
+  }
   return {
     env: e.NODE_ENV,
     logLevel: e.LOG_LEVEL,
@@ -161,6 +178,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       maxJsonBodyBytes: e.MAX_JSON_BODY_BYTES,
     },
     worker: { pollMs: e.WORKER_POLL_MS, leaseMs: e.WORKER_LEASE_MS },
+    trustedProxies,
   };
 }
 

@@ -126,8 +126,15 @@ export async function receiveUpload(ctx: AppContext, input: ReceiveUploadInput):
     if (err instanceof ObjectTooLargeError) throw new ApiError('PAYLOAD_TOO_LARGE');
     throw new ApiError('INTERNAL', undefined, { internal: err });
   }
-  updateAsset(ctx.db, asset.id, { storageKey: key }, ctx.clock.iso());
-  const ready = await finalizeSourceAsset(ctx, asset, { storageKey: key, bytes: stored.bytes, sha256: stored.sha256, ...(mime ? { mimeType: mime } : {}) });
+  let ready: AssetRecord;
+  try {
+    updateAsset(ctx.db, asset.id, { storageKey: key }, ctx.clock.iso());
+    ready = await finalizeSourceAsset(ctx, asset, { storageKey: key, bytes: stored.bytes, sha256: stored.sha256, ...(mime ? { mimeType: mime } : {}) });
+  } catch (err) {
+    // The blob is already stored: never leave it behind without a row that points at it.
+    await failAsset(ctx, asset, key).catch(() => undefined);
+    throw err;
+  }
   audit(ctx, { workspaceId: asset.workspaceId, actorType: 'user', action: 'source.upload', targetType: 'asset', targetId: asset.id, metadata: { bytes: stored.bytes, durationMs: ready.durationMs } });
   return ready;
 }

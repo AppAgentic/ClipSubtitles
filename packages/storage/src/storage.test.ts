@@ -5,6 +5,7 @@ import { Readable } from 'node:stream';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { DEFAULT_SEGMENTATION, defaultStyle } from '@clipsubtitles/core';
 import { migrate, openDatabase, type Db } from './db';
+import { MIGRATIONS } from './migrations';
 import { StorageError } from './errors';
 import { FileObjectStore, ObjectKeyError, ObjectTooLargeError } from './object-store';
 import { recordAudit, listAudit, findAuditByErrorRef } from './repos/audit';
@@ -73,6 +74,29 @@ beforeEach(() => {
 describe('migrations', () => {
   it('are idempotent', () => {
     expect(migrate(db)).toBe(0);
+  });
+
+  it('upgrades a v1 ledger to per-workspace idempotency keys without losing rows', () => {
+    const legacy = openDatabase({ path: ':memory:', migrate: false });
+    legacy.exec('CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at TEXT NOT NULL);');
+    legacy.exec(MIGRATIONS[0]!.sql);
+    legacy.prepare('INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)').run(1, MIGRATIONS[0]!.name, T0);
+    const a = ensureUserWorkspace(legacy, { subject: 'legacy-a', now: T0, initialCredits: 100 });
+    const b = ensureUserWorkspace(legacy, { subject: 'legacy-b', now: T0, initialCredits: 0 });
+    grantCredits(legacy, { workspaceId: a.workspace.id, amount: 5, idempotencyKey: 'promo-2026', now: plus(1) });
+    // The v1 schema wrongly rejects the same key in another workspace.
+    expect(() => grantCredits(legacy, { workspaceId: b.workspace.id, amount: 5, idempotencyKey: 'promo-2026', now: plus(2) })).toThrow(/UNIQUE/);
+
+    expect(migrate(legacy)).toBe(MIGRATIONS.length - 1);
+    expect(migrate(legacy)).toBe(0);
+    expect(listLedger(legacy, a.workspace.id).map((e) => e.kind)).toEqual(['grant', 'grant']);
+    expect(getBalance(legacy, a.workspace.id).available).toBe(105);
+
+    grantCredits(legacy, { workspaceId: b.workspace.id, amount: 5, idempotencyKey: 'promo-2026', now: plus(3) });
+    expect(getBalance(legacy, b.workspace.id).available).toBe(5);
+    grantCredits(legacy, { workspaceId: b.workspace.id, amount: 5, idempotencyKey: 'promo-2026', now: plus(4) });
+    expect(getBalance(legacy, b.workspace.id).available).toBe(5);
+    legacy.close();
   });
 });
 
@@ -328,6 +352,22 @@ describe('credits', () => {
     grantCredits(db, { workspaceId: ws, amount: 10, idempotencyKey: 'topup-1', now: plus(1) });
     expect(getBalance(db, ws).available).toBe(110);
   });
+
+  it('scopes grant idempotency keys per workspace (the same provider key in another workspace is not denied)', () => {
+    const before = getBalance(db, otherWs).available;
+    grantCredits(db, { workspaceId: ws, amount: 10, idempotencyKey: 'promo-2026', now: T0 });
+    grantCredits(db, { workspaceId: otherWs, amount: 10, idempotencyKey: 'promo-2026', now: plus(1) });
+    expect(getBalance(db, ws).available).toBe(110);
+    expect(getBalance(db, otherWs).available).toBe(before + 10);
+    // Replays stay no-ops within each workspace.
+    grantCredits(db, { workspaceId: ws, amount: 10, idempotencyKey: 'promo-2026', now: plus(2) });
+    grantCredits(db, { workspaceId: otherWs, amount: 10, idempotencyKey: 'promo-2026', now: plus(3) });
+    expect(getBalance(db, ws).available).toBe(110);
+    expect(getBalance(db, otherWs).available).toBe(before + 10);
+    // ws: initial grant + promo; otherWs (created with 0 credits): promo only.
+    expect(listLedger(db, ws).filter((e) => e.kind === 'grant')).toHaveLength(2);
+    expect(listLedger(db, otherWs).filter((e) => e.kind === 'grant')).toHaveLength(1);
+  });
 });
 
 describe('idempotency keys', () => {
@@ -401,6 +441,21 @@ describe('FileObjectStore', () => {
     expect(() => store.localPath('../etc/passwd')).toThrowError(ObjectKeyError);
     expect(() => store.localPath('ws_a/../x')).toThrowError(ObjectKeyError);
     expect(() => store.localPath('/abs')).toThrowError(ObjectKeyError);
+  });
+
+  it('lists and deletes everything under a prefix, including blobs no row references', async () => {
+    const store = new FileObjectStore(dir);
+    await store.put('ws_b/exports/task_1/a.mp4', 'a');
+    await store.put('ws_b/exports/task_1/nested/b.srt', 'b');
+    await store.put('ws_b/exports/task_2/c.mp4', 'c');
+    expect(await store.list('ws_b/exports/task_1')).toEqual(['ws_b/exports/task_1/a.mp4', 'ws_b/exports/task_1/nested/b.srt']);
+    expect(await store.list('ws_b/exports/none')).toEqual([]);
+    expect(await store.deletePrefix('ws_b/exports/task_1')).toBe(2);
+    expect(await store.deletePrefix('ws_b/exports/task_1')).toBe(0);
+    expect(await store.exists('ws_b/exports/task_1/a.mp4')).toBe(false);
+    expect(await store.exists('ws_b/exports/task_2/c.mp4')).toBe(true);
+    await expect(store.list('../x')).rejects.toThrowError(ObjectKeyError);
+    await expect(store.deletePrefix('ws_b/..')).rejects.toThrowError(ObjectKeyError);
   });
 
   it('streams with a hard byte cap', async () => {

@@ -145,6 +145,8 @@ export async function importSourceHandler(ctx: AppContext, task: TaskRecord, too
       updateAsset(ctx.db, asset.id, { status: 'failed' }, ctx.clock.iso());
       updateProjectMeta(ctx.db, input.projectId, { status: 'failed' }, ctx.clock.iso());
     }
+    // Whatever was fetched is discarded: a retry re-fetches, and a failed/cancelled import owns no blob.
+    await ctx.store.delete(key).catch(() => false);
     throw err;
   }
 }

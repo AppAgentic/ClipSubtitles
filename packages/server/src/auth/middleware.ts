@@ -5,6 +5,7 @@ import { newId } from '@clipsubtitles/core';
 import { ensureGrant, ensureUserWorkspace, isTokenRevoked, touchGrant } from '@clipsubtitles/storage';
 import type { AppContext } from '../context';
 import { ApiError } from '../errors';
+import { proxyTrust, resolveClientIp } from './client-ip';
 import type { RateLimiters } from './ratelimit';
 import { maskEmail, type Principal } from './principal';
 import { SESSION_COOKIE, principalFromSessionToken } from './session';
@@ -157,10 +158,22 @@ export function rateLimit(ctx: AppContext, bucket: keyof RateLimiters, keyFor: (
   };
 }
 
-export function clientIp(c: Context): string {
-  const fwd = c.req.header('x-forwarded-for');
-  if (fwd) return fwd.split(',')[0]?.trim() ?? 'unknown';
-  return c.req.header('x-real-ip') ?? 'local';
+/**
+ * Client address for rate-limit keys. Fail-closed: forwarding headers are only
+ * consulted when the socket peer is one of `trustedProxies` (see
+ * `resolveClientIp`); with the default empty list the socket address is the
+ * client, and in-process requests with no socket share one "unknown" bucket.
+ */
+export function clientIp(c: Context, trustedProxies: readonly string[] = []): string {
+  const incoming = (c.env as { incoming?: { socket?: { remoteAddress?: string } } } | undefined)?.incoming;
+  return resolveClientIp(
+    {
+      socketAddress: incoming?.socket?.remoteAddress ?? null,
+      forwardedFor: c.req.header('x-forwarded-for') ?? null,
+      realIp: c.req.header('x-real-ip') ?? null,
+    },
+    proxyTrust(trustedProxies),
+  );
 }
 
 export function principalKey(c: Context<AppEnv>): string {

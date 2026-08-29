@@ -71,6 +71,7 @@ Everything runs with the defaults; every integration is config-gated:
 - `AUTH_MODE=mock|workos` — WorkOS/AuthKit is the only production identity and OAuth authority.
 - `TRANSCRIPTION_PROVIDERS=mock` — ordered fallback chain (`gemini`, `elevenlabs`, `gpt-transcribe`, `whisper` need keys).
 - `RENDERER=ffmpeg|remotion` — deterministic canvas+ffmpeg compositor by default.
+- `TRUSTED_PROXIES=` — comma-separated proxy IPs/CIDRs whose `X-Forwarded-For`/`X-Real-IP` are honoured for client-IP rate limiting. Empty (default) never trusts forwarding headers.
 - Limits/retention: upload size, source duration, private-URL policy, retention days, signed-URL/quote TTLs, rate limits, initial credit grant.
 
 ## Guarantees the code enforces

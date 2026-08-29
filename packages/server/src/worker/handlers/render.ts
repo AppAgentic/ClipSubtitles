@@ -1,19 +1,10 @@
 import { mkdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 import type { TaskResult } from '@clipsubtitles/contracts';
-import type { RenderContent, RenderOutputFile, RenderSource } from '@clipsubtitles/render';
-import {
-  createExport,
-  deleteExportsForTask,
-  getAssetById,
-  getProjectById,
-  getReservationForTask,
-  getRevision,
-  getWorkspace,
-  listExportsForTaskAll,
-  type TaskRecord,
-} from '@clipsubtitles/storage';
+import type { RenderContent, RenderSource } from '@clipsubtitles/render';
+import { getAssetById, getProjectById, getReservationForTask, getRevision, getWorkspace, type TaskRecord } from '@clipsubtitles/storage';
 import type { AppContext } from '../../context';
+import { discardTaskOutputs, publishOutputs } from '../../services/outputs';
 import { TaskFailure } from '../errors';
 import { RenderExportInputSchema, RenderPreviewInputSchema } from '../inputs';
 import type { HandlerTools } from '../worker';
@@ -47,49 +38,21 @@ function loadRenderInputs(ctx: AppContext, task: TaskRecord, snap: Snapshot): { 
   return { source, content };
 }
 
-/** A retried attempt replaces any partial outputs from an earlier attempt instead of duplicating them. */
-async function discardPartialOutputs(ctx: AppContext, taskId: string): Promise<void> {
-  const previous = listExportsForTaskAll(ctx.db, taskId);
-  for (const e of previous) await ctx.store.delete(e.storageKey).catch(() => false);
-  if (previous.length) deleteExportsForTask(ctx.db, taskId);
-}
-
-async function storeOutput(ctx: AppContext, task: TaskRecord, projectId: string, snap: Snapshot, file: RenderOutputFile, expiresAt: string) {
-  const key = `${task.workspaceId}/exports/${task.id}/${file.fileName}`;
-  const stored = await ctx.store.putFile(key, file.path, { move: true });
-  return createExport(ctx.db, {
-    workspaceId: task.workspaceId,
-    projectId,
-    taskId: task.id,
-    kind: file.kind,
-    storageKey: key,
-    fileName: file.fileName,
-    mimeType: file.mimeType,
-    bytes: stored.bytes,
-    sha256: stored.sha256,
-    ...(file.width !== undefined ? { width: file.width } : {}),
-    ...(file.height !== undefined ? { height: file.height } : {}),
-    ...(file.durationMs !== undefined ? { durationMs: file.durationMs } : {}),
-    projectVersion: snap.projectVersion,
-    contentHash: snap.contentHash,
-    expiresAt,
-    now: ctx.clock.iso(),
-  });
-}
-
 export async function renderPreviewHandler(ctx: AppContext, task: TaskRecord, tools: HandlerTools): Promise<TaskResult> {
   const input = RenderPreviewInputSchema.parse(task.input);
   const { source, content } = loadRenderInputs(ctx, task, input);
   const workDir = path.join(ctx.config.workDir, task.id);
   await mkdir(workDir, { recursive: true });
-  await discardPartialOutputs(ctx, task.id);
+  // A retried attempt replaces any partial outputs of an earlier one (rows and row-less blobs alike).
+  await discardTaskOutputs(ctx, task);
   try {
     const file = await ctx.renderer.renderPreview(
       { source, content, startMs: input.startMs, durationMs: input.durationMs, resolution: input.resolution, workDir, baseName: `preview-v${input.projectVersion}` },
       { signal: tools.signal, onProgress: (p, s) => tools.progress(p, s) },
     );
     const expiresAt = new Date(ctx.clock.now() + 24 * 3_600_000).toISOString();
-    const exp = await storeOutput(ctx, task, input.projectId, input, file, expiresAt);
+    const [exp] = await publishOutputs(ctx, task, [file], { projectId: input.projectId, projectVersion: input.projectVersion, contentHash: input.contentHash, expiresAt });
+    if (!exp) throw new TaskFailure('RENDER_FAILED', 'The preview produced no output.');
     return { kind: 'render_preview', projectId: input.projectId, exportId: exp.id, projectVersion: input.projectVersion, contentHash: input.contentHash };
   } finally {
     await rm(workDir, { recursive: true, force: true }).catch(() => undefined);
@@ -105,19 +68,18 @@ export async function renderExportHandler(ctx: AppContext, task: TaskRecord, too
   const retentionDays = workspace?.retention.exportDays ?? ctx.config.limits.exportRetentionDays;
   const workDir = path.join(ctx.config.workDir, task.id);
   await mkdir(workDir, { recursive: true });
-  await discardPartialOutputs(ctx, task.id);
+  await discardTaskOutputs(ctx, task);
   try {
     const files = await ctx.renderer.renderExport(
       { source, content, settings: input.settings, workDir, baseName: `captions-v${input.projectVersion}` },
       { signal: tools.signal, onProgress: (p, s) => tools.progress(p, s) },
     );
     const expiresAt = new Date(ctx.clock.now() + retentionDays * 86_400_000).toISOString();
-    const exportIds: string[] = [];
-    for (const file of files) exportIds.push((await storeOutput(ctx, task, input.projectId, input, file, expiresAt)).id);
+    const exports = await publishOutputs(ctx, task, files, { projectId: input.projectId, projectVersion: input.projectVersion, contentHash: input.contentHash, expiresAt });
     return {
       kind: 'render_export',
       projectId: input.projectId,
-      exportIds,
+      exportIds: exports.map((e) => e.id),
       projectVersion: input.projectVersion,
       contentHash: input.contentHash,
       creditsCharged: reservation.amount,

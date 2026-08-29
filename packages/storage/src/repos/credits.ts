@@ -111,13 +111,17 @@ function setBalance(db: Db, workspaceId: string, available: number, reserved: nu
   );
 }
 
-/** Idempotent grant/adjustment keyed by the caller's idempotency key. */
+/**
+ * Idempotent grant/adjustment keyed by (workspace, idempotency key). Keys are
+ * scoped per workspace: the same provider key (e.g. a promo code or webhook
+ * event id) used in two workspaces is two independent grants, not a denial.
+ */
 export function grantCredits(
   db: Db,
   input: { workspaceId: string; amount: number; idempotencyKey: string; note?: string; now: string; kind?: 'grant' | 'adjust' },
 ): CreditBalanceRecord {
   return transaction(db, () => {
-    const existing = one(db, 'SELECT id FROM credit_ledger WHERE idempotency_key = ?', input.idempotencyKey);
+    const existing = one(db, 'SELECT id FROM credit_ledger WHERE workspace_id = ? AND idempotency_key = ?', input.workspaceId, input.idempotencyKey);
     if (existing) return getBalance(db, input.workspaceId);
     const bal = getBalance(db, input.workspaceId);
     const available = bal.available + input.amount;
