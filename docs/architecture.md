@@ -31,7 +31,7 @@ is a durable task; every paid step is an immutable quote.
 | `core` | Pure domain. `normalizeWords` (provider-neutral words, monotonic timing, duration fit), `segmentWords` (DP over pause/punctuation/clause signals with manual split/merge constraints; never rewrites words), `breakLines`, `layoutCaption` (frame-relative geometry incl. fit-to-width), `applyPatchOps` (constrained edits, transactional), `evaluateCaptions` (fidelity + reading speed QA), `quoteRender` (deterministic pricing), `computeContentHash` | contracts |
 | `transcription` | `TranscriptionProvider` interface, deterministic mock profiles, config-gated live adapters (Gemini, ElevenLabs Scribe, GPT Transcribe + alignment, Whisper baseline), ffmpeg extraction/probe, energy VAD, `transcribeWithFallback`, benchmark corpus/synth/scorer/runner/report | core |
 | `storage` | Migrations, workspace-scoped repositories (projects, revisions, assets, uploads, tasks, quotes, credits, exports, idempotency, audit, identity), leased task queue, exactly-once ledger, `ObjectStore` | core |
-| `render` | `Renderer` interface. `FfmpegCompositeRenderer`: plan visual states → rasterize each once (Skia canvas, same `layoutCaption`) → ffconcat timeline → ffmpeg `overlay` with bit-exact flags → MP4 / ProRes 4444 overlay / SRT / VTT / low-res preview | core |
+| `render` | `Renderer` interface. `FfmpegCompositeRenderer`: motion `none` plans/rasterizes sparse PNG states into ffconcat; named motion presets evaluate exact-frame cubic/spring curves and stream one reusable padded Skia caption band through bounded FFmpeg stdin. Both produce MP4 / ProRes 4444 overlay / SRT / VTT / previews. | core |
 | `server` | Config, context, auth (session cookie + bearer, scopes, grants/revocation, CSRF, rate limits, signed URLs), services, REST routes, MCP server + route, worker + handlers, CLIs | all |
 | `web` | Editor + recovery library; runs `core` in the browser for sub-second style/timing feedback | contracts, core |
 
@@ -55,7 +55,7 @@ is a durable task; every paid step is an immutable quote.
 
 ## Rendering determinism
 
-Sizes are fractions of the shorter frame side; the browser overlay, the rasterizer, and the (optional) Remotion composition all call `layoutCaption` with a real text measurer for Inter. ffmpeg runs with `-fflags +bitexact -flags +bitexact -map_metadata -1`; `pnpm smoke:render` verifies byte-identical MP4/MOV/SRT/VTT across two runs.
+Sizes are fractions of the shorter frame side; the browser overlay, Skia rasterizer, and optional Remotion composition call the same `layoutCaption` and `captionMotionState` functions. Motion is named and bounded (`none`, `soft-rise`, `spring-pop`, `karaoke-slide`) with exact frame-grid evaluation. Animated renders draw only the unioned caption region plus 12% movement/shadow/blur padding, feed straight RGBA one frame at a time, and await FFmpeg backpressure; the source video is decoded once. ffmpeg runs with `-fflags +bitexact -flags +bitexact -map_metadata -1`; `pnpm smoke:render` verifies repeat byte identity and renderer tests verify full-frame/cropped-band output identity.
 
 ## Security notes
 

@@ -39,8 +39,15 @@ const BASE: StyleConfig = {
   textColor: '#FFFFFF',
   stroke: { widthPct: 0.005, color: '#000000' },
   shadow: { enabled: true, color: '#000000B3', blurPct: 0.01, offsetYPct: 0.004 },
-  background: { enabled: false, color: '#000000A6', paddingXPct: 0.02, paddingYPct: 0.01, radiusPct: 0.01 },
+  background: {
+    enabled: false,
+    color: '#000000A6',
+    paddingXPct: 0.02,
+    paddingYPct: 0.01,
+    radiusPct: 0.01,
+  },
   highlight: { mode: 'none', color: '#FFD84D', scale: 1 },
+  motion: { preset: 'soft-rise', enterDurationMs: 260, exitDurationMs: 120, wordTransitionMs: 180 },
   safeMarginPct: 0.08,
   lowerThirdOffsetPct: 0.22,
 };
@@ -58,6 +65,12 @@ export const STYLE_PRESETS: Record<StylePresetId, StyleConfig> = {
     stroke: { widthPct: 0.008, color: '#000000' },
     shadow: { enabled: true, color: '#000000CC', blurPct: 0.012, offsetYPct: 0.005 },
     highlight: { mode: 'word', color: '#FFD84D', scale: 1.08 },
+    motion: {
+      preset: 'spring-pop',
+      enterDurationMs: 420,
+      exitDurationMs: 100,
+      wordTransitionMs: 180,
+    },
     position: 'center',
   },
   'lower-third': {
@@ -70,8 +83,20 @@ export const STYLE_PRESETS: Record<StylePresetId, StyleConfig> = {
     maxCharsPerLine: 30,
     stroke: { widthPct: 0, color: '#000000' },
     shadow: { enabled: false, color: '#000000', blurPct: 0, offsetYPct: 0 },
-    background: { enabled: true, color: '#000000B8', paddingXPct: 0.024, paddingYPct: 0.012, radiusPct: 0.012 },
+    background: {
+      enabled: true,
+      color: '#000000B8',
+      paddingXPct: 0.024,
+      paddingYPct: 0.012,
+      radiusPct: 0.012,
+    },
     textAlign: 'left',
+    motion: {
+      preset: 'soft-rise',
+      enterDurationMs: 240,
+      exitDurationMs: 120,
+      wordTransitionMs: 160,
+    },
   },
   karaoke: {
     ...BASE,
@@ -82,6 +107,12 @@ export const STYLE_PRESETS: Record<StylePresetId, StyleConfig> = {
     highlight: { mode: 'word', color: '#7CFC00', backgroundColor: '#FFFFFF1A', scale: 1.1 },
     stroke: { widthPct: 0.006, color: '#000000' },
     position: 'bottom',
+    motion: {
+      preset: 'karaoke-slide',
+      enterDurationMs: 260,
+      exitDurationMs: 100,
+      wordTransitionMs: 190,
+    },
   },
   minimal: {
     ...BASE,
@@ -92,8 +123,20 @@ export const STYLE_PRESETS: Record<StylePresetId, StyleConfig> = {
     maxCharsPerLine: 32,
     stroke: { widthPct: 0, color: '#000000' },
     shadow: { enabled: true, color: '#00000099', blurPct: 0.008, offsetYPct: 0.003 },
-    background: { enabled: true, color: '#00000080', paddingXPct: 0.018, paddingYPct: 0.009, radiusPct: 0.008 },
+    background: {
+      enabled: true,
+      color: '#00000080',
+      paddingXPct: 0.018,
+      paddingYPct: 0.009,
+      radiusPct: 0.008,
+    },
     position: 'bottom',
+    motion: {
+      preset: 'soft-rise',
+      enterDurationMs: 220,
+      exitDurationMs: 120,
+      wordTransitionMs: 150,
+    },
   },
 };
 
@@ -122,6 +165,7 @@ export function applyStylePatch(base: StyleConfig, patch: StylePatch): StyleConf
     shadow: { ...base.shadow, ...definedEntries(patch.shadow) },
     background: { ...base.background, ...definedEntries(patch.background) },
     highlight: { ...base.highlight, ...definedEntries(patch.highlight) },
+    motion: { ...base.motion, ...definedEntries(patch.motion) },
   };
   return StyleConfigSchema.parse(merged);
 }
@@ -131,7 +175,10 @@ export function withPosition(style: StyleConfig, position: CaptionPosition): Sty
 }
 
 /** Segmentation derived from style so line limits stay consistent with rendering. */
-export function segmentationForStyle(style: StyleConfig, base: SegmentationParams = DEFAULT_SEGMENTATION): SegmentationParams {
+export function segmentationForStyle(
+  style: StyleConfig,
+  base: SegmentationParams = DEFAULT_SEGMENTATION,
+): SegmentationParams {
   return {
     ...base,
     maxLinesPerPage: style.maxLines,

@@ -19,7 +19,9 @@ other MCP clients, or the web editor.
 - Transcripts use a provider-neutral word-level schema.
 - Caption grouping uses semantic and prosody-aware segmentation without
   rewriting spoken words.
-- Rendering uses Remotion and FFmpeg. Visual safe-placement, face detection,
+- Rendering uses headless Skia/Canvas plus FFmpeg by default, with Remotion as
+  an optional DOM-heavy lane. Static styles use sparse PNG states; named motion
+  presets stream only a padded caption band with bounded backpressure. Visual safe-placement, face detection,
   OCR, and automatic repositioning are intentionally out of scope.
 - WorkOS/AuthKit is the sole user identity and MCP OAuth authority from day
   one. Private beta begins with a predefined OAuth client; CIMD/DCR is a later
@@ -45,7 +47,7 @@ other MCP clients, or the web editor.
 The vertical slice from `docs/plans/initial-agent-native-plan.md` is
 implemented locally: contracts, caption core, transcription adapters +
 benchmark harness, SQLite storage with a durable task queue and credit ledger,
-the deterministic render pipeline (plus the optional Remotion renderer,
+the deterministic still + smooth-motion render pipeline (plus the optional Remotion renderer,
 verified locally behind `RENDERER=remotion`), the REST/OpenAPI + MCP server
 with the WorkOS boundary (mock locally), the durable worker, the Next.js
 editor with Playwright coverage at desktop and 390 px, and the Phase 4
@@ -72,6 +74,7 @@ directory submission) are listed in `PARKED_ACTIONS.md`. Read
 | `pnpm smoke:render` | Byte-identical repeat render of the demo fixture |
 | `pnpm --filter @clipsubtitles/web e2e` | Playwright browser flows at desktop and 390 px (needs `pnpm dev` running and `PLAYWRIGHT_BROWSERS_PATH`) |
 | `pnpm benchmark` | Transcription benchmark (mock by default; live needs vault-injected keys) |
+| `pnpm benchmark:motion` | Local sparse/full-frame/cropped-band/Remotion render bake-off + visual canaries |
 | `pnpm openapi:emit` | Regenerate `docs/api/openapi.json` |
 
 ## Working rules for agents in this repo
@@ -98,4 +101,3 @@ directory submission) are listed in `PARKED_ACTIONS.md`. Read
 
 The canonical product decisions originated in CEO Slack thread
 `1787964320.606629` on 29 August 2026.
-

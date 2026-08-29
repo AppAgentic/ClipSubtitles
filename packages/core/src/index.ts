@@ -7,6 +7,7 @@ export * from './lines';
 export * from './segmentation';
 export * from './qa';
 export * from './layout';
+export * from './motion';
 export * from './state';
 export * from './patch';
 export * from './subtitles';

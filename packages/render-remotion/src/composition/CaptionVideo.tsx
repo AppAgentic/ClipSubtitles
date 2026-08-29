@@ -1,6 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AbsoluteFill, OffthreadVideo, continueRender, delayRender, staticFile, useCurrentFrame, useVideoConfig } from 'remotion';
-import { hexToRgba, layoutCaption, type CaptionLayout, type FontSpec, type TextMeasurer } from '@clipsubtitles/core';
+import {
+  AbsoluteFill,
+  OffthreadVideo,
+  continueRender,
+  delayRender,
+  staticFile,
+  useCurrentFrame,
+  useVideoConfig,
+} from 'remotion';
+import {
+  captionMotionState,
+  hexToRgba,
+  layoutCaption,
+  type CaptionLayout,
+  type CaptionMotionState,
+  type FontSpec,
+  type TextMeasurer,
+} from '@clipsubtitles/core';
 import { frameState, frameTimeMs } from '../frame';
 import type { CaptionVideoProps } from './props';
 
@@ -16,7 +32,10 @@ const FACES: Array<{ weight: number; file: string }> = [
 ];
 
 function fontFaceCss(): string {
-  return FACES.map((f) => `@font-face{font-family:'Inter';font-weight:${f.weight};font-style:normal;src:url('${staticFile(`fonts/${f.file}`)}') format('truetype');}`).join('\n');
+  return FACES.map(
+    (f) =>
+      `@font-face{font-family:'Inter';font-weight:${f.weight};font-style:normal;src:url('${staticFile(`fonts/${f.file}`)}') format('truetype');}`,
+  ).join('\n');
 }
 
 let sharedCtx: CanvasRenderingContext2D | null = null;
@@ -37,10 +56,55 @@ function browserMeasurer(): TextMeasurer {
 }
 
 /** Draw a layout as absolutely positioned DOM text (same geometry as the canvas rasterizer). */
-export function CaptionLayer({ layout }: { layout: CaptionLayout }) {
-  const shadow = layout.shadow ? `0 ${layout.shadow.offsetYPx}px ${layout.shadow.blurPx}px ${hexToRgba(layout.shadow.color)}` : 'none';
+export function CaptionLayer({
+  layout,
+  motion,
+}: {
+  layout: CaptionLayout;
+  motion: CaptionMotionState;
+}) {
+  const shadow = layout.shadow
+    ? `0 ${layout.shadow.offsetYPx}px ${layout.shadow.blurPx}px ${hexToRgba(layout.shadow.color)}`
+    : 'none';
+  const highlightBackground = layout.highlight.backgroundColor
+    ? hexToRgba(layout.highlight.backgroundColor)
+    : 'transparent';
+  const activeLine = layout.lines.find((line) => line.words.some((word) => word.active));
+  const activeWord = activeLine?.words.find((word) => word.active);
+  const fromWord =
+    motion.highlightFromWordIndex === null
+      ? undefined
+      : activeLine?.words.find((word) => word.wordIndex === motion.highlightFromWordIndex);
+  const pill =
+    activeLine && activeWord && layout.highlight.backgroundColor
+      ? {
+          x:
+            (fromWord?.x ?? activeWord.x) +
+            (activeWord.x - (fromWord?.x ?? activeWord.x)) * motion.highlightProgress,
+          width:
+            (fromWord?.width ?? activeWord.width) +
+            (activeWord.width - (fromWord?.width ?? activeWord.width)) * motion.highlightProgress,
+          y:
+            activeLine.y +
+            activeLine.height / 2 -
+            layout.font.sizePx * 0.62 -
+            layout.font.sizePx * 0.12,
+          height: layout.font.sizePx * 1.24 + layout.font.sizePx * 0.24,
+        }
+      : null;
   return (
-    <AbsoluteFill style={{ pointerEvents: 'none' }}>
+    <AbsoluteFill
+      style={{
+        pointerEvents: 'none',
+        opacity: motion.opacity,
+        transform: `translateY(${motion.translateYFactor * Math.min(layout.frame.width, layout.frame.height)}px) scale(${motion.scale})`,
+        transformOrigin: `${layout.block.x + layout.block.width / 2}px ${layout.block.y + layout.block.height / 2}px`,
+        filter:
+          motion.blurFactor > 0
+            ? `blur(${motion.blurFactor * Math.min(layout.frame.width, layout.frame.height)}px)`
+            : undefined,
+      }}
+    >
       {layout.background ? (
         <div
           style={{
@@ -51,6 +115,19 @@ export function CaptionLayer({ layout }: { layout: CaptionLayout }) {
             height: layout.background.height,
             borderRadius: layout.background.radius,
             background: hexToRgba(layout.background.color),
+          }}
+        />
+      ) : null}
+      {pill ? (
+        <div
+          style={{
+            position: 'absolute',
+            left: pill.x - layout.font.sizePx * 0.18,
+            top: pill.y,
+            width: pill.width + layout.font.sizePx * 0.36,
+            height: pill.height,
+            borderRadius: layout.font.sizePx * 0.2,
+            background: highlightBackground,
           }}
         />
       ) : null}
@@ -71,13 +148,17 @@ export function CaptionLayer({ layout }: { layout: CaptionLayout }) {
                 fontSize: layout.font.sizePx,
                 fontWeight: layout.font.weight,
                 color: hexToRgba(active ? layout.highlight.color : layout.textColor),
-                WebkitTextStroke: layout.strokePx > 0 ? `${layout.strokePx * 2}px ${hexToRgba(layout.strokeColor)}` : undefined,
+                WebkitTextStroke:
+                  layout.strokePx > 0
+                    ? `${layout.strokePx * 2}px ${hexToRgba(layout.strokeColor)}`
+                    : undefined,
                 paintOrder: 'stroke fill',
                 textShadow: shadow,
-                transform: active && layout.highlight.scale !== 1 ? `scale(${layout.highlight.scale})` : undefined,
+                transform:
+                  active && motion.activeWordScale !== 1
+                    ? `scale(${motion.activeWordScale})`
+                    : undefined,
                 transformOrigin: 'center center',
-                background: active && layout.highlight.backgroundColor ? hexToRgba(layout.highlight.backgroundColor) : undefined,
-                borderRadius: active && layout.highlight.backgroundColor ? layout.font.sizePx * 0.2 : undefined,
               }}
             >
               {w.text}
@@ -114,15 +195,35 @@ export const CaptionVideo: React.FC<CaptionVideoProps> = (props) => {
   const timeMs = frameTimeMs(frame, fps, props.startMs);
   const state = frameState(props.words, props.pages, props.style, timeMs);
   const layout = state.page
-    ? layoutCaption({ page: state.page, words: props.words, style: props.style, frame: { width, height }, activeWordIndex: state.activeWordIndex, measure })
+    ? layoutCaption({
+        page: state.page,
+        words: props.words,
+        style: props.style,
+        frame: { width, height },
+        activeWordIndex: state.activeWordIndex,
+        measure,
+      })
+    : null;
+  const motion = state.page
+    ? captionMotionState({
+        page: state.page,
+        words: props.words,
+        style: props.style,
+        timeMs,
+        activeWordIndex: state.activeWordIndex,
+      })
     : null;
 
   return (
     <AbsoluteFill style={{ backgroundColor: props.sourceUrl ? 'black' : 'transparent' }}>
       {props.sourceUrl ? (
-        <OffthreadVideo src={props.sourceUrl} startFrom={Math.round((props.startMs / 1000) * fps)} style={{ width, height, objectFit: 'contain' }} />
+        <OffthreadVideo
+          src={props.sourceUrl}
+          startFrom={Math.round((props.startMs / 1000) * fps)}
+          style={{ width, height, objectFit: 'contain' }}
+        />
       ) : null}
-      {layout && fontsReady ? <CaptionLayer layout={layout} /> : null}
+      {layout && motion && fontsReady ? <CaptionLayer layout={layout} motion={motion} /> : null}
     </AbsoluteFill>
   );
 };

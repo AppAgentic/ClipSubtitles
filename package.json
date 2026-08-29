@@ -30,6 +30,7 @@
     "test:coverage": "vitest run --coverage",
     "fixtures:build": "pnpm --filter @clipsubtitles/transcription fixtures:build",
     "benchmark": "pnpm --filter @clipsubtitles/transcription benchmark",
+    "benchmark:motion": "pnpm --filter @clipsubtitles/render-remotion benchmark:motion",
     "smoke:render": "pnpm --filter @clipsubtitles/render smoke",
     "smoke:render:remotion": "pnpm --filter @clipsubtitles/render-remotion smoke",
     "smoke:e2e": "pnpm --filter @clipsubtitles/server smoke:e2e",

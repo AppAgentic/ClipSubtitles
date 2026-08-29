@@ -7,6 +7,7 @@ import type {
   TranscriptSource,
   TranscriptWord,
 } from '@clipsubtitles/contracts';
+import { StyleConfigSchema } from '@clipsubtitles/contracts';
 import { newId } from '@clipsubtitles/core';
 import { many, num, one, parseJson, run, text, transaction, type Db, type Row } from '../db';
 import { StorageError } from '../errors';
@@ -55,7 +56,7 @@ function toProject(r: Row): ProjectRecord {
     status: String(r.status) as ProjectStatus,
     version: num(r.version) ?? 1,
     contentHash: String(r.content_hash),
-    style: parseJson<StyleConfig>(r.style_json, {} as StyleConfig),
+    style: StyleConfigSchema.parse(parseJson<unknown>(r.style_json, {})),
     segmentation: parseJson<SegmentationParams>(r.segmentation_json, {} as SegmentationParams),
     pages: parseJson<CaptionPage[]>(r.pages_json, []),
     manualBreaks: parseJson<string[]>(r.manual_breaks_json, []),
@@ -129,7 +130,12 @@ export function createProject(
 
 /** Workspace-scoped read: cross-workspace ids resolve to null (never 403 leaks). */
 export function getProject(db: Db, workspaceId: string, id: string): ProjectRecord | null {
-  const r = one(db, 'SELECT * FROM projects WHERE id = ? AND workspace_id = ? AND deleted_at IS NULL', id, workspaceId);
+  const r = one(
+    db,
+    'SELECT * FROM projects WHERE id = ? AND workspace_id = ? AND deleted_at IS NULL',
+    id,
+    workspaceId,
+  );
   return r ? toProject(r) : null;
 }
 
@@ -168,13 +174,22 @@ export interface ProjectEditPatch {
  */
 export function commitProjectEdit(
   db: Db,
-  input: { id: string; workspaceId: string; expectedVersion: number; patch: ProjectEditPatch; now: string },
+  input: {
+    id: string;
+    workspaceId: string;
+    expectedVersion: number;
+    patch: ProjectEditPatch;
+    now: string;
+  },
 ): ProjectRecord {
   return transaction(db, () => {
     const current = getProject(db, input.workspaceId, input.id);
     if (!current) throw new StorageError('NOT_FOUND', 'Project not found.');
     if (current.version !== input.expectedVersion) {
-      throw new StorageError('VERSION_CONFLICT', `Expected version ${input.expectedVersion}, current is ${current.version}.`);
+      throw new StorageError(
+        'VERSION_CONFLICT',
+        `Expected version ${input.expectedVersion}, current is ${current.version}.`,
+      );
     }
     const p = input.patch;
     const res = run(
@@ -191,7 +206,13 @@ export function commitProjectEdit(
       JSON.stringify(p.pages ?? current.pages),
       JSON.stringify(p.manualBreaks ?? current.manualBreaks),
       JSON.stringify(p.manualJoins ?? current.manualJoins),
-      p.qa === undefined ? (current.qa ? JSON.stringify(current.qa) : null) : p.qa ? JSON.stringify(p.qa) : null,
+      p.qa === undefined
+        ? current.qa
+          ? JSON.stringify(current.qa)
+          : null
+        : p.qa
+          ? JSON.stringify(p.qa)
+          : null,
       p.contentHash,
       p.currentRevisionId ?? current.currentRevisionId ?? null,
       input.now,
@@ -199,7 +220,8 @@ export function commitProjectEdit(
       input.workspaceId,
       input.expectedVersion,
     );
-    if (res.changes !== 1) throw new StorageError('VERSION_CONFLICT', 'Project changed concurrently.');
+    if (res.changes !== 1)
+      throw new StorageError('VERSION_CONFLICT', 'Project changed concurrently.');
     return getProject(db, input.workspaceId, input.id) as ProjectRecord;
   });
 }
@@ -208,7 +230,12 @@ export function commitProjectEdit(
 export function updateProjectMeta(
   db: Db,
   id: string,
-  patch: { status?: ProjectStatus; sourceAssetId?: string | null; language?: string; title?: string },
+  patch: {
+    status?: ProjectStatus;
+    sourceAssetId?: string | null;
+    language?: string;
+    title?: string;
+  },
   now: string,
 ): ProjectRecord | null {
   return transaction(db, () => {
@@ -230,8 +257,14 @@ export function updateProjectMeta(
 
 export function softDeleteProject(db: Db, workspaceId: string, id: string, now: string): boolean {
   return (
-    run(db, 'UPDATE projects SET deleted_at = ?, updated_at = ? WHERE id = ? AND workspace_id = ? AND deleted_at IS NULL', now, now, id, workspaceId)
-      .changes > 0
+    run(
+      db,
+      'UPDATE projects SET deleted_at = ?, updated_at = ? WHERE id = ? AND workspace_id = ? AND deleted_at IS NULL',
+      now,
+      now,
+      id,
+      workspaceId,
+    ).changes > 0
   );
 }
 
@@ -251,7 +284,11 @@ export function createRevision(
   },
 ): RevisionRecord {
   return transaction(db, () => {
-    const last = one(db, 'SELECT MAX(revision_number) AS n FROM transcript_revisions WHERE project_id = ?', input.projectId);
+    const last = one(
+      db,
+      'SELECT MAX(revision_number) AS n FROM transcript_revisions WHERE project_id = ?',
+      input.projectId,
+    );
     const next = (num(last?.n) ?? 0) + 1;
     const id = newId('revision');
     run(
@@ -277,7 +314,12 @@ export function createRevision(
 }
 
 export function getRevision(db: Db, projectId: string, id: string): RevisionRecord | null {
-  const r = one(db, 'SELECT * FROM transcript_revisions WHERE id = ? AND project_id = ?', id, projectId);
+  const r = one(
+    db,
+    'SELECT * FROM transcript_revisions WHERE id = ? AND project_id = ?',
+    id,
+    projectId,
+  );
   return r ? toRevision(r) : null;
 }
 
@@ -291,5 +333,13 @@ export function listRevisions(db: Db, projectId: string, limit = 50): RevisionRe
 }
 
 export function countProjects(db: Db, workspaceId: string): number {
-  return num(one(db, 'SELECT COUNT(*) AS n FROM projects WHERE workspace_id = ? AND deleted_at IS NULL', workspaceId)?.n) ?? 0;
+  return (
+    num(
+      one(
+        db,
+        'SELECT COUNT(*) AS n FROM projects WHERE workspace_id = ? AND deleted_at IS NULL',
+        workspaceId,
+      )?.n,
+    ) ?? 0
+  );
 }

@@ -16,6 +16,8 @@ Read and follow `AGENTS.md`; it is the canonical project instruction file.
 
 - `node:sqlite` is experimental in Node 24: scripts pass `--no-warnings=ExperimentalWarning`; tests print the warning once, harmlessly.
 - This machine's ffmpeg has no `libass`/`drawtext`: captions are rasterized with `@napi-rs/canvas` and composited with ffmpeg `overlay` (see ADR-0002). Any renderer change must keep `pnpm smoke:render` byte-identical.
+- Motion is content-hashed in `StyleConfig.motion`. `none` keeps the sparse PNG/ffconcat lane; named motion presets use a one-frame-at-a-time straight-RGBA caption band with FFmpeg stdin backpressure. Keep full-frame mode benchmark-only and preserve full-vs-band byte identity in `packages/render/src/render.test.ts`.
+- Raw-frame input and FFmpeg encode progress happen concurrently. Merge them through the monotonic emitter in `FfmpegCompositeRenderer.runMotion`; forwarding both callbacks directly makes task progress jump backwards.
 - Style sizes are fractions of the **shorter** frame side (ADR-0006). Presets were calibrated so their longest line fits the 90 % safe width at 1080p; `layoutCaption` shrinks text as a last resort.
 - `packages/core` must stay isomorphic (no `node:` imports): the browser overlay runs it. Hashing uses the pure SHA-256 in `core/src/sha256.ts`.
 - Vite 8 (used by Vitest) transforms with **oxc**; TSX tests in `apps/web` need `oxc: { jsx: { runtime: 'automatic' } }` because Next's tsconfig uses `jsx: preserve`.

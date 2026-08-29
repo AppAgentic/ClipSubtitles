@@ -38,7 +38,13 @@ export interface ContentHashInput {
  * but identical content hashes the same.
  */
 export function computeContentHash(input: ContentHashInput): string {
-  const words = input.words.map((w) => [w.text, w.startMs, w.endMs, w.speaker ?? '', w.language ?? '']);
+  const words = input.words.map((w) => [
+    w.text,
+    w.startMs,
+    w.endMs,
+    w.speaker ?? '',
+    w.language ?? '',
+  ]);
   const pages = input.pages.map((p) => [
     p.startWordIndex,
     p.endWordIndex,
@@ -46,7 +52,7 @@ export function computeContentHash(input: ContentHashInput): string {
     p.endMs,
     p.lines.map((l) => [l.startWordIndex, l.endWordIndex]),
   ]);
-  return sha256Hex(canonicalJson({ v: 1, words, pages, style: input.style }));
+  return sha256Hex(canonicalJson({ v: 2, words, pages, style: input.style }));
 }
 
 /** Stable fingerprint for idempotency comparisons of request bodies. */

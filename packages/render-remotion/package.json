@@ -15,7 +15,8 @@
     "build": "node scripts/sync-fonts.mjs && tsc -p tsconfig.json",
     "test": "vitest run",
     "browser:ensure": "remotion browser ensure",
-    "smoke": "node scripts/sync-fonts.mjs && tsx src/bin/smoke.ts"
+    "smoke": "node scripts/sync-fonts.mjs && tsx src/bin/smoke.ts",
+    "benchmark:motion": "node scripts/sync-fonts.mjs && tsx src/bin/motion-benchmark.ts"
   },
   "dependencies": {
     "@clipsubtitles/contracts": "workspace:*",

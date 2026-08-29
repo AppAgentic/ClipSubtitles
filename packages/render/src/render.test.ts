@@ -2,16 +2,30 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { DEFAULT_SEGMENTATION, segmentWords, stylePreset, wordsFromText } from '@clipsubtitles/core';
+import type { OutputSettings } from '@clipsubtitles/contracts';
+import {
+  DEFAULT_SEGMENTATION,
+  segmentWords,
+  stylePreset,
+  wordsFromText,
+} from '@clipsubtitles/core';
 import { probeMedia, runTool } from '@clipsubtitles/transcription';
 import { createCanvasMeasurer } from './measure';
 import { opaqueBounds, rasterizeCaption, transparentPng } from './rasterize';
-import { FfmpegCompositeRenderer, RenderCancelledError, type RenderContent, type RenderSource } from './renderer';
+import {
+  FfmpegCompositeRenderer,
+  RenderCancelledError,
+  type RenderContent,
+  type RenderSource,
+} from './renderer';
+import { planMotionFrames, renderMotionFrames, type MotionFrameMetrics } from './motion-render';
 import { BLANK_KEY, planStates, rasterizePlan } from './states';
 import { writeConcatList } from './ffmpeg';
 
 const frame = { width: 320, height: 568 };
-const words = wordsFromText('Captions that look great on every phone. | And they never rewrite a word.');
+const words = wordsFromText(
+  'Captions that look great on every phone. | And they never rewrite a word.',
+);
 const pages = segmentWords(words, DEFAULT_SEGMENTATION);
 
 describe('rasterizeCaption', () => {
@@ -19,7 +33,9 @@ describe('rasterizeCaption', () => {
     const style = stylePreset('clean');
     const a = rasterizeCaption({ page: pages[0]!, words, style, frame });
     const b = rasterizeCaption({ page: pages[0]!, words, style, frame });
-    expect(a.png.subarray(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+    expect(a.png.subarray(0, 8)).toEqual(
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    );
     expect(a.png.equals(b.png)).toBe(true);
     const bounds = await opaqueBounds(a.png);
     expect(bounds).not.toBeNull();
@@ -31,13 +47,23 @@ describe('rasterizeCaption', () => {
   });
 
   it('moves ink with the position and draws a background for lower-third', async () => {
-    const top = rasterizeCaption({ page: pages[0]!, words, style: { ...stylePreset('clean'), position: 'top' }, frame });
+    const top = rasterizeCaption({
+      page: pages[0]!,
+      words,
+      style: { ...stylePreset('clean'), position: 'top' },
+      frame,
+    });
     const bounds = await opaqueBounds(top.png);
     expect(bounds!.y).toBeLessThan(frame.height * 0.2);
     // Fit-to-width keeps ink inside the horizontal safe area even on a narrow frame.
     expect(bounds!.x).toBeGreaterThanOrEqual(frame.width * 0.05 - 4);
     expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(frame.width * 0.95 + 4);
-    const lower = rasterizeCaption({ page: pages[0]!, words, style: stylePreset('lower-third'), frame });
+    const lower = rasterizeCaption({
+      page: pages[0]!,
+      words,
+      style: stylePreset('lower-third'),
+      frame,
+    });
     const lb = await opaqueBounds(lower.png);
     expect(lb).not.toBeNull();
     expect(lower.layout.background).not.toBeNull();
@@ -59,35 +85,112 @@ describe('rasterizeCaption', () => {
 
 describe('planStates', () => {
   it('covers the window without gaps and dedupes identical states', () => {
-    const plan = planStates({ words, pages, style: stylePreset('clean'), frame, windowStartMs: 0, windowEndMs: 8000 });
+    const plan = planStates({
+      words,
+      pages,
+      style: stylePreset('clean'),
+      frame,
+      windowStartMs: 0,
+      windowEndMs: 8000,
+    });
     expect(plan.timeline[0]?.startMs).toBe(0);
     expect(plan.timeline[plan.timeline.length - 1]?.endMs).toBe(8000);
-    for (let i = 1; i < plan.timeline.length; i += 1) expect(plan.timeline[i]!.startMs).toBe(plan.timeline[i - 1]!.endMs);
+    for (let i = 1; i < plan.timeline.length; i += 1)
+      expect(plan.timeline[i]!.startMs).toBe(plan.timeline[i - 1]!.endMs);
     expect(plan.states.size).toBe(pages.length + 1);
     expect(plan.states.has(BLANK_KEY)).toBe(true);
-    const karaoke = planStates({ words, pages, style: stylePreset('karaoke'), frame, windowStartMs: 0, windowEndMs: 8000 });
+    const karaoke = planStates({
+      words,
+      pages,
+      style: stylePreset('karaoke'),
+      frame,
+      windowStartMs: 0,
+      windowEndMs: 8000,
+    });
     expect(karaoke.states.size).toBe(words.length + 1);
     const raster = rasterizePlan(plan, { words, style: stylePreset('clean') });
     expect(raster.size).toBe(plan.states.size);
   });
 });
 
+describe('motion frame planning', () => {
+  it('crops to a padded caption band and emits exact bounded RGBA frames', async () => {
+    const style = stylePreset('karaoke');
+    const input = {
+      words,
+      pages,
+      style,
+      frame,
+      fps: 30,
+      startMs: 0,
+      durationMs: 1_000,
+      mode: 'caption-band' as const,
+    };
+    const band = planMotionFrames(input);
+    const full = planMotionFrames({ ...input, mode: 'full-frame' });
+    expect(band.band.width).toBe(frame.width);
+    expect(band.band.height).toBeLessThan(frame.height);
+    expect(band.bytesPerFrame).toBe(band.band.width * band.band.height * 4);
+    expect(full.band).toEqual({ y: 0, width: frame.width, height: frame.height });
+    expect(band.bytesPerFrame).toBeLessThan(full.bytesPerFrame);
+    expect(band.layouts.size).toBeGreaterThan(words.length);
+    const metrics: MotionFrameMetrics = { renderedFrames: 0, rasterMs: 0, bytesWritten: 0 };
+    const iterator = renderMotionFrames(input, band, metrics);
+    const first = await iterator.next();
+    expect(first.done).toBe(false);
+    expect(first.value).toHaveLength(band.bytesPerFrame);
+    await iterator.return(undefined);
+    expect(metrics.renderedFrames).toBe(1);
+    expect(metrics.bytesWritten).toBe(band.bytesPerFrame);
+  });
+});
+
 describe('FfmpegCompositeRenderer', () => {
   let dir: string;
   let source: RenderSource;
-  const content: RenderContent = { words, pages, style: stylePreset('bold-pop'), projectVersion: 3, contentHash: 'c'.repeat(64) };
+  const content: RenderContent = {
+    words,
+    pages,
+    style: stylePreset('bold-pop'),
+    projectVersion: 3,
+    contentHash: 'c'.repeat(64),
+  };
 
   beforeAll(async () => {
     dir = await mkdtemp(path.join(os.tmpdir(), 'clipsubtitles-render-'));
     const src = path.join(dir, 'source.mp4');
     await runTool('ffmpeg', [
-      '-hide_banner', '-nostdin', '-y',
-      '-f', 'lavfi', '-i', 'testsrc2=size=320x568:rate=30:duration=3',
-      '-f', 'lavfi', '-i', 'sine=frequency=440:duration=3',
-      '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-shortest', src,
+      '-hide_banner',
+      '-nostdin',
+      '-y',
+      '-f',
+      'lavfi',
+      '-i',
+      'testsrc2=size=320x568:rate=30:duration=3',
+      '-f',
+      'lavfi',
+      '-i',
+      'sine=frequency=440:duration=3',
+      '-c:v',
+      'libx264',
+      '-preset',
+      'ultrafast',
+      '-pix_fmt',
+      'yuv420p',
+      '-c:a',
+      'aac',
+      '-shortest',
+      src,
     ]);
     const probe = await probeMedia(src);
-    source = { path: src, width: probe.width ?? 320, height: probe.height ?? 568, durationMs: probe.durationMs, fps: probe.fps ?? 30, hasAudio: probe.hasAudio };
+    source = {
+      path: src,
+      width: probe.width ?? 320,
+      height: probe.height ?? 568,
+      durationMs: probe.durationMs,
+      fps: probe.fps ?? 30,
+      hasAudio: probe.hasAudio,
+    };
   });
 
   afterAll(async () => {
@@ -98,7 +201,18 @@ describe('FfmpegCompositeRenderer', () => {
     const renderer = new FfmpegCompositeRenderer();
     const progress: Array<[number, string]> = [];
     const outputs = await renderer.renderExport(
-      { source, content, settings: { outputs: ['mp4', 'overlay', 'srt', 'vtt'], resolution: 'source', fps: 'source', quality: 'standard' }, workDir: path.join(dir, 'run1'), baseName: 'clip' },
+      {
+        source,
+        content,
+        settings: {
+          outputs: ['mp4', 'overlay', 'srt', 'vtt'],
+          resolution: 'source',
+          fps: 'source',
+          quality: 'standard',
+        },
+        workDir: path.join(dir, 'run1'),
+        baseName: 'clip',
+      },
       { onProgress: (p, s) => progress.push([p, s]) },
     );
     expect(outputs.map((o) => o.kind)).toEqual(['mp4', 'overlay', 'srt', 'vtt']);
@@ -116,27 +230,72 @@ describe('FfmpegCompositeRenderer', () => {
     expect(progress.some(([, s]) => s === 'rasterizing')).toBe(true);
     expect(progress.some(([, s]) => s === 'encoding')).toBe(true);
     expect(progress[progress.length - 1]?.[0]).toBe(100);
+    for (let i = 1; i < progress.length; i += 1) {
+      expect(progress[i]![0]).toBeGreaterThanOrEqual(progress[i - 1]![0]);
+    }
 
-    const again = await renderer.renderExport(
-      { source, content, settings: { outputs: ['mp4'], resolution: 'source', fps: 'source', quality: 'standard' }, workDir: path.join(dir, 'run2'), baseName: 'clip' },
-    );
+    const again = await renderer.renderExport({
+      source,
+      content,
+      settings: { outputs: ['mp4'], resolution: 'source', fps: 'source', quality: 'standard' },
+      workDir: path.join(dir, 'run2'),
+      baseName: 'clip',
+    });
     expect(again[0]!.sha256).toBe(mp4.sha256);
   });
 
   it('renders a bounded low-resolution preview window', async () => {
     const renderer = new FfmpegCompositeRenderer();
-    const out = await renderer.renderPreview({ source, content, startMs: 500, durationMs: 1500, resolution: '360p', workDir: path.join(dir, 'preview'), baseName: 'clip' });
+    const out = await renderer.renderPreview({
+      source,
+      content,
+      startMs: 500,
+      durationMs: 1500,
+      resolution: '360p',
+      workDir: path.join(dir, 'preview'),
+      baseName: 'clip',
+    });
     expect(out.kind).toBe('preview');
     const probe = await probeMedia(out.path);
     expect(Math.abs(probe.durationMs - 1500)).toBeLessThan(150);
     expect(probe.width).toBe(320); // 360p never upscales a 320px-wide source
   });
 
+  it('produces pixel-identical encoded output from full-frame and cropped-band motion pipes', async () => {
+    const full = new FfmpegCompositeRenderer({ motionRasterMode: 'full-frame' });
+    const band = new FfmpegCompositeRenderer({ motionRasterMode: 'caption-band' });
+    const settings: OutputSettings = {
+      outputs: ['mp4'],
+      resolution: 'source',
+      fps: 30,
+      quality: 'standard',
+    };
+    const fullOut = await full.renderExport({
+      source,
+      content,
+      settings,
+      workDir: path.join(dir, 'motion-full'),
+      baseName: 'clip',
+    });
+    const bandOut = await band.renderExport({
+      source,
+      content,
+      settings,
+      workDir: path.join(dir, 'motion-band'),
+      baseName: 'clip',
+    });
+    expect(bandOut[0]!.sha256).toBe(fullOut[0]!.sha256);
+  });
+
   it('scales to 720p by the shorter side', async () => {
     const renderer = new FfmpegCompositeRenderer();
-    const outputs = await renderer.renderExport(
-      { source, content, settings: { outputs: ['mp4'], resolution: '720p', fps: 24, quality: 'standard' }, workDir: path.join(dir, 'run720'), baseName: 'clip' },
-    );
+    const outputs = await renderer.renderExport({
+      source,
+      content,
+      settings: { outputs: ['mp4'], resolution: '720p', fps: 24, quality: 'standard' },
+      workDir: path.join(dir, 'run720'),
+      baseName: 'clip',
+    });
     const probe = await probeMedia(outputs[0]!.path);
     expect(probe.width).toBe(720);
     expect(probe.height).toBe(1278);
@@ -149,7 +308,13 @@ describe('FfmpegCompositeRenderer', () => {
     ac.abort();
     await expect(
       renderer.renderExport(
-        { source, content, settings: { outputs: ['mp4'], resolution: 'source', fps: 'source', quality: 'standard' }, workDir: path.join(dir, 'cancel'), baseName: 'clip' },
+        {
+          source,
+          content,
+          settings: { outputs: ['mp4'], resolution: 'source', fps: 'source', quality: 'standard' },
+          workDir: path.join(dir, 'cancel'),
+          baseName: 'clip',
+        },
         { signal: ac.signal },
       ),
     ).rejects.toBeInstanceOf(RenderCancelledError);
@@ -157,7 +322,13 @@ describe('FfmpegCompositeRenderer', () => {
 
   it('writes ffconcat lists that repeat the last file', async () => {
     const p = path.join(dir, 'list.ffconcat');
-    await writeConcatList([{ file: "/tmp/a'b.png", durationMs: 1000 }, { file: '/tmp/c.png', durationMs: 250 }], p);
+    await writeConcatList(
+      [
+        { file: "/tmp/a'b.png", durationMs: 1000 },
+        { file: '/tmp/c.png', durationMs: 250 },
+      ],
+      p,
+    );
     const text = await readFile(p, 'utf8');
     expect(text).toContain("file '/tmp/a'\\''b.png'");
     expect(text.trim().endsWith("file '/tmp/c.png'")).toBe(true);

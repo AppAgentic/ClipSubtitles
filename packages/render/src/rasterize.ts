@@ -1,6 +1,12 @@
 import { createCanvas, loadImage, type SKRSContext2D } from '@napi-rs/canvas';
 import type { CaptionPage, StyleConfig, TranscriptWord } from '@clipsubtitles/contracts';
-import { hexToRgba, layoutCaption, type CaptionLayout, type FrameSize, type TextMeasurer } from '@clipsubtitles/core';
+import {
+  hexToRgba,
+  layoutCaption,
+  type CaptionLayout,
+  type FrameSize,
+  type TextMeasurer,
+} from '@clipsubtitles/core';
 import { ensureFontsRegistered } from './fonts';
 import { cssFont, createCanvasMeasurer } from './measure';
 
@@ -13,7 +19,24 @@ export interface RasterizeInput {
   measure?: TextMeasurer;
 }
 
-function roundRect(ctx: SKRSContext2D, x: number, y: number, w: number, h: number, r: number): void {
+export interface DrawLayoutMotion {
+  opacity?: number;
+  scale?: number;
+  translateY?: number;
+  blurPx?: number;
+  activeWordScale?: number;
+  highlightFromWordIndex?: number | null;
+  highlightProgress?: number;
+}
+
+function roundRect(
+  ctx: SKRSContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+): void {
   const radius = Math.min(r, w / 2, h / 2);
   ctx.beginPath();
   ctx.moveTo(x + radius, y);
@@ -29,8 +52,20 @@ function roundRect(ctx: SKRSContext2D, x: number, y: number, w: number, h: numbe
 }
 
 /** Draw a computed layout onto a transparent canvas context. Shared by stills and video states. */
-export function drawLayout(ctx: SKRSContext2D, layout: CaptionLayout): void {
+export function drawLayout(
+  ctx: SKRSContext2D,
+  layout: CaptionLayout,
+  motion: DrawLayoutMotion = {},
+): void {
   ctx.save();
+  ctx.globalAlpha = motion.opacity ?? 1;
+  if ((motion.blurPx ?? 0) > 0.01) ctx.filter = `blur(${motion.blurPx}px)`;
+  const blockCenterX = layout.block.x + layout.block.width / 2;
+  const blockCenterY = layout.block.y + layout.block.height / 2;
+  const pageScale = motion.scale ?? 1;
+  ctx.translate(blockCenterX, blockCenterY + (motion.translateY ?? 0));
+  ctx.scale(pageScale, pageScale);
+  ctx.translate(-blockCenterX, -blockCenterY);
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'left';
   ctx.lineJoin = 'round';
@@ -38,7 +73,14 @@ export function drawLayout(ctx: SKRSContext2D, layout: CaptionLayout): void {
 
   if (layout.background) {
     ctx.fillStyle = hexToRgba(layout.background.color);
-    roundRect(ctx, layout.background.x, layout.background.y, layout.background.width, layout.background.height, layout.background.radius);
+    roundRect(
+      ctx,
+      layout.background.x,
+      layout.background.y,
+      layout.background.width,
+      layout.background.height,
+      layout.background.radius,
+    );
     ctx.fill();
   }
 
@@ -47,7 +89,7 @@ export function drawLayout(ctx: SKRSContext2D, layout: CaptionLayout): void {
     const centerY = line.y + line.height / 2;
     for (const word of line.words) {
       const active = word.active && layout.highlight.mode === 'word';
-      const scale = active ? layout.highlight.scale : 1;
+      const scale = active ? (motion.activeWordScale ?? layout.highlight.scale) : 1;
       const cx = word.x + word.width / 2;
       ctx.save();
       if (scale !== 1) {
@@ -56,10 +98,33 @@ export function drawLayout(ctx: SKRSContext2D, layout: CaptionLayout): void {
         ctx.translate(-cx, -centerY);
       }
       if (active && layout.highlight.backgroundColor) {
+        let pillX = word.x;
+        let pillWidth = word.width;
+        const fromIndex = motion.highlightFromWordIndex;
+        const progress = Math.max(0, Math.min(1, motion.highlightProgress ?? 1));
+        if (fromIndex !== null && fromIndex !== undefined && progress < 1) {
+          const fromLine = layout.lines.find((candidate) =>
+            candidate.words.some((candidateWord) => candidateWord.wordIndex === fromIndex),
+          );
+          const from = fromLine?.words.find(
+            (candidateWord) => candidateWord.wordIndex === fromIndex,
+          );
+          if (from && fromLine === line) {
+            pillX = from.x + (word.x - from.x) * progress;
+            pillWidth = from.width + (word.width - from.width) * progress;
+          }
+        }
         ctx.fillStyle = hexToRgba(layout.highlight.backgroundColor);
         const padX = layout.font.sizePx * 0.18;
         const padY = layout.font.sizePx * 0.12;
-        roundRect(ctx, word.x - padX, centerY - layout.font.sizePx * 0.62 - padY, word.width + padX * 2, layout.font.sizePx * 1.24 + padY * 2, layout.font.sizePx * 0.2);
+        roundRect(
+          ctx,
+          pillX - padX,
+          centerY - layout.font.sizePx * 0.62 - padY,
+          pillWidth + padX * 2,
+          layout.font.sizePx * 1.24 + padY * 2,
+          layout.font.sizePx * 0.2,
+        );
         ctx.fill();
       }
       if (layout.shadow) {
@@ -111,7 +176,11 @@ export function transparentPng(frame: FrameSize): Buffer {
 }
 
 /** Read back RGBA at a pixel of a PNG (tests and QA tooling). */
-export async function pixelAt(png: Buffer, x: number, y: number): Promise<[number, number, number, number]> {
+export async function pixelAt(
+  png: Buffer,
+  x: number,
+  y: number,
+): Promise<[number, number, number, number]> {
   const image = await loadImage(png);
   const canvas = createCanvas(image.width, image.height);
   const ctx = canvas.getContext('2d');
@@ -121,7 +190,9 @@ export async function pixelAt(png: Buffer, x: number, y: number): Promise<[numbe
 }
 
 /** Bounding box of non-transparent pixels (tests). Returns null for a fully transparent image. */
-export async function opaqueBounds(png: Buffer): Promise<{ x: number; y: number; width: number; height: number } | null> {
+export async function opaqueBounds(
+  png: Buffer,
+): Promise<{ x: number; y: number; width: number; height: number } | null> {
   const image = await loadImage(png);
   const canvas = createCanvas(image.width, image.height);
   const ctx = canvas.getContext('2d');

@@ -42,6 +42,7 @@ mode exposes at `/.well-known/oauth-authorization-server`.
 | `pnpm smoke:e2e` | REST flow end to end incl. a real render, exact-once billing check |
 | `pnpm smoke:render` | Renders the demo fixture twice and verifies byte-identical outputs |
 | `pnpm benchmark [--providers …] [--repeats N]` | Transcription benchmark harness (mock providers by default) |
+| `pnpm benchmark:motion` | Compare sparse PNG, full-frame Skia, cropped-band Skia, and warm Remotion on one deterministic motion fixture; write reports/canaries under `.data/motion-benchmark/` |
 | `pnpm fixtures:build` | Regenerate `fixtures/generated/` |
 | `pnpm openapi:emit` | Write `docs/api/openapi.json` from the live routes |
 
@@ -52,7 +53,7 @@ packages/contracts     zod schemas, error codes, limits, MCP tool descriptors (s
 packages/core          pure caption domain: normalization, segmentation, layout, patches, QA, pricing, hashing
 packages/transcription provider adapters (mock + config-gated live shells), ffmpeg audio/VAD, benchmark harness
 packages/storage       node:sqlite migrations, workspace-scoped repositories, task queue, credit ledger, object store
-packages/render        canvas rasterizer + ffmpeg compositor (MP4, ProRes 4444 overlay, SRT/VTT, previews)
+packages/render        Skia caption rasterizer + ffmpeg compositor; sparse still states or bounded cropped-band motion pipe
 packages/server        Hono REST v1 + OpenAPI 3.1, MCP endpoint, auth boundary, services, durable worker, CLIs
 apps/web               Next.js editor + recovery library (port 3100)
 fixtures/              synthetic corpus definitions; generated media lives in fixtures/generated (gitignored)
