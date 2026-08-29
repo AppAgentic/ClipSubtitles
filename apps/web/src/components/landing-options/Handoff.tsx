@@ -48,20 +48,20 @@ export function Handoff() {
         {/* 1 · Hero — split stage */}
         <section className="ho-hero lo-wrap" aria-labelledby="ho-h1">
           <div className="ho-hero-copy">
-            <p className="lo-eyebrow ho-eyebrow">Agent-native captions · MCP + REST</p>
+            <p className="lo-eyebrow ho-eyebrow">Video captions for AI agents · MCP + REST</p>
             <h1 id="ho-h1">
-              <span className="ho-agent-ink">Your agent captions the clip.</span> You approve the <em>words</em> and the <em>price</em>.
+              <span className="ho-agent-ink">AI video caption generator</span> for <em>agents</em> and <em>creators.</em>
             </h1>
             <p className="ho-lede">
-              Eight tools import, transcribe, segment, preview and render. Two decisions never leave you: the exact words on screen and the exact
-              credits charged.
+              Upload or import a short video and get word-timed, styled captions as MP4, transparent overlay, SRT or VTT. Work in the studio or
+              automate through MCP and API.
             </p>
             <div className="ho-cta">
-              <Link href="/docs" className="lo-btn ho-btn-primary">
-                Connect an agent
+              <Link href="/sign-in" className="lo-btn ho-btn-primary">
+                Caption a video
               </Link>
-              <Link href="/sign-in" className="lo-btn ho-btn-ghost">
-                Open the studio
+              <Link href="/docs" className="lo-btn ho-btn-ghost">
+                View agent API
               </Link>
             </div>
           </div>
@@ -156,7 +156,7 @@ export function Handoff() {
         <section className="ho-rail-section lo-wrap" aria-labelledby="ho-h3">
           <div className="ho-section-head">
             <p className="lo-eyebrow ho-eyebrow">Tool flow</p>
-            <h2 id="ho-h3">Eight tools. One rail. Two orange stops.</h2>
+            <h2 id="ho-h3">What your agent handles — and what waits for approval.</h2>
           </div>
           <ol className="ho-rail lo-mono" aria-label="MCP tools in workflow order">
             {MCP_TOOLS.map((t) => (
@@ -186,16 +186,16 @@ export function Handoff() {
         {/* 4 · Final CTA */}
         <section className="ho-final lo-wrap lo-end" aria-labelledby="ho-h4">
           <h2 id="ho-h4">
-            Hand off the work.
+            Caption videos in the studio.
             <br />
-            <em>Keep the decisions.</em>
+            <em>Or hand them to your agent.</em>
           </h2>
           <div className="ho-cta">
-            <Link href="/docs" className="lo-btn ho-btn-primary">
-              Connect an agent
+            <Link href="/sign-in" className="lo-btn ho-btn-primary">
+              Caption a video
             </Link>
-            <Link href="/sign-in" className="lo-btn ho-btn-ghost">
-              Open the studio
+            <Link href="/docs" className="lo-btn ho-btn-ghost">
+              View agent API
             </Link>
           </div>
           <p className="ho-foot lo-mono">

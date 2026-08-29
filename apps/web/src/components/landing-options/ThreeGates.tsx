@@ -22,20 +22,20 @@ export function ThreeGates() {
         {/* 1 · Hero */}
         <section className="tg-hero lo-wrap" aria-labelledby="tg-h1">
           <h1 id="tg-h1">
-            Agents do the work.
+            Create styled video captions
             <br />
-            <em>Three decisions stay yours.</em>
+            <em>with your AI agent.</em>
           </h1>
           <p className="tg-lede">
-            Import, transcribe, segment, preview, render: eight MCP tools your agent can call without asking. The words, the cost and the output are
-            gates only you can open.
+            Send a short video and get a finished captioned MP4, transparent overlay, SRT or VTT. Your agent handles the workflow; you approve the
+            exact words, render cost and output formats.
           </p>
           <div className="tg-cta">
-            <Link href="/docs" className="lo-btn tg-btn-primary">
-              Connect an agent
+            <Link href="/sign-in" className="lo-btn tg-btn-primary">
+              Caption a video
             </Link>
-            <Link href="/sign-in" className="lo-btn tg-btn-ghost">
-              Open the studio
+            <Link href="/docs" className="lo-btn tg-btn-ghost">
+              View agent API
             </Link>
           </div>
           <p className="tg-scroll lo-mono" aria-hidden>
@@ -67,13 +67,13 @@ export function ThreeGates() {
 
         {/* 4 · Final */}
         <section className="tg-final lo-wrap lo-end" aria-labelledby="tg-h4">
-          <h2 id="tg-h4">Keep your three decisions.</h2>
+          <h2 id="tg-h4">Keep control of the words, cost and files.</h2>
           <div className="tg-cta">
-            <Link href="/docs" className="lo-btn tg-btn-primary">
-              Connect an agent
+            <Link href="/sign-in" className="lo-btn tg-btn-primary">
+              Caption a video
             </Link>
-            <Link href="/sign-in" className="lo-btn tg-btn-ghost">
-              Open the studio
+            <Link href="/docs" className="lo-btn tg-btn-ghost">
+              View agent API
             </Link>
           </div>
         </section>

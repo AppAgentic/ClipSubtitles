@@ -70,22 +70,22 @@ export function FrameExact() {
           </figure>
 
           <div className="fx-hero-copy">
-            <p className="lo-eyebrow fx-eyebrow">Deterministic captions for agents and editors</p>
+            <p className="lo-eyebrow fx-eyebrow">Precise, repeatable video captions for agents and editors</p>
             <h1 id="fx-h1">
-              Word-exact captions.
+              Automatic video captions
               <br />
-              <em>Byte-exact renders.</em>
+              <em>with word-level timing.</em>
             </h1>
             <p className="fx-lede">
-              Your agent transcribes, segments and renders. You change a word, not a paragraph. The same version and hash produce the same bytes,
-              every time.
+              Transcribe, edit, style and export short videos in one workflow. Five caption styles, four motion presets and a deterministic renderer
+              mean the preview you approve is the file you download.
             </p>
             <div className="fx-cta">
-              <Link href="/docs" className="lo-btn fx-btn-primary">
-                Connect an agent
+              <Link href="/sign-in" className="lo-btn fx-btn-primary">
+                Caption a video
               </Link>
-              <Link href="/sign-in" className="lo-btn fx-btn-ghost">
-                Open the studio
+              <Link href="/docs" className="lo-btn fx-btn-ghost">
+                View agent API
               </Link>
             </div>
           </div>
@@ -95,7 +95,7 @@ export function FrameExact() {
         <section className="fx-matrix-section lo-wrap" aria-labelledby="fx-h2">
           <div className="fx-section-head">
             <p className="lo-eyebrow fx-eyebrow">5 presets × 4 motions</p>
-            <h2 id="fx-h2">Twenty looks. One layout engine.</h2>
+            <h2 id="fx-h2">Choose a caption style and motion.</h2>
             <p>
               Sizes are fractions of the shorter frame side, so a preset looks the same at 720p, 1080p and source. The editor overlay, the Skia
               rasterizer and the renderer call the same <span className="lo-mono">layoutCaption</span>.
@@ -140,7 +140,7 @@ export function FrameExact() {
           <div className="fx-proof-grid">
             <div>
               <p className="lo-eyebrow fx-eyebrow">Exact-word timing proof</p>
-              <h2 id="fx-h3">One word changed. One version bumped.</h2>
+              <h2 id="fx-h3">Fix one word without rewriting the transcript.</h2>
               <table className="fx-words lo-mono">
                 <thead>
                   <tr>
@@ -178,7 +178,7 @@ export function FrameExact() {
 
             <div>
               <p className="lo-eyebrow fx-eyebrow">Same input, same output</p>
-              <h2>Render it twice. Compare the checksum.</h2>
+              <h2>Render it twice. Get the same file.</h2>
               <dl className="fx-runs lo-mono">
                 <div>
                   <dt>input</dt>
@@ -211,19 +211,19 @@ export function FrameExact() {
         {/* 4 · Final */}
         <section className="fx-final lo-wrap lo-end" aria-labelledby="fx-h4">
           <h2 id="fx-h4">
-            Exact words. Exact frames.
+            Precise captions. Repeatable renders.
             <br />
-            <em>Exact cost, approved by you.</em>
+            <em>Cost approved by you.</em>
           </h2>
           <p>
             Every paid render starts as an immutable quote pinned to a version and a hash. Approve the credits to the unit or nothing renders.
           </p>
           <div className="fx-cta">
-            <Link href="/docs" className="lo-btn fx-btn-primary">
-              Connect an agent
+            <Link href="/sign-in" className="lo-btn fx-btn-primary">
+              Caption a video
             </Link>
-            <Link href="/sign-in" className="lo-btn fx-btn-ghost">
-              Open the studio
+            <Link href="/docs" className="lo-btn fx-btn-ghost">
+              View agent API
             </Link>
           </div>
           <p className="fx-foot lo-mono">8 MCP tools · {OUTPUTS.map((o) => o.label).join(' / ')} · /api/mcp</p>

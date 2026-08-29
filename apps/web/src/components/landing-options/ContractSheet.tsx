@@ -58,20 +58,20 @@ export function ContractSheet() {
         <section className="cs-hero" aria-labelledby="cs-h1">
           <p className="cs-clause-n lo-mono">§ 0</p>
           <h1 id="cs-h1">
-            Captions your agent can run,
+            A video caption API,
             <br />
-            under terms you can read.
+            with human approval built in.
           </h1>
           <p className="cs-lede">
-            An agent imports, transcribes, segments, previews and renders through eight MCP tools. Three things require a person: the exact words,
-            the exact cost, the chosen outputs. The rest of this sheet is what the code guarantees.
+            Send a short video; your agent transcribes, styles, previews and renders it. Exact words, render cost and output formats stay subject to
+            your approval — and the code enforces it.
           </p>
           <div className="cs-cta">
-            <Link href="/docs" className="lo-btn cs-btn-primary">
-              Read the agent docs
+            <Link href="/sign-in" className="lo-btn cs-btn-primary">
+              Caption a video
             </Link>
-            <Link href="/sign-in" className="lo-btn cs-btn-ghost">
-              Open the studio
+            <Link href="/docs" className="lo-btn cs-btn-ghost">
+              View agent API
             </Link>
           </div>
 
@@ -211,20 +211,20 @@ export function ContractSheet() {
         {/* Final */}
         <section className="cs-final lo-end" aria-labelledby="cs-h4">
           <h2 id="cs-h4">
-            Signed by the schema,
+            Every promise here
             <br />
-            not by the marketing.
+            is checked by the API.
           </h2>
           <p>
             Every clause above maps to a type in <span className="lo-mono">packages/contracts</span> and a route that validates it. The OpenAPI 3.1
             document is at <Link href="/openapi.json">/openapi.json</Link>; the MCP endpoint is <span className="lo-mono">/api/mcp</span>.
           </p>
           <div className="cs-cta">
-            <Link href="/docs" className="lo-btn cs-btn-primary">
-              Connect an agent
+            <Link href="/sign-in" className="lo-btn cs-btn-primary">
+              Caption a video
             </Link>
-            <Link href="/sign-in" className="lo-btn cs-btn-ghost">
-              Open the studio
+            <Link href="/docs" className="lo-btn cs-btn-ghost">
+              View agent API
             </Link>
           </div>
         </section>

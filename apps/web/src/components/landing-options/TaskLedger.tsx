@@ -30,22 +30,22 @@ export function TaskLedger() {
         {/* 1 · Hero — the ledger */}
         <section className="tl-hero lo-wrap" aria-labelledby="tl-h1">
           <div className="tl-hero-copy">
-            <p className="lo-eyebrow tl-eyebrow">Durable tasks · immutable quotes · exactly-once credits</p>
+            <p className="lo-eyebrow tl-eyebrow">Agent-run video captioning · tracked jobs · fixed render costs</p>
             <h1 id="tl-h1">
-              Let agents run the queue.
+              Video caption API
               <br />
-              <em>Keep the ledger.</em>
+              <em>for high-volume workflows.</em>
             </h1>
             <p className="tl-lede">
-              Every step an agent takes is a leased, heart-beaten task. Every credit moves through a quote you approved. Nothing runs twice; nothing
-              is charged twice.
+              Batch-caption short videos through MCP or REST. Every import, transcription, preview and render is tracked; paid renders use a fixed
+              quote you approve, and nothing is charged twice.
             </p>
             <div className="tl-cta">
-              <Link href="/docs" className="lo-btn tl-btn-primary">
-                Connect an agent
+              <Link href="/sign-in" className="lo-btn tl-btn-primary">
+                Caption a video
               </Link>
-              <Link href="/sign-in" className="lo-btn tl-btn-ghost">
-                Open the studio
+              <Link href="/docs" className="lo-btn tl-btn-ghost">
+                View agent API
               </Link>
             </div>
           </div>
@@ -86,7 +86,7 @@ export function TaskLedger() {
         <InView as="section" className="tl-life lo-wrap" threshold={0.2}>
           <div className="tl-section-head">
             <p className="lo-eyebrow tl-eyebrow">Task lifecycle</p>
-            <h2>Five states. Every edge is a transaction.</h2>
+            <h2>Every caption job is tracked from start to finish.</h2>
           </div>
           <div className="tl-life-grid">
             <svg className="tl-graph" viewBox="0 0 640 220" role="img" aria-label="Task states: queued to running; running to succeeded, failed or cancelled; failed re-queues while attempts remain">
@@ -161,7 +161,7 @@ export function TaskLedger() {
           <div className="tl-audit-grid">
             <div>
               <p className="lo-eyebrow tl-eyebrow">Redacted by construction</p>
-              <h2>What support sees. What support never sees.</h2>
+              <h2>Useful error details. Your transcript stays private.</h2>
               <pre className="tl-code lo-mono" aria-label="Public error and its audit event (example)">
                 <span className="tl-c">// public error, returned to the agent</span>
                 {'\n'}
@@ -175,7 +175,7 @@ export function TaskLedger() {
             </div>
             <div>
               <p className="lo-eyebrow tl-eyebrow">Human cost gate</p>
-              <h2>The agent asks. You answer to the unit.</h2>
+              <h2>Every paid render waits for your exact approval.</h2>
               <pre className="tl-code lo-mono" aria-label="Approval request (example)">
                 {`render_caption_export {\n  approval: {\n    quoteId: "${SAMPLE.quoteId}",\n    `}
                 <span className="tl-amber">approvedCreditCost: {SAMPLE.creditCost}</span>
@@ -206,16 +206,16 @@ export function TaskLedger() {
         {/* 4 · Final */}
         <section className="tl-final lo-wrap lo-end" aria-labelledby="tl-h4">
           <h2 id="tl-h4">
-            Queue it to an agent.
+            Batch-caption videos with an agent.
             <br />
-            <em>Read it in the ledger.</em>
+            <em>Track every result.</em>
           </h2>
           <div className="tl-cta">
-            <Link href="/docs" className="lo-btn tl-btn-primary">
-              Connect an agent
+            <Link href="/sign-in" className="lo-btn tl-btn-primary">
+              Caption a video
             </Link>
-            <Link href="/sign-in" className="lo-btn tl-btn-ghost">
-              Open the studio
+            <Link href="/docs" className="lo-btn tl-btn-ghost">
+              View agent API
             </Link>
           </div>
           <p className="tl-foot lo-mono">

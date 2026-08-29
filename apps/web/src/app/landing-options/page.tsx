@@ -17,9 +17,9 @@ export default function LandingOptionsIndex() {
       <main className="lo-wrap">
         <section className="lx-hero">
           <h1>
-            Five ways to say the same true thing:
+            Five SEO-aware ways to position ClipSubtitles:
             <br />
-            <em>the agent does the work, you keep the decisions.</em>
+            <em>AI video captions, built for agents and creators.</em>
           </h1>
           <p>
             Each direction is a complete four-section page — hero, product proof, workflow and trust, final call — built from the same product
