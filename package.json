@@ -1,0 +1,49 @@
+{
+  "name": "clipsubtitles",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Agent-native video captioning and subtitle studio (clipsubtitles.com)",
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0",
+    "pnpm": ">=10.0.0"
+  },
+  "packageManager": "pnpm@10.33.1",
+  "scripts": {
+    "dev": "concurrently -k -n api,worker,web -c blue,magenta,green \"pnpm --filter @clipsubtitles/server dev:api\" \"pnpm --filter @clipsubtitles/server dev:worker\" \"pnpm --filter @clipsubtitles/web dev\"",
+    "dev:api": "pnpm --filter @clipsubtitles/server dev:api",
+    "dev:worker": "pnpm --filter @clipsubtitles/server dev:worker",
+    "dev:web": "pnpm --filter @clipsubtitles/web dev",
+    "dev:token": "pnpm --filter @clipsubtitles/server dev:token",
+    "build": "pnpm -r --workspace-concurrency=1 build",
+    "start:api": "pnpm --filter @clipsubtitles/server start:api",
+    "start:worker": "pnpm --filter @clipsubtitles/server start:worker",
+    "start:web": "pnpm --filter @clipsubtitles/web start",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "fixtures:build": "pnpm --filter @clipsubtitles/transcription fixtures:build",
+    "benchmark": "pnpm --filter @clipsubtitles/transcription benchmark",
+    "smoke:render": "pnpm --filter @clipsubtitles/render smoke",
+    "smoke:e2e": "pnpm --filter @clipsubtitles/server smoke:e2e",
+    "mcp:conformance": "pnpm --filter @clipsubtitles/server mcp:conformance",
+    "openapi:emit": "pnpm --filter @clipsubtitles/server openapi:emit",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.13.3",
+    "concurrently": "^10.0.5",
+    "eslint": "^10.9.1",
+    "prettier": "^3.9.6",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.68.0",
+    "vitest": "^4.1.11"
+  }
+}

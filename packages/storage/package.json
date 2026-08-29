@@ -1,0 +1,23 @@
+{
+  "name": "@clipsubtitles/storage",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SQLite persistence (node:sqlite), migrations, repositories, durable task queue, credit ledger, idempotency, audit, object store",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@clipsubtitles/contracts": "workspace:*",
+    "@clipsubtitles/core": "workspace:*",
+    "zod": "^4.5.2"
+  }
+}

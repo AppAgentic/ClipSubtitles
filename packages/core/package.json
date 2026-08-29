@@ -1,0 +1,25 @@
+{
+  "name": "@clipsubtitles/core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pure caption domain logic: transcript normalization, segmentation, styling, layout, hashing, patches, subtitle writers, pricing",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@clipsubtitles/contracts": "workspace:*",
+    "zod": "^4.5.2"
+  },
+  "devDependencies": {
+    "fast-check": "^4.9.0"
+  }
+}

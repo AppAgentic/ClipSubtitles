@@ -1,0 +1,28 @@
+{
+  "name": "@clipsubtitles/transcription",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Provider-neutral transcription adapters, audio extraction/VAD, and the benchmark harness",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "fixtures:build": "tsx src/benchmark/build-fixtures.ts",
+    "benchmark": "tsx src/benchmark/cli.ts"
+  },
+  "dependencies": {
+    "@clipsubtitles/contracts": "workspace:*",
+    "@clipsubtitles/core": "workspace:*",
+    "zod": "^4.5.2"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.12"
+  }
+}

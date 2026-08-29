@@ -1,0 +1,44 @@
+{
+  "name": "@clipsubtitles/server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ClipSubtitles API: REST v1 + OpenAPI, remote MCP (Streamable HTTP), auth boundaries, services, and the durable task worker",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "build": "node build.mjs",
+    "test": "vitest run",
+    "dev:api": "NODE_OPTIONS=--no-warnings=ExperimentalWarning tsx watch src/bin/api.ts",
+    "dev:worker": "NODE_OPTIONS=--no-warnings=ExperimentalWarning tsx watch src/bin/worker.ts",
+    "dev:token": "NODE_OPTIONS=--no-warnings=ExperimentalWarning tsx src/bin/dev-token.ts",
+    "start:api": "node --no-warnings=ExperimentalWarning dist/api.js",
+    "start:worker": "node --no-warnings=ExperimentalWarning dist/worker.js",
+    "openapi:emit": "NODE_OPTIONS=--no-warnings=ExperimentalWarning tsx src/bin/openapi-emit.ts",
+    "mcp:conformance": "NODE_OPTIONS=--no-warnings=ExperimentalWarning tsx src/bin/mcp-conformance.ts",
+    "smoke:e2e": "NODE_OPTIONS=--no-warnings=ExperimentalWarning tsx src/bin/smoke-e2e.ts"
+  },
+  "dependencies": {
+    "@clipsubtitles/contracts": "workspace:*",
+    "@clipsubtitles/core": "workspace:*",
+    "@clipsubtitles/render": "workspace:*",
+    "@clipsubtitles/storage": "workspace:*",
+    "@clipsubtitles/transcription": "workspace:*",
+    "@hono/node-server": "^2.1.1",
+    "@hono/zod-openapi": "^1.6.1",
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@workos-inc/node": "^10.12.0",
+    "hono": "^4.13.5",
+    "jose": "^6.2.10",
+    "zod": "^4.5.2"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "tsx": "^4.23.12"
+  }
+}

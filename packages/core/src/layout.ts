@@ -1,0 +1,201 @@
+import type { CaptionPage, StyleConfig, TranscriptWord } from '@clipsubtitles/contracts';
+
+export interface FrameSize {
+  width: number;
+  height: number;
+}
+
+export interface FontSpec {
+  family: string;
+  weight: number;
+  sizePx: number;
+}
+
+/** Width in px of `text` rendered with `font`. Injected per environment (DOM canvas, node canvas, approximation). */
+export type TextMeasurer = (text: string, font: FontSpec) => number;
+
+export interface LayoutWordBox {
+  wordIndex: number;
+  text: string;
+  x: number;
+  width: number;
+  active: boolean;
+}
+
+export interface LayoutLine {
+  text: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  words: LayoutWordBox[];
+}
+
+export interface CaptionLayout {
+  frame: FrameSize;
+  font: FontSpec;
+  lineHeightPx: number;
+  strokePx: number;
+  strokeColor: string;
+  textColor: string;
+  textTransform: StyleConfig['textTransform'];
+  block: { x: number; y: number; width: number; height: number };
+  background: { x: number; y: number; width: number; height: number; radius: number; color: string } | null;
+  shadow: { color: string; blurPx: number; offsetYPx: number } | null;
+  highlight: StyleConfig['highlight'];
+  activeWordIndex: number | null;
+  lines: LayoutLine[];
+}
+
+export function displayText(text: string, transform: StyleConfig['textTransform']): string {
+  return transform === 'uppercase' ? text.toLocaleUpperCase() : text;
+}
+
+/**
+ * Approximate measurer used in tests and as a fallback. Inter's average glyph
+ * advance is ~0.55em for mixed-case Latin text; uppercase runs wider.
+ */
+export function createApproxMeasurer(): TextMeasurer {
+  return (text, font) => {
+    let w = 0;
+    for (const ch of text) {
+      if (ch === ' ') w += 0.28;
+      else if (/[A-Z]/.test(ch)) w += 0.68;
+      else if (/[ijl.,'!|]/.test(ch)) w += 0.3;
+      else if (/[mw]/.test(ch)) w += 0.85;
+      else w += 0.55;
+    }
+    const weightBoost = 1 + Math.max(0, font.weight - 400) / 4000;
+    return w * font.sizePx * weightBoost;
+  };
+}
+
+export interface LayoutInput {
+  page: CaptionPage;
+  words: readonly TranscriptWord[];
+  style: StyleConfig;
+  frame: FrameSize;
+  activeWordIndex?: number | null;
+  measure: TextMeasurer;
+}
+
+/**
+ * Pure geometry shared by the browser overlay, the canvas rasterizer, and the
+ * Remotion composition so every surface agrees on where captions sit.
+ */
+export function layoutCaption(input: LayoutInput): CaptionLayout {
+  const { page, words, style, frame, measure } = input;
+  const H = frame.height;
+  const W = frame.width;
+  const fontPx = Math.max(8, Math.round(style.fontSizePct * H));
+  const font: FontSpec = { family: style.fontFamily, weight: style.fontWeight, sizePx: fontPx };
+  const lineHeightPx = Math.round(fontPx * style.lineHeight);
+  const spaceWidth = measure(' ', font);
+  const padX = style.background.enabled ? style.background.paddingXPct * H : 0;
+  const padY = style.background.enabled ? style.background.paddingYPct * H : 0;
+  const activeWordIndex = input.activeWordIndex ?? null;
+
+  const measuredLines = page.lines.map((line) => {
+    const boxes: Array<{ wordIndex: number; text: string; width: number }> = [];
+    for (let i = line.startWordIndex; i <= line.endWordIndex; i += 1) {
+      const word = words[i];
+      if (!word) continue;
+      const text = displayText(word.text, style.textTransform);
+      boxes.push({ wordIndex: i, text, width: measure(text, font) });
+    }
+    const width = boxes.reduce((sum, b, idx) => sum + b.width + (idx > 0 ? spaceWidth : 0), 0);
+    return { boxes, width };
+  });
+
+  const contentWidth = Math.max(0, ...measuredLines.map((l) => l.width));
+  const contentHeight = lineHeightPx * Math.max(1, measuredLines.length);
+  const blockWidth = contentWidth + padX * 2;
+  const blockHeight = contentHeight + padY * 2;
+
+  let blockTop: number;
+  switch (style.position) {
+    case 'top':
+      blockTop = style.safeMarginPct * H;
+      break;
+    case 'center':
+      blockTop = (H - blockHeight) / 2;
+      break;
+    case 'lower-third':
+      blockTop = H - style.lowerThirdOffsetPct * H - blockHeight;
+      break;
+    case 'bottom':
+    default:
+      blockTop = H - style.safeMarginPct * H - blockHeight;
+      break;
+  }
+  blockTop = Math.round(Math.max(0, Math.min(H - blockHeight, blockTop)));
+  const blockLeft = Math.round((W - blockWidth) / 2);
+  const contentLeft = blockLeft + padX;
+
+  const lines: LayoutLine[] = measuredLines.map((line, idx) => {
+    let x: number;
+    if (style.textAlign === 'left') x = contentLeft;
+    else if (style.textAlign === 'right') x = contentLeft + contentWidth - line.width;
+    else x = contentLeft + (contentWidth - line.width) / 2;
+    const y = blockTop + padY + idx * lineHeightPx;
+    let cursor = x;
+    const wordBoxes: LayoutWordBox[] = line.boxes.map((b, wi) => {
+      if (wi > 0) cursor += spaceWidth;
+      const box: LayoutWordBox = {
+        wordIndex: b.wordIndex,
+        text: b.text,
+        x: cursor,
+        width: b.width,
+        active: activeWordIndex === b.wordIndex,
+      };
+      cursor += b.width;
+      return box;
+    });
+    return {
+      text: line.boxes.map((b) => b.text).join(' '),
+      x,
+      y,
+      width: line.width,
+      height: lineHeightPx,
+      words: wordBoxes,
+    };
+  });
+
+  return {
+    frame,
+    font,
+    lineHeightPx,
+    strokePx: style.stroke.widthPct * H,
+    strokeColor: style.stroke.color,
+    textColor: style.textColor,
+    textTransform: style.textTransform,
+    block: { x: blockLeft, y: blockTop, width: blockWidth, height: blockHeight },
+    background: style.background.enabled
+      ? {
+          x: blockLeft,
+          y: blockTop,
+          width: blockWidth,
+          height: blockHeight,
+          radius: style.background.radiusPct * H,
+          color: style.background.color,
+        }
+      : null,
+    shadow: style.shadow.enabled
+      ? { color: style.shadow.color, blurPx: style.shadow.blurPct * H, offsetYPx: style.shadow.offsetYPct * H }
+      : null,
+    highlight: style.highlight,
+    activeWordIndex,
+    lines,
+  };
+}
+
+/** Parse #RRGGBB / #RRGGBBAA into CSS rgba() for canvas contexts. */
+export function hexToRgba(hex: string): string {
+  const m = /^#([0-9a-fA-F]{6})([0-9a-fA-F]{2})?$/.exec(hex);
+  if (!m || !m[1]) return hex;
+  const r = parseInt(m[1].slice(0, 2), 16);
+  const g = parseInt(m[1].slice(2, 4), 16);
+  const b = parseInt(m[1].slice(4, 6), 16);
+  const a = m[2] ? parseInt(m[2], 16) / 255 : 1;
+  return `rgba(${r}, ${g}, ${b}, ${Math.round(a * 1000) / 1000})`;
+}

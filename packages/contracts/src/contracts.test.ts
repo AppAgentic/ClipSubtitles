@@ -1,0 +1,127 @@
+import { describe, expect, it } from 'vitest';
+import {
+  ApiErrorSchema,
+  CreateProjectRequestSchema,
+  ERROR_CODES,
+  ERROR_HTTP_STATUS,
+  ERROR_MESSAGES,
+  ERROR_RETRYABLE,
+  IdempotencyKeySchema,
+  LIMITS,
+  MCP_TOOLS,
+  MCP_TOOL_NAMES,
+  OutputSettingsSchema,
+  PatchProjectRequestSchema,
+  StyleConfigSchema,
+  TranscriptWordSchema,
+  idSchema,
+} from './index';
+
+describe('error contract', () => {
+  it('maps every error code to an HTTP status, retryability, and message', () => {
+    for (const code of ERROR_CODES) {
+      expect(ERROR_HTTP_STATUS[code]).toBeGreaterThanOrEqual(400);
+      expect(typeof ERROR_RETRYABLE[code]).toBe('boolean');
+      expect(ERROR_MESSAGES[code].length).toBeGreaterThan(5);
+    }
+  });
+
+  it('accepts a well-formed public error and rejects unknown codes', () => {
+    expect(
+      ApiErrorSchema.safeParse({
+        error: { code: 'NOT_FOUND', message: 'x', retryable: false, errorRef: 'err_abc' },
+      }).success,
+    ).toBe(true);
+    expect(
+      ApiErrorSchema.safeParse({ error: { code: 'PROVIDER_STACK_TRACE', message: 'x', retryable: false } })
+        .success,
+    ).toBe(false);
+  });
+});
+
+describe('id schemas', () => {
+  it('validates prefixed ids and rejects other kinds', () => {
+    expect(idSchema('project').safeParse('proj_01j5abcdefghjkmnpqrs').success).toBe(true);
+    expect(idSchema('project').safeParse('task_01j5abcdefghjkmnpqrs').success).toBe(false);
+    expect(idSchema('project').safeParse('proj_').success).toBe(false);
+    expect(idSchema('project').safeParse('proj_ABCDEFGHJKMNPQRSTVWX').success).toBe(false);
+  });
+
+  it('bounds idempotency keys', () => {
+    expect(IdempotencyKeySchema.safeParse('short').success).toBe(false);
+    expect(IdempotencyKeySchema.safeParse('a'.repeat(LIMITS.maxIdempotencyKeyChars + 1)).success).toBe(false);
+    expect(IdempotencyKeySchema.safeParse('render:proj_1:attempt-1').success).toBe(true);
+    expect(IdempotencyKeySchema.safeParse('has spaces here').success).toBe(false);
+  });
+});
+
+describe('request schemas are strict and bounded', () => {
+  it('rejects unknown keys and caller-supplied ownership fields', () => {
+    const r = CreateProjectRequestSchema.safeParse({ title: 'x', workspaceId: 'ws_abc', userId: 'u1' });
+    expect(r.success).toBe(false);
+  });
+
+  it('rejects non-http source URLs', () => {
+    expect(CreateProjectRequestSchema.safeParse({ sourceUrl: 'file:///etc/passwd' }).success).toBe(false);
+    expect(CreateProjectRequestSchema.safeParse({ sourceUrl: 'ftp://host/x.mp4' }).success).toBe(false);
+    expect(CreateProjectRequestSchema.safeParse({ sourceUrl: 'https://example.com/x.mp4' }).success).toBe(true);
+  });
+
+  it('caps patch operations', () => {
+    const ops = Array.from({ length: LIMITS.maxPatchOps + 1 }, () => ({ op: 'set_title', title: 't' }));
+    expect(PatchProjectRequestSchema.safeParse({ expectedVersion: 1, ops }).success).toBe(false);
+    expect(PatchProjectRequestSchema.safeParse({ expectedVersion: 1, ops: ops.slice(0, 3) }).success).toBe(true);
+  });
+
+  it('rejects inverted word timing', () => {
+    const r = PatchProjectRequestSchema.safeParse({
+      expectedVersion: 1,
+      ops: [{ op: 'set_word_timing', wordId: 'w_01j5abcdefghjkmnpqrs', startMs: 500, endMs: 400 }],
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it('requires unique output kinds', () => {
+    expect(
+      OutputSettingsSchema.safeParse({ outputs: ['mp4', 'mp4'], resolution: '1080p', fps: 'source', quality: 'standard' })
+        .success,
+    ).toBe(false);
+  });
+
+  it('bounds word text and confidence', () => {
+    expect(
+      TranscriptWordSchema.safeParse({ id: 'w_01j5abcdefghjkmnpqrs', text: '', startMs: 0, endMs: 10 }).success,
+    ).toBe(false);
+    expect(
+      TranscriptWordSchema.safeParse({ id: 'w_01j5abcdefghjkmnpqrs', text: 'hi', startMs: 0, endMs: 10, confidence: 2 })
+        .success,
+    ).toBe(false);
+  });
+
+  it('requires complete style configs but allows partial patches', () => {
+    expect(StyleConfigSchema.safeParse({ preset: 'clean' }).success).toBe(false);
+  });
+});
+
+describe('MCP registry', () => {
+  it('exposes exactly the eight contracted tools with annotations and scopes', () => {
+    expect(MCP_TOOLS.map((t) => t.name)).toEqual([...MCP_TOOL_NAMES]);
+    expect(MCP_TOOLS).toHaveLength(8);
+    for (const tool of MCP_TOOLS) {
+      expect(tool.description.length).toBeGreaterThan(40);
+      expect(tool.annotations.title.length).toBeGreaterThan(0);
+      expect(['captions:read', 'captions:write']).toContain(tool.scope);
+      if (tool.annotations.readOnlyHint) expect(tool.scope).toBe('captions:read');
+    }
+    const paid = MCP_TOOLS.filter((t) => t.cost === 'credits').map((t) => t.name);
+    expect(paid).toEqual(['render_caption_export']);
+  });
+
+  it('tool inputs never accept caller-provided identity', () => {
+    for (const tool of MCP_TOOLS) {
+      const keys = Object.keys(tool.inputSchema.shape);
+      expect(keys).not.toContain('userId');
+      expect(keys).not.toContain('workspaceId');
+    }
+  });
+});

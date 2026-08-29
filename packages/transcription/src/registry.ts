@@ -1,0 +1,80 @@
+import { ElevenLabsScribeProvider } from './adapters/elevenlabs';
+import { GeminiTranscribeProvider } from './adapters/gemini';
+import { GptTranscribeAlignedProvider, WhisperApiProvider } from './adapters/openai';
+import { MOCK_PROFILES, MockTranscriptionProvider } from './mock';
+import type { TranscriptionProvider } from './provider';
+import type { TruthSource } from './truth';
+
+export interface ProviderEnv {
+  TRANSCRIPTION_PROVIDERS?: string | undefined;
+  GEMINI_API_KEY?: string | undefined;
+  GEMINI_TRANSCRIBE_MODEL?: string | undefined;
+  ELEVENLABS_API_KEY?: string | undefined;
+  ELEVENLABS_SCRIBE_MODEL?: string | undefined;
+  OPENAI_API_KEY?: string | undefined;
+  OPENAI_TRANSCRIBE_MODEL?: string | undefined;
+  WHISPER_API_MODEL?: string | undefined;
+  /** Optional list prices for cost scoring, e.g. BENCHMARK_USD_PER_MINUTE_GEMINI=0.01 */
+  [key: `BENCHMARK_USD_PER_MINUTE_${string}`]: string | undefined;
+}
+
+export const KNOWN_PROVIDER_IDS = ['mock', 'mock-noisy', 'mock-drifty', 'mock-flaky', 'gemini', 'elevenlabs', 'gpt-transcribe', 'whisper'] as const;
+export type KnownProviderId = (typeof KNOWN_PROVIDER_IDS)[number];
+
+export interface ProviderRegistry {
+  all: TranscriptionProvider[];
+  byId(id: string): TranscriptionProvider | undefined;
+  /** The configured fallback chain in order (from TRANSCRIPTION_PROVIDERS). */
+  chain: TranscriptionProvider[];
+}
+
+function price(env: ProviderEnv, id: string): number | null {
+  const key = `BENCHMARK_USD_PER_MINUTE_${id.toUpperCase().replace(/-/g, '_')}` as const;
+  const raw = env[key];
+  if (!raw) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 ? n : null;
+}
+
+export function createProviderRegistry(env: ProviderEnv, deps: { truthSources?: TruthSource[] } = {}): ProviderRegistry {
+  const mockOpts = deps.truthSources ? { truthSources: deps.truthSources } : {};
+  const all: TranscriptionProvider[] = [
+    new MockTranscriptionProvider({ ...mockOpts, profile: MOCK_PROFILES.mock! }),
+    new MockTranscriptionProvider({ ...mockOpts, profile: MOCK_PROFILES['mock-noisy']! }),
+    new MockTranscriptionProvider({ ...mockOpts, profile: MOCK_PROFILES['mock-drifty']! }),
+    new MockTranscriptionProvider({ ...mockOpts, profile: MOCK_PROFILES['mock-flaky']! }),
+    new GeminiTranscribeProvider({
+      ...(env.GEMINI_API_KEY ? { apiKey: env.GEMINI_API_KEY } : {}),
+      ...(env.GEMINI_TRANSCRIBE_MODEL ? { model: env.GEMINI_TRANSCRIBE_MODEL } : {}),
+      usdPerMinute: price(env, 'gemini'),
+    }),
+    new ElevenLabsScribeProvider({
+      ...(env.ELEVENLABS_API_KEY ? { apiKey: env.ELEVENLABS_API_KEY } : {}),
+      ...(env.ELEVENLABS_SCRIBE_MODEL ? { model: env.ELEVENLABS_SCRIBE_MODEL } : {}),
+      usdPerMinute: price(env, 'elevenlabs'),
+    }),
+    new GptTranscribeAlignedProvider({
+      ...(env.OPENAI_API_KEY ? { apiKey: env.OPENAI_API_KEY } : {}),
+      ...(env.OPENAI_TRANSCRIBE_MODEL ? { transcribeModel: env.OPENAI_TRANSCRIBE_MODEL } : {}),
+      ...(env.WHISPER_API_MODEL ? { whisperModel: env.WHISPER_API_MODEL } : {}),
+      usdPerMinute: price(env, 'gpt-transcribe'),
+    }),
+    new WhisperApiProvider({
+      ...(env.OPENAI_API_KEY ? { apiKey: env.OPENAI_API_KEY } : {}),
+      ...(env.WHISPER_API_MODEL ? { whisperModel: env.WHISPER_API_MODEL } : {}),
+      usdPerMinute: price(env, 'whisper'),
+    }),
+  ];
+  const byId = (id: string) => all.find((p) => p.id === id);
+  const ids = (env.TRANSCRIPTION_PROVIDERS ?? 'mock')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const chain: TranscriptionProvider[] = [];
+  for (const id of ids) {
+    const p = byId(id);
+    if (p) chain.push(p);
+  }
+  if (chain.length === 0) chain.push(all[0]!);
+  return { all, byId, chain };
+}

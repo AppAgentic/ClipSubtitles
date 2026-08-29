@@ -1,0 +1,10 @@
+packages:
+  - packages/*
+  - apps/*
+
+# Native/prebuilt packages that need postinstall or binary download.
+onlyBuiltDependencies:
+  - '@napi-rs/canvas'
+  - esbuild
+  - sharp
+  - unrs-resolver

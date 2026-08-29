@@ -1,0 +1,28 @@
+{
+  "name": "@clipsubtitles/render",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Caption rasterization (canvas), ffmpeg compositing, preview/export renderers, subtitle file exports",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "smoke": "tsx src/bin/smoke.ts"
+  },
+  "dependencies": {
+    "@clipsubtitles/contracts": "workspace:*",
+    "@clipsubtitles/core": "workspace:*",
+    "@expo-google-fonts/inter": "^0.4.2",
+    "@napi-rs/canvas": "^1.0.8"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.12"
+  }
+}
