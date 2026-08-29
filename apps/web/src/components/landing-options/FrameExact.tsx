@@ -1,12 +1,12 @@
 import Link from 'next/link';
 import { FrameCounter } from './FrameCounter';
 import { OptionSwitcher } from './OptionSwitcher';
-import { EDITED_WORD, MOTION_PRESETS, OUTPUTS, SAMPLE, STYLE_PRESETS, shortHash, timecode } from './facts';
+import { EDITED_WORD, MOTION_PRESETS, OUTPUTS, SAMPLE, STYLE_PRESETS, shortHash, timecode, wordsForPage } from './facts';
 import './frame-exact.css';
 
-const page1 = SAMPLE.pages[0].wordIds.map((id) => SAMPLE.words.find((w) => w.id === id)!);
-const page2 = SAMPLE.pages[1].wordIds.map((id) => SAMPLE.words.find((w) => w.id === id)!);
-const captionSpanMs = SAMPLE.words.at(-1)!.endMs;
+const page1 = wordsForPage(SAMPLE.pages[0]);
+const page2 = wordsForPage(SAMPLE.pages[1]);
+const captionSpanMs = SAMPLE.words.at(-1)?.endMs ?? 1;
 
 export function FrameExact() {
   return (

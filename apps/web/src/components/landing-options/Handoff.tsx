@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { OptionSwitcher } from './OptionSwitcher';
-import { EDITED_WORD, MCP_TOOLS, OUTPUTS, SAMPLE, shortHash, timecode } from './facts';
+import { EDITED_WORD, MCP_TOOLS, OUTPUTS, SAMPLE, shortHash, timecode, wordsForPage } from './facts';
 import './handoff.css';
 
 type Actor = 'agent' | 'you';
@@ -28,7 +28,8 @@ const LEDGER: Array<{ step: string; agent: string; you: string; owner: Actor }> 
 ];
 
 export function Handoff() {
-  const page2 = SAMPLE.pages[1].wordIds.map((id) => SAMPLE.words.find((w) => w.id === id)!);
+  const page2 = wordsForPage(SAMPLE.pages[1]);
+  const firstPage2Word = page2[0];
   return (
     <div data-lo="handoff" className="ho">
       <header className="ho-top lo-wrap">
@@ -102,7 +103,7 @@ export function Handoff() {
                 <span className="ho-clip-readout lo-mono ho-clip-readout-tl">
                   v{SAMPLE.version} · {shortHash(SAMPLE.hashV3, 6, 4)}
                 </span>
-                <span className="ho-clip-readout lo-mono ho-clip-readout-tr">{timecode(SAMPLE.excerptStartMs + page2[0]!.startMs)}</span>
+                <span className="ho-clip-readout lo-mono ho-clip-readout-tr">{timecode(SAMPLE.excerptStartMs + (firstPage2Word?.startMs ?? 0))}</span>
                 <p className="ho-caption lo-cap" aria-label={`Caption: ${page2.map((w) => w.text).join(' ')}`}>
                   {page2.map((w, i) => (
                     <span key={w.id} className={`ho-word${w.was ? ' ho-word-edited' : ''}`} style={{ ['--w' as string]: i }}>

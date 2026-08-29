@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { EDITED_WORD, OUTPUTS, SAMPLE } from './facts';
+import { EDITED_WORD, OUTPUTS, SAMPLE, wordsForPage } from './facts';
 import { CaptionFrame, type FrameWord } from './StyleBoard';
 
 type Gate = 0 | 1 | 2 | 3;
 
-const page2 = SAMPLE.pages[1].wordIds.map((id) => SAMPLE.words.find((w) => w.id === id)!);
+const page2 = wordsForPage(SAMPLE.pages[1]);
 
 const STATUS: Record<Gate, string> = {
   0: 'reviewing captions',
@@ -86,24 +86,25 @@ export function GatesStory() {
 
       <ol className="tg-gates">
         <li ref={(el) => void (refs.current[0] = el)} data-gate="1" className="tg-gate">
-          <span className="tg-gate-n lo-mono">01 · Words</span>
-          <h3>Fix any word.</h3>
+          <span className="tg-gate-n lo-mono">01 · Automatic captions</span>
+          <h3>Generate timed captions.</h3>
           <p>
-            Captions arrive timed to your speech. If the transcript hears “{EDITED_WORD.was}” when
-            you said “{EDITED_WORD.text}”, change that one word. Everything else stays where it was.
+            ClipSubtitles turns the speech in your video into word-timed captions. If it hears
+            “{EDITED_WORD.was}” when you said “{EDITED_WORD.text}”, correct that word without
+            rebuilding the rest of the transcript.
           </p>
         </li>
         <li ref={(el) => void (refs.current[1] = el)} data-gate="2" className="tg-gate">
-          <span className="tg-gate-n lo-mono">02 · Look</span>
-          <h3>Make it yours.</h3>
+          <span className="tg-gate-n lo-mono">02 · Edit and style</span>
+          <h3>Choose how captions look.</h3>
           <p>
-            Pick a caption style and motion, then preview the current version of your clip before
-            you export.
+            Pick a readable caption style and motion, then preview the current version of your
+            video before you export.
           </p>
         </li>
         <li ref={(el) => void (refs.current[2] = el)} data-gate="3" className="tg-gate">
-          <span className="tg-gate-n lo-mono">03 · Files</span>
-          <h3>Export your way.</h3>
+          <span className="tg-gate-n lo-mono">03 · Export</span>
+          <h3>Download your captioned video.</h3>
           <p>
             Download a captioned MP4, a transparent overlay for your own edit, or SRT and VTT
             subtitle files. One edit keeps every file in sync.

@@ -85,6 +85,11 @@
   min-width: 0;
 }
 
+[data-lo='three-gates'] .tg-hero-eyebrow {
+  margin-bottom: -10px;
+  color: var(--warm);
+}
+
 [data-lo='three-gates'] .tg-hero h1 {
   max-width: 13ch;
   font-size: clamp(40px, 6.6vw, 92px);
@@ -853,6 +858,58 @@
   color: var(--dim);
 }
 
+/* Related intent pages: useful internal navigation, not a keyword cloud. */
+[data-lo='three-gates'] .tg-related {
+  display: grid;
+  gap: 22px;
+  padding-block: clamp(72px, 10vw, 136px);
+  border-top: 1px solid var(--line);
+}
+
+[data-lo='three-gates'] .tg-related h2 {
+  max-width: 15ch;
+  font-size: clamp(36px, 5.2vw, 68px);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+  font-weight: 500;
+}
+
+[data-lo='three-gates'] .tg-related ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+[data-lo='three-gates'] .tg-related li {
+  border-bottom: 1px solid var(--line);
+}
+
+[data-lo='three-gates'] .tg-related li:nth-child(odd) {
+  padding-right: clamp(18px, 3vw, 42px);
+}
+
+[data-lo='three-gates'] .tg-related li:nth-child(even) {
+  padding-left: clamp(18px, 3vw, 42px);
+  border-left: 1px solid var(--line);
+}
+
+[data-lo='three-gates'] .tg-related a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 76px;
+  color: var(--dim);
+  font-size: clamp(17px, 2vw, 22px);
+  text-decoration: none;
+  transition: color 160ms ease;
+}
+
+[data-lo='three-gates'] .tg-related a:hover {
+  color: var(--warm);
+}
+
 /* Final */
 [data-lo='three-gates'] .tg-final {
   display: grid;
@@ -958,6 +1015,14 @@
   }
   [data-lo='three-gates'] .tg-frame-board {
     width: min(100%, 200px);
+  }
+  [data-lo='three-gates'] .tg-related ul {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  [data-lo='three-gates'] .tg-related li:nth-child(odd),
+  [data-lo='three-gates'] .tg-related li:nth-child(even) {
+    padding-inline: 0;
+    border-left: 0;
   }
 }
 

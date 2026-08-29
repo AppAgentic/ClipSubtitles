@@ -84,7 +84,20 @@ export const SAMPLE = {
   ],
 } as const;
 
-export const EDITED_WORD = SAMPLE.words.find((w) => w.was)!;
+function findEditedWord(): SampleWord {
+  const word = SAMPLE.words.find((candidate) => candidate.was !== undefined);
+  if (!word) throw new Error('The landing-page sample must contain one corrected word.');
+  return word;
+}
+
+export const EDITED_WORD = findEditedWord();
+
+export function wordsForPage(page: { wordIds: readonly string[] }): SampleWord[] {
+  return page.wordIds.flatMap((id) => {
+    const word = SAMPLE.words.find((candidate) => candidate.id === id);
+    return word ? [word] : [];
+  });
+}
 
 export function shortHash(hash: string, head = 8, tail = 4): string {
   return `${hash.slice(0, head)}…${hash.slice(-tail)}`;

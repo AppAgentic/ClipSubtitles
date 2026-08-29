@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import { ThreeGates } from '@/components/landing-options/ThreeGates';
 
 export const metadata: Metadata = {
-  title: 'Styled Video Captions That Get Every Word Right',
+  title: 'AI Video Caption Generator for Styled Captions',
   description:
-    'Caption a short video: correct the word-level transcript, choose a style and motion, then export the files you need at a fixed credit price you approve first.',
+    'Add accurate, styled captions to short videos. Review every word, choose a look and motion, preview the result, then export a captioned video or subtitle file.',
 };
 
 export default function ThreeGatesPage() {

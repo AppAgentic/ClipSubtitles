@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
-import { MOTION_PRESETS, SAMPLE, STYLE_PRESETS } from './facts';
+import { MOTION_PRESETS, SAMPLE, STYLE_PRESETS, wordsForPage } from './facts';
 
 export type StyleId = (typeof STYLE_PRESETS)[number];
 export type MotionId = (typeof MOTION_PRESETS)[number];
@@ -40,8 +40,7 @@ export interface FrameWord {
 }
 
 /** Page one of the sample clip, with the highlight on "shipped". */
-export const PAGE_ONE: readonly FrameWord[] = SAMPLE.pages[0].wordIds.map((id, i) => {
-  const w = SAMPLE.words.find((word) => word.id === id)!;
+export const PAGE_ONE: readonly FrameWord[] = wordsForPage(SAMPLE.pages[0]).map((w, i) => {
   return { id: w.id, text: w.text, hot: i === 1 };
 });
 
