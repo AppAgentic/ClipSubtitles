@@ -5,7 +5,7 @@ import https from 'node:https';
 import type { LookupFunction } from 'node:net';
 import type { Readable } from 'node:stream';
 import type { TaskResult } from '@clipsubtitles/contracts';
-import { ObjectTooLargeError, getAssetById, updateAsset, updateProjectMeta, type TaskRecord } from '@clipsubtitles/storage';
+import { ObjectTooLargeError, type TaskRecord } from '@clipsubtitles/storage';
 import type { AppContext } from '../../context';
 import { isPrivateAddress, validateSourceUrl } from '../../services/source-policy';
 import { finalizeSourceAsset, sourceStorageKey } from '../../services/uploads';
@@ -30,7 +30,10 @@ export class PrivateAddressError extends Error {
  * rebinding). Every resolved address must be public unless private hosts are
  * explicitly allowed for local development.
  */
-export function createGuardedLookup(allowPrivate: boolean, resolver: (hostname: string) => Promise<LookupAddress[]> = (h) => lookup(h, { all: true })): LookupFunction {
+export function createGuardedLookup(
+  allowPrivate: boolean,
+  resolver: (hostname: string) => Promise<LookupAddress[]> = (h) => lookup(h, { all: true }),
+): LookupFunction {
   return (hostname, options, callback) => {
     resolver(hostname).then(
       (addresses) => {
@@ -44,7 +47,10 @@ export function createGuardedLookup(allowPrivate: boolean, resolver: (hostname: 
           return;
         }
         if (typeof options === 'object' && options && 'all' in options && options.all) {
-          (callback as unknown as (err: Error | null, addresses: LookupAddress[]) => void)(null, addresses);
+          (callback as unknown as (err: Error | null, addresses: LookupAddress[]) => void)(
+            null,
+            addresses,
+          );
         } else {
           callback(null, first.address, first.family);
         }
@@ -60,12 +66,22 @@ interface FetchedResponse {
   body: Readable;
 }
 
-function requestOnce(url: URL, lookupFn: LookupFunction, signal: AbortSignal): Promise<FetchedResponse> {
+function requestOnce(
+  url: URL,
+  lookupFn: LookupFunction,
+  signal: AbortSignal,
+): Promise<FetchedResponse> {
   return new Promise((resolve, reject) => {
     const mod = url.protocol === 'https:' ? https : http;
     const req = mod.request(
       url,
-      { method: 'GET', headers: { 'user-agent': USER_AGENT, accept: 'video/*,audio/*;q=0.9,*/*;q=0.5' }, lookup: lookupFn, timeout: CONNECT_TIMEOUT_MS, signal },
+      {
+        method: 'GET',
+        headers: { 'user-agent': USER_AGENT, accept: 'video/*,audio/*;q=0.9,*/*;q=0.5' },
+        lookup: lookupFn,
+        timeout: CONNECT_TIMEOUT_MS,
+        signal,
+      },
       (res) => resolve({ status: res.statusCode ?? 0, headers: res.headers, body: res }),
     );
     req.on('timeout', () => req.destroy(new Error('connect timeout')));
@@ -92,19 +108,32 @@ export async function fetchRemoteSource(
       res = await requestOnce(url, lookupFn, signal);
     } catch (err) {
       if (signal.aborted) throw err;
-      if (err instanceof PrivateAddressError) throw new TaskFailure('SOURCE_URL_REJECTED', 'The source host resolves to a private address.');
-      throw new TaskFailure('SOURCE_URL_REJECTED', 'The source could not be fetched.', { retryable: true, internal: err });
+      if (err instanceof PrivateAddressError)
+        throw new TaskFailure(
+          'SOURCE_URL_REJECTED',
+          'The source host resolves to a private address.',
+        );
+      throw new TaskFailure('SOURCE_URL_REJECTED', 'The source could not be fetched.', {
+        retryable: true,
+        internal: err,
+      });
     }
     if (res.status >= 300 && res.status < 400) {
       res.body.resume();
       const location = res.headers.location;
       if (!location) throw new TaskFailure('SOURCE_URL_REJECTED', 'Redirect without location.');
-      url = validateSourceUrl(new URL(location, url).toString(), { allowPrivate: ctx.config.limits.allowPrivateSourceUrls });
+      url = validateSourceUrl(new URL(location, url).toString(), {
+        allowPrivate: ctx.config.limits.allowPrivateSourceUrls,
+      });
       continue;
     }
     if (res.status < 200 || res.status >= 300) {
       res.body.resume();
-      throw new TaskFailure('SOURCE_URL_REJECTED', `The source responded with status ${res.status}.`, { retryable: res.status >= 500 });
+      throw new TaskFailure(
+        'SOURCE_URL_REJECTED',
+        `The source responded with status ${res.status}.`,
+        { retryable: res.status >= 500 },
+      );
     }
     const length = Number(res.headers['content-length'] ?? '0');
     if (length > ctx.config.limits.maxRemoteSourceBytes) {
@@ -112,38 +141,63 @@ export async function fetchRemoteSource(
       throw new TaskFailure('PAYLOAD_TOO_LARGE', 'The remote source exceeds the size limit.');
     }
     const mime = res.headers['content-type']?.split(';')[0]?.trim().toLowerCase();
-    if (mime && !mime.startsWith('video/') && !mime.startsWith('audio/') && mime !== 'application/octet-stream' && mime !== 'binary/octet-stream') {
+    if (
+      mime &&
+      !mime.startsWith('video/') &&
+      !mime.startsWith('audio/') &&
+      mime !== 'application/octet-stream' &&
+      mime !== 'binary/octet-stream'
+    ) {
       res.body.resume();
       throw new TaskFailure('UNSUPPORTED_MEDIA', `The remote source is ${mime}, not media.`);
     }
     try {
-      const stored = await ctx.store.putStream(storageKey, res.body, { maxBytes: ctx.config.limits.maxRemoteSourceBytes });
+      const stored = await ctx.store.putStream(storageKey, res.body, {
+        maxBytes: ctx.config.limits.maxRemoteSourceBytes,
+        ...(mime ? { contentType: mime } : {}),
+      });
       return mime ? { ...stored, mimeType: mime } : stored;
     } catch (err) {
-      if (err instanceof ObjectTooLargeError) throw new TaskFailure('PAYLOAD_TOO_LARGE', 'The remote source exceeds the size limit.');
+      if (err instanceof ObjectTooLargeError)
+        throw new TaskFailure('PAYLOAD_TOO_LARGE', 'The remote source exceeds the size limit.');
       throw err;
     }
   }
   throw new TaskFailure('SOURCE_URL_REJECTED', 'Too many redirects.');
 }
 
-export async function importSourceHandler(ctx: AppContext, task: TaskRecord, tools: HandlerTools): Promise<TaskResult> {
+export async function importSourceHandler(
+  ctx: AppContext,
+  task: TaskRecord,
+  tools: HandlerTools,
+): Promise<TaskResult> {
   const input = ImportSourceInputSchema.parse(task.input);
-  const asset = getAssetById(ctx.db, input.assetId);
-  if (!asset || asset.workspaceId !== task.workspaceId) throw new TaskFailure('NOT_FOUND', 'Source asset not found.');
+  const asset = await ctx.db.getAssetById(input.assetId);
+  if (!asset || asset.workspaceId !== task.workspaceId)
+    throw new TaskFailure('NOT_FOUND', 'Source asset not found.');
   tools.progress(5, 'fetching');
   const key = sourceStorageKey(asset.workspaceId, asset.id, asset.fileName ?? 'source.mp4');
   try {
     const stored = await fetchRemoteSource(ctx, input.url, key, tools.signal);
     tools.progress(70, 'probing');
-    updateAsset(ctx.db, asset.id, { status: 'importing', storageKey: key }, ctx.clock.iso());
-    const ready = await finalizeSourceAsset(ctx, asset, { storageKey: key, bytes: stored.bytes, sha256: stored.sha256, ...(stored.mimeType ? { mimeType: stored.mimeType } : {}) });
+    await ctx.db.updateAsset(asset.id, { status: 'importing', storageKey: key }, ctx.clock.iso());
+    const ready = await finalizeSourceAsset(ctx, asset, {
+      storageKey: key,
+      bytes: stored.bytes,
+      sha256: stored.sha256,
+      ...(stored.mimeType ? { mimeType: stored.mimeType } : {}),
+    });
     tools.progress(95, 'ready');
-    return { kind: 'import_source', projectId: input.projectId, assetId: asset.id, durationMs: ready.durationMs ?? 0 };
+    return {
+      kind: 'import_source',
+      projectId: input.projectId,
+      assetId: asset.id,
+      durationMs: ready.durationMs ?? 0,
+    };
   } catch (err) {
     if (!tools.signal.aborted) {
-      updateAsset(ctx.db, asset.id, { status: 'failed' }, ctx.clock.iso());
-      updateProjectMeta(ctx.db, input.projectId, { status: 'failed' }, ctx.clock.iso());
+      await ctx.db.updateAsset(asset.id, { status: 'failed' }, ctx.clock.iso());
+      await ctx.db.updateProjectMeta(input.projectId, { status: 'failed' }, ctx.clock.iso());
     }
     // Whatever was fetched is discarded: a retry re-fetches, and a failed/cancelled import owns no blob.
     await ctx.store.delete(key).catch(() => false);

@@ -1,0 +1,12 @@
+.git
+.data
+.next
+**/.next
+**/dist
+node_modules
+**/node_modules
+fixtures/generated
+artifacts
+coverage
+.env*
+!.env.example

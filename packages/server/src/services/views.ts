@@ -9,10 +9,6 @@ import {
 } from '@clipsubtitles/contracts';
 import { createCaptionState, resegmentState, type CaptionState } from '@clipsubtitles/core';
 import {
-  getAssetById,
-  getRevision,
-  listExports,
-  listTasks,
   toPublicExport,
   toPublicTask,
   type AssetRecord,
@@ -91,17 +87,19 @@ export function transcriptView(revision: RevisionRecord, opts: ProjectViewOption
   return view;
 }
 
-export function currentRevision(ctx: AppContext, project: ProjectRecord): RevisionRecord | null {
-  return project.currentRevisionId ? getRevision(ctx.db, project.id, project.currentRevisionId) : null;
+export async function currentRevision(ctx: AppContext, project: ProjectRecord): Promise<RevisionRecord | null> {
+  return project.currentRevisionId ? ctx.db.getRevision(project.id, project.currentRevisionId) : null;
 }
 
-export function projectAsset(ctx: AppContext, project: ProjectRecord): AssetRecord | null {
-  return project.sourceAssetId ? getAssetById(ctx.db, project.sourceAssetId) : null;
+export async function projectAsset(ctx: AppContext, project: ProjectRecord): Promise<AssetRecord | null> {
+  return project.sourceAssetId ? ctx.db.getAssetById(project.sourceAssetId) : null;
 }
 
-export function buildProjectView(ctx: AppContext, project: ProjectRecord, opts: ProjectViewOptions = {}): CaptionProject {
-  const asset = projectAsset(ctx, project);
-  const revision = currentRevision(ctx, project);
+export async function buildProjectView(ctx: AppContext, project: ProjectRecord, opts: ProjectViewOptions = {}): Promise<CaptionProject> {
+  const asset = await projectAsset(ctx, project);
+  const revision = await currentRevision(ctx, project);
+  const activeTasks = await ctx.db.listTasks(project.workspaceId, { projectId: project.id, activeOnly: true, limit: 20 });
+  const recentExports = await ctx.db.listExports(project.workspaceId, { projectId: project.id, limit: 10 });
   const includePages = opts.includePages ?? true;
   const view: CaptionProject = {
     id: project.id,
@@ -117,8 +115,8 @@ export function buildProjectView(ctx: AppContext, project: ProjectRecord, opts: 
     style: project.style,
     segmentation: project.segmentation,
     qa: project.qa,
-    activeTasks: listTasks(ctx.db, project.workspaceId, { projectId: project.id, activeOnly: true, limit: 20 }).map(toPublicTask),
-    recentExports: listExports(ctx.db, project.workspaceId, { projectId: project.id, limit: 10 }).map((e) => exportView(ctx, e)),
+    activeTasks: activeTasks.map(toPublicTask),
+    recentExports: recentExports.map((e) => exportView(ctx, e)),
     links: { editor: `${ctx.config.webPublicUrl}/projects/${project.id}` },
     contentNotice: CONTENT_NOTICE,
   };
@@ -130,8 +128,8 @@ export function buildProjectView(ctx: AppContext, project: ProjectRecord, opts: 
   return view;
 }
 
-export function buildProjectSummary(ctx: AppContext, project: ProjectRecord): ProjectSummary {
-  const asset = projectAsset(ctx, project);
+export async function buildProjectSummary(ctx: AppContext, project: ProjectRecord): Promise<ProjectSummary> {
+  const asset = await projectAsset(ctx, project);
   const summary: ProjectSummary = {
     id: project.id,
     title: project.title,

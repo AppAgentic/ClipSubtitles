@@ -1,0 +1,6 @@
+project_id      = "clipsubtitles-staging"
+environment     = "staging"
+deploy_services = false
+image_tag       = "replace-with-immutable-git-sha"
+object_store_driver = "r2"
+r2_endpoint          = "https://replace-with-account-id.r2.cloudflarestorage.com"

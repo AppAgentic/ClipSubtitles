@@ -18,6 +18,8 @@ const externalizeNodeModules = {
 const entries = {
   api: 'src/bin/api.ts',
   worker: 'src/bin/worker.ts',
+  'worker-push': 'src/bin/worker-push.ts',
+  'runtime-check': 'src/bin/runtime-check.ts',
 };
 
 for (const [name, entry] of Object.entries(entries)) {

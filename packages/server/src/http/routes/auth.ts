@@ -1,7 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { Hono } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
-import { revokeGrantsForUser, revokeSessionsByIdpSessionId, revokeSessionsForUser, getUserBySubject } from '@clipsubtitles/storage';
 import { MOCK_USERS } from '../../auth/identity-provider';
 import { passesCsrf, type AppEnv } from '../../auth/middleware';
 import { SESSION_COOKIE, endSession, establishSession, sessionCookieOptions } from '../../auth/session';
@@ -72,17 +71,17 @@ export function registerAuthRoutes(app: Hono<AppEnv>, ctx: AppContext): void {
     } catch (err) {
       throw new ApiError('UNAUTHENTICATED', 'Sign-in could not be completed.', { internal: err });
     }
-    const { token, principal } = establishSession(ctx, user);
+    const { token, principal } = await establishSession(ctx, user);
     setCookie(c, SESSION_COOKIE, token, sessionCookieOptions(ctx));
     deleteCookie(c, STATE_COOKIE, { path: '/auth' });
-    audit(ctx, { principal, action: 'auth.sign_in', metadata: { idp: ctx.identity.kind } });
+    await audit(ctx, { principal, action: 'auth.sign_in', metadata: { idp: ctx.identity.kind } });
     return c.redirect(safeReturnTo(ctx, returnTo), 302);
   });
 
-  app.post('/auth/logout', (c) => {
+  app.post('/auth/logout', async (c) => {
     if (!passesCsrf(c, ctx)) throw new ApiError('FORBIDDEN', 'Cross-site request blocked.');
     const token = getCookie(c, SESSION_COOKIE);
-    if (token) endSession(ctx, token);
+    if (token) await endSession(ctx, token);
     deleteCookie(c, SESSION_COOKIE, { path: '/' });
     return c.body(null, 204);
   });
@@ -109,15 +108,15 @@ export function registerAuthRoutes(app: Hono<AppEnv>, ctx: AppContext): void {
     }
     const now = ctx.clock.iso();
     if (event.event === 'session.revoked' && event.data?.id) {
-      revokeSessionsByIdpSessionId(ctx.db, event.data.id, now);
+      await ctx.db.revokeSessionsByIdpSessionId(event.data.id, now);
     } else if (event.event === 'user.deleted' && event.data?.id) {
-      const user = getUserBySubject(ctx.db, event.data.id);
+      const user = await ctx.db.getUserBySubject(event.data.id);
       if (user) {
-        revokeSessionsForUser(ctx.db, user.id, now);
-        revokeGrantsForUser(ctx.db, user.id, now);
+        await ctx.db.revokeSessionsForUser(user.id, now);
+        await ctx.db.revokeGrantsForUser(user.id, now);
       }
     }
-    audit(ctx, { actorType: 'system', action: 'auth.webhook', metadata: { event: event.event } });
+    await audit(ctx, { actorType: 'system', action: 'auth.webhook', metadata: { event: event.event } });
     return c.json({ received: true }, 200);
   });
 }

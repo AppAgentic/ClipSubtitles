@@ -1,17 +1,6 @@
 import type { Readable } from 'node:stream';
 import { SUPPORTED_SOURCE_MIME_TYPES } from '@clipsubtitles/contracts';
-import {
-  ObjectTooLargeError,
-  completeUpload,
-  findUploadByTokenHash,
-  getAssetById,
-  getProjectById,
-  getWorkspace,
-  transaction,
-  updateAsset,
-  updateProjectMeta,
-  type AssetRecord,
-} from '@clipsubtitles/storage';
+import { ObjectTooLargeError, type AssetRecord } from '@clipsubtitles/storage';
 import { probeMedia, type MediaProbe } from '@clipsubtitles/transcription';
 import { hashToken } from '../auth/tokens';
 import type { AppContext } from '../context';
@@ -32,13 +21,20 @@ export async function finalizeSourceAsset(
   asset: AssetRecord,
   info: { storageKey: string; bytes: number; sha256: string; mimeType?: string },
 ): Promise<AssetRecord> {
-  const localPath = ctx.store.localPath(info.storageKey);
+  const localPath = await ctx.store.materialize(info.storageKey);
   let probe: MediaProbe;
   try {
-    probe = await probeMedia(localPath, { ffmpegPath: ctx.config.ffmpegPath, ffprobePath: ctx.config.ffprobePath });
+    probe = await probeMedia(localPath, {
+      ffmpegPath: ctx.config.ffmpegPath,
+      ffprobePath: ctx.config.ffprobePath,
+    });
   } catch (err) {
     await failAsset(ctx, asset, info.storageKey);
-    throw new ApiError('UNSUPPORTED_MEDIA', 'The file could not be read as audio or video.', { internal: err });
+    throw new ApiError('UNSUPPORTED_MEDIA', 'The file could not be read as audio or video.', {
+      internal: err,
+    });
+  } finally {
+    await ctx.store.releaseMaterialized?.(localPath).catch(() => undefined);
   }
   if (!probe.hasAudio && !probe.hasVideo) {
     await failAsset(ctx, asset, info.storageKey);
@@ -50,14 +46,16 @@ export async function finalizeSourceAsset(
   }
   if (probe.durationMs <= 0 || probe.durationMs > ctx.config.limits.maxSourceDurationMs) {
     await failAsset(ctx, asset, info.storageKey);
-    throw new ApiError('PAYLOAD_TOO_LARGE', `Media must be between 1 second and ${Math.round(ctx.config.limits.maxSourceDurationMs / 60000)} minutes long.`);
+    throw new ApiError(
+      'PAYLOAD_TOO_LARGE',
+      `Media must be between 1 second and ${Math.round(ctx.config.limits.maxSourceDurationMs / 60000)} minutes long.`,
+    );
   }
   const now = ctx.clock.now();
-  const project = getProjectById(ctx.db, asset.projectId);
-  const workspace = getWorkspace(ctx.db, asset.workspaceId);
+  const project = await ctx.db.getProjectById(asset.projectId);
+  const workspace = await ctx.db.getWorkspace(asset.workspaceId);
   const retentionDays = workspace?.retention.sourceDays ?? ctx.config.limits.sourceRetentionDays;
-  const updated = updateAsset(
-    ctx.db,
+  const updated = await ctx.db.updateAsset(
     asset.id,
     {
       status: 'ready',
@@ -75,14 +73,15 @@ export async function finalizeSourceAsset(
     },
     new Date(now).toISOString(),
   );
-  if (project && project.status !== 'captioned') updateProjectMeta(ctx.db, project.id, { status: 'ready' }, new Date(now).toISOString());
+  if (project && project.status !== 'captioned')
+    await ctx.db.updateProjectMeta(project.id, { status: 'ready' }, new Date(now).toISOString());
   return updated ?? asset;
 }
 
 async function failAsset(ctx: AppContext, asset: AssetRecord, storageKey: string): Promise<void> {
   await ctx.store.delete(storageKey).catch(() => false);
-  updateAsset(ctx.db, asset.id, { status: 'failed' }, ctx.clock.iso());
-  updateProjectMeta(ctx.db, asset.projectId, { status: 'failed' }, ctx.clock.iso());
+  await ctx.db.updateAsset(asset.id, { status: 'failed' }, ctx.clock.iso());
+  await ctx.db.updateProjectMeta(asset.projectId, { status: 'failed' }, ctx.clock.iso());
 }
 
 export interface ReceiveUploadInput {
@@ -98,29 +97,44 @@ export interface ReceiveUploadInput {
  * are stored, so concurrent PUTs with the same target cannot overwrite or
  * delete each other's file: exactly one wins, the rest get CONFLICT.
  */
-export async function receiveUpload(ctx: AppContext, input: ReceiveUploadInput): Promise<AssetRecord> {
+export async function receiveUpload(
+  ctx: AppContext,
+  input: ReceiveUploadInput,
+): Promise<AssetRecord> {
   const mime = input.contentType?.split(';')[0]?.trim().toLowerCase();
-  if (mime && mime !== 'application/octet-stream' && !(SUPPORTED_SOURCE_MIME_TYPES as readonly string[]).includes(mime)) {
+  if (
+    mime &&
+    mime !== 'application/octet-stream' &&
+    !(SUPPORTED_SOURCE_MIME_TYPES as readonly string[]).includes(mime)
+  ) {
     throw new ApiError('UNSUPPORTED_MEDIA', `Content type ${mime} is not accepted.`);
   }
-  const claimed = transaction(ctx.db, () => {
-    const upload = findUploadByTokenHash(ctx.db, hashToken(input.token));
+  const claimed = await ctx.db.transaction(async () => {
+    const upload = await ctx.db.findUploadByTokenHash(hashToken(input.token));
     const nowIso = ctx.clock.iso();
-    if (!upload || upload.workspaceId !== input.workspaceId) throw new ApiError('NOT_FOUND', 'Upload target not found.');
-    if (upload.expiresAt <= nowIso) throw new ApiError('RETENTION_EXPIRED', 'The upload target has expired. Request a new one.');
+    if (!upload || upload.workspaceId !== input.workspaceId)
+      throw new ApiError('NOT_FOUND', 'Upload target not found.');
+    if (upload.expiresAt <= nowIso)
+      throw new ApiError('RETENTION_EXPIRED', 'The upload target has expired. Request a new one.');
     if (upload.completedAt) throw new ApiError('CONFLICT', 'This upload target was already used.');
-    const asset = getAssetById(ctx.db, upload.assetId);
-    if (!asset || asset.status !== 'pending_upload') throw new ApiError('CONFLICT', 'The project already has a source.');
-    if (input.contentLength !== undefined && input.contentLength > upload.maxBytes) throw new ApiError('PAYLOAD_TOO_LARGE');
-    if (!completeUpload(ctx.db, upload.id, nowIso)) throw new ApiError('CONFLICT', 'This upload target was already used.');
-    updateAsset(ctx.db, asset.id, { status: 'importing' }, nowIso);
+    const asset = await ctx.db.getAssetById(upload.assetId);
+    if (!asset || asset.status !== 'pending_upload')
+      throw new ApiError('CONFLICT', 'The project already has a source.');
+    if (input.contentLength !== undefined && input.contentLength > upload.maxBytes)
+      throw new ApiError('PAYLOAD_TOO_LARGE');
+    if (!(await ctx.db.completeUpload(upload.id, nowIso)))
+      throw new ApiError('CONFLICT', 'This upload target was already used.');
+    await ctx.db.updateAsset(asset.id, { status: 'importing' }, nowIso);
     return { upload, asset };
   });
   const { upload, asset } = claimed;
   const key = sourceStorageKey(asset.workspaceId, asset.id, asset.fileName ?? 'source.mp4');
   let stored: { bytes: number; sha256: string };
   try {
-    stored = await ctx.store.putStream(key, input.stream, { maxBytes: upload.maxBytes });
+    stored = await ctx.store.putStream(key, input.stream, {
+      maxBytes: upload.maxBytes,
+      ...(mime ? { contentType: mime } : {}),
+    });
   } catch (err) {
     await failAsset(ctx, asset, key);
     if (err instanceof ObjectTooLargeError) throw new ApiError('PAYLOAD_TOO_LARGE');
@@ -128,13 +142,25 @@ export async function receiveUpload(ctx: AppContext, input: ReceiveUploadInput):
   }
   let ready: AssetRecord;
   try {
-    updateAsset(ctx.db, asset.id, { storageKey: key }, ctx.clock.iso());
-    ready = await finalizeSourceAsset(ctx, asset, { storageKey: key, bytes: stored.bytes, sha256: stored.sha256, ...(mime ? { mimeType: mime } : {}) });
+    await ctx.db.updateAsset(asset.id, { storageKey: key }, ctx.clock.iso());
+    ready = await finalizeSourceAsset(ctx, asset, {
+      storageKey: key,
+      bytes: stored.bytes,
+      sha256: stored.sha256,
+      ...(mime ? { mimeType: mime } : {}),
+    });
   } catch (err) {
     // The blob is already stored: never leave it behind without a row that points at it.
     await failAsset(ctx, asset, key).catch(() => undefined);
     throw err;
   }
-  audit(ctx, { workspaceId: asset.workspaceId, actorType: 'user', action: 'source.upload', targetType: 'asset', targetId: asset.id, metadata: { bytes: stored.bytes, durationMs: ready.durationMs } });
+  await audit(ctx, {
+    workspaceId: asset.workspaceId,
+    actorType: 'user',
+    action: 'source.upload',
+    targetType: 'asset',
+    targetId: asset.id,
+    metadata: { bytes: stored.bytes, durationMs: ready.durationMs },
+  });
   return ready;
 }

@@ -39,7 +39,7 @@ export interface GrantRecord {
   revokedAt?: string;
 }
 
-function toUser(r: Row): UserRecord {
+export function toUser(r: Row): UserRecord {
   const u: UserRecord = { id: String(r.id), subject: String(r.subject), createdAt: String(r.created_at) };
   const email = text(r.email);
   const displayName = text(r.display_name);
@@ -48,7 +48,7 @@ function toUser(r: Row): UserRecord {
   return u;
 }
 
-function toWorkspace(r: Row): WorkspaceRecord {
+export function toWorkspace(r: Row): WorkspaceRecord {
   return {
     id: String(r.id),
     ownerUserId: String(r.owner_user_id),
@@ -59,7 +59,7 @@ function toWorkspace(r: Row): WorkspaceRecord {
   };
 }
 
-function toSession(r: Row): SessionRecord {
+export function toSession(r: Row): SessionRecord {
   const s: SessionRecord = {
     id: String(r.id),
     userId: String(r.user_id),
@@ -76,7 +76,7 @@ function toSession(r: Row): SessionRecord {
   return s;
 }
 
-function toGrant(r: Row): GrantRecord {
+export function toGrant(r: Row): GrantRecord {
   const g: GrantRecord = {
     id: String(r.id),
     userId: String(r.user_id),

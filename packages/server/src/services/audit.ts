@@ -1,4 +1,4 @@
-import { recordAudit, type AuditActorType, type AuditOutcome } from '@clipsubtitles/storage';
+import type { AuditActorType, AuditOutcome } from '@clipsubtitles/storage';
 import type { Principal } from '../auth/principal';
 import type { AppContext } from '../context';
 import { redact } from '../logging';
@@ -17,12 +17,12 @@ export interface AuditInput {
 }
 
 /** Audit with mandatory redaction: task/tool/outcome metadata only, never content. */
-export function audit(ctx: AppContext, input: AuditInput): void {
+export async function audit(ctx: AppContext, input: AuditInput): Promise<void> {
   const actorType = input.actorType ?? (input.principal ? (input.principal.kind === 'bearer' ? 'agent' : 'user') : 'system');
   const workspaceId = input.workspaceId ?? input.principal?.workspaceId;
   const actorId = input.actorId ?? input.principal?.userId;
   try {
-    recordAudit(ctx.db, {
+    await ctx.db.recordAudit({
       ...(workspaceId ? { workspaceId } : {}),
       actorType,
       ...(actorId ? { actorId } : {}),

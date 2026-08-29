@@ -15,8 +15,8 @@ is a durable task; every paid step is an immutable quote.
 │ Next.js 3100 │  (rewrites → API)    └───────┬───────────────┬─────────────────┘
 └──────────────┘                              │               │
                                    packages/storage   packages/render + transcription
-                                   node:sqlite,       canvas rasterizer + ffmpeg,
-                                   file object store  provider adapters, VAD, benchmark
+                                   repository layer,  canvas rasterizer + ffmpeg,
+                                   file/GCS/R2 blobs  provider adapters, VAD, benchmark
                                               ▲
                                    packages/core (pure, isomorphic): normalize, segment,
                                    layout, patch, QA, pricing, hashing — used by the
@@ -34,6 +34,24 @@ is a durable task; every paid step is an immutable quote.
 | `render` | `Renderer` interface. `FfmpegCompositeRenderer`: motion `none` plans/rasterizes sparse PNG states into ffconcat; named motion presets evaluate exact-frame cubic/spring curves and stream one reusable padded Skia caption band through bounded FFmpeg stdin. Both produce MP4 / ProRes 4444 overlay / SRT / VTT / previews. | core |
 | `server` | Config, context, auth (session cookie + bearer, scopes, grants/revocation, CSRF, rate limits, signed URLs), services, REST routes, MCP server + route, worker + handlers, CLIs | all |
 | `web` | Editor + recovery library; runs `core` in the browser for sub-second style/timing feedback | contracts, core |
+
+## Deployment boundary
+
+The economical production target is three independently scaling linux/amd64
+Cloud Run images: public API, private push worker, and web. Cloud Tasks invokes
+the worker one job per instance; a transactional outbox repairs enqueue races.
+R2 is the preferred media store because provider-native signed downloads avoid
+GCS public-egress charges; GCS remains a supported fallback. Cloud-backed files
+are materialized into unique atomic scratch paths only while FFmpeg needs them,
+then released in `finally` cleanup.
+
+Persistence is asynchronous end to end through `DataStore`. Local/test runs use
+the serialized `SqliteStore`; production uses pooled `PostgresStore` transactions
+pinned with `AsyncLocalStorage`, guarded updates, row locks, and `SKIP LOCKED`
+task claims. The PostgreSQL 17 migration/concurrency suite covers migration
+startup, rollback/pinning, billing, idempotency, revision numbering, leases,
+outbox redelivery, and optimistic edits. Terraform still defaults
+`deploy_services=false` until the dedicated project, secrets, and plan are approved.
 
 ## Request path
 
@@ -62,6 +80,6 @@ Sizes are fractions of the shorter frame side; the browser overlay, Skia rasteri
 - Media, transcripts, titles, and file names are data: they never reach logs (redaction of content keys), never appear in audit metadata, and every MCP/REST project payload carries `contentNotice`.
 - Uploads are single bounded PUTs to signed targets; the token is claimed atomically before bytes are written. Remote imports resolve DNS inside the socket connect (no rebinding window), reject private ranges, cap size, and re-validate redirects.
 - Signed content URLs are HMAC-bound to `{kind, id, workspace, expiry}` and short-lived; persistent identity stays server-side.
-- Retention sweeps purge expired sources/exports and mark records `purged`; deleting a project purges immediately and cancels its tasks.
+- Retention sweeps purge expired sources/exports and mark records `purged`; deleting a project purges immediately and cancels its tasks. Push-mode deployments wake the scale-to-zero worker with an authenticated daily Cloud Scheduler job. Provider deletion failures retain their database pointers for retry rather than creating invisible orphan objects. See `docs/data-retention-policy.md`.
 - Output publishing is atomic enough to never orphan or half-publish: render blobs are written under `<workspace>/exports/<taskId>/` first, then every export row is inserted in one transaction; a failure discards rows and every blob under the prefix (row-less blobs included). Terminal task states — permanent failure, cancellation, lease reclaim — discard outputs the same way. Source uploads/imports delete their blob whenever the asset cannot be finalized.
 - Anonymous rate-limit keys use the socket address; `X-Forwarded-For`/`X-Real-IP` are honoured only when the peer is in `TRUSTED_PROXIES` (walked right-to-left past trusted hops). Ledger idempotency keys are unique per workspace.

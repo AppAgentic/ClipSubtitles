@@ -31,7 +31,7 @@ export function registerAccountRoutes(api: Api, ctx: AppContext): void {
       middleware: [auth, limited, requireScope('captions:read')] as const,
       responses: { 200: jsonResponse(MeSchema, 'Me'), ...errorResponses() },
     }),
-    (c) => c.json(getMe(ctx, c.get('principal')), 200),
+    async (c) => c.json(await getMe(ctx, c.get('principal')), 200),
   );
 
   api.openapi(
@@ -45,13 +45,13 @@ export function registerAccountRoutes(api: Api, ctx: AppContext): void {
       request: { body: jsonBody(UpdateWorkspaceRequestSchema) },
       responses: { 200: jsonResponse(WorkspaceSchema, 'Workspace'), ...errorResponses() },
     }),
-    (c) => {
+    async (c) => {
       const body = c.req.valid('json');
       const retention: { sourceDays?: number; exportDays?: number } = {};
       if (body.retention?.sourceDays !== undefined) retention.sourceDays = body.retention.sourceDays;
       if (body.retention?.exportDays !== undefined) retention.exportDays = body.retention.exportDays;
       return c.json(
-        updateWorkspaceSettings(ctx, c.get('principal'), {
+        await updateWorkspaceSettings(ctx, c.get('principal'), {
           ...(body.name ? { name: body.name } : {}),
           ...(body.retention ? { retention } : {}),
         }),
@@ -70,7 +70,7 @@ export function registerAccountRoutes(api: Api, ctx: AppContext): void {
       middleware: [auth, limited, requireScope('captions:read')] as const,
       responses: { 200: jsonResponse(ConnectionListSchema, 'Connections'), ...errorResponses() },
     }),
-    (c) => c.json({ connections: listConnections(ctx, c.get('principal')) }, 200),
+    async (c) => c.json({ connections: await listConnections(ctx, c.get('principal')) }, 200),
   );
 
   api.openapi(
@@ -84,9 +84,9 @@ export function registerAccountRoutes(api: Api, ctx: AppContext): void {
       request: { params: z.object({ grantId: GrantIdSchema }) },
       responses: { 200: jsonResponse(ConnectionSchema, 'Connection'), ...errorResponses() },
     }),
-    (c) => {
+    async (c) => {
       const { grantId } = c.req.valid('param');
-      return c.json(revokeConnection(ctx, c.get('principal'), grantId), 200);
+      return c.json(await revokeConnection(ctx, c.get('principal'), grantId), 200);
     },
   );
 
@@ -100,7 +100,7 @@ export function registerAccountRoutes(api: Api, ctx: AppContext): void {
       middleware: [auth, limited, requireScope('captions:read')] as const,
       responses: { 200: jsonResponse(CreditBalanceSchema, 'Balance'), ...errorResponses() },
     }),
-    (c) => c.json(creditBalance(ctx, c.get('principal').workspaceId), 200),
+    async (c) => c.json(await creditBalance(ctx, c.get('principal').workspaceId), 200),
   );
 
   api.openapi(
@@ -113,7 +113,7 @@ export function registerAccountRoutes(api: Api, ctx: AppContext): void {
       middleware: [auth, limited, requireScope('captions:read')] as const,
       responses: { 200: jsonResponse(LedgerListSchema, 'Ledger'), ...errorResponses() },
     }),
-    (c) => c.json({ entries: ledger(ctx, c.get('principal').workspaceId) }, 200),
+    async (c) => c.json({ entries: await ledger(ctx, c.get('principal').workspaceId) }, 200),
   );
 
   api.openapi(

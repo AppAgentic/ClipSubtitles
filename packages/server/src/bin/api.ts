@@ -8,7 +8,7 @@ import { createApp } from '../http/app';
 loadDotEnv();
 if (!process.env.DATA_DIR) process.env.DATA_DIR = path.join(findRepoRoot(), '.data');
 const config = loadConfig();
-const ctx = createAppContext(config);
+const ctx = await createAppContext(config);
 const app = createApp(ctx);
 
 const server = serve({ fetch: app.fetch, port: config.apiPort, hostname: '0.0.0.0' }, (info) => {
@@ -21,8 +21,7 @@ const server = serve({ fetch: app.fetch, port: config.apiPort, hostname: '0.0.0.
 function shutdown(signal: string): void {
   ctx.logger.info('shutting down', { signal });
   server.close(() => {
-    ctx.db.close();
-    process.exit(0);
+    void ctx.db.close().finally(() => process.exit(0));
   });
   setTimeout(() => process.exit(0), 3000).unref();
 }

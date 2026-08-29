@@ -48,7 +48,7 @@ export interface RevisionRecord {
   createdAt: string;
 }
 
-function toProject(r: Row): ProjectRecord {
+export function toProject(r: Row): ProjectRecord {
   const p: ProjectRecord = {
     id: String(r.id),
     workspaceId: String(r.workspace_id),
@@ -74,7 +74,7 @@ function toProject(r: Row): ProjectRecord {
   return p;
 }
 
-function toRevision(r: Row): RevisionRecord {
+export function toRevision(r: Row): RevisionRecord {
   const rev: RevisionRecord = {
     id: String(r.id),
     projectId: String(r.project_id),

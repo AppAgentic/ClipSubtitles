@@ -11,17 +11,9 @@ import {
 } from '@clipsubtitles/contracts';
 import { quoteRender } from '@clipsubtitles/core';
 import {
-  consumeQuote,
-  createQuote,
   effectiveStatus,
-  enqueueTask,
-  getQuote,
-  invalidateOpenQuotes,
-  reserveCredits,
   toPublicQuote,
   toPublicTask,
-  transaction,
-  updateProjectMeta,
   type AssetRecord,
   type ProjectRecord,
   type RevisionRecord,
@@ -31,31 +23,32 @@ import type { AppContext } from '../context';
 import { ApiError } from '../errors';
 import type { GenerateCaptionsInput, RenderExportInput, RenderPreviewInput } from '../worker/inputs';
 import { audit } from './audit';
+import { dispatchTaskBestEffort } from './task-dispatch';
 import { requireProject } from './projects';
 import { buildProjectView, currentRevision, projectAsset } from './views';
 
-function requireReadySource(ctx: AppContext, project: ProjectRecord): AssetRecord {
-  const asset = projectAsset(ctx, project);
+async function requireReadySource(ctx: AppContext, project: ProjectRecord): Promise<AssetRecord> {
+  const asset = await projectAsset(ctx, project);
   if (!asset || asset.status !== 'ready' || !asset.storageKey) throw new ApiError('SOURCE_NOT_READY');
   if (asset.durationMs === undefined || !asset.width || !asset.height) throw new ApiError('SOURCE_NOT_READY');
   return asset;
 }
 
-function requireTranscript(ctx: AppContext, project: ProjectRecord): RevisionRecord {
-  const revision = currentRevision(ctx, project);
+async function requireTranscript(ctx: AppContext, project: ProjectRecord): Promise<RevisionRecord> {
+  const revision = await currentRevision(ctx, project);
   if (!revision || revision.words.length === 0) throw new ApiError('TRANSCRIPT_MISSING');
   return revision;
 }
 
-export function startGeneration(
+export async function startGeneration(
   ctx: AppContext,
   principal: Principal,
   projectId: string,
   req: GenerateCaptionsRequest,
-): { task: Task; project: CaptionProject } {
-  return transaction(ctx.db, () => {
-    const project = requireProject(ctx, principal, projectId);
-    const asset = requireReadySource(ctx, project);
+): Promise<{ task: Task; project: CaptionProject }> {
+  const result = await ctx.db.transaction(async () => {
+    const project = await requireProject(ctx, principal, projectId);
+    const asset = await requireReadySource(ctx, project);
     if (req.provider) {
       const p = ctx.providers.byId(req.provider);
       if (!p || !p.isConfigured()) {
@@ -74,7 +67,7 @@ export function startGeneration(
       ...(req.provider ? { provider: req.provider } : {}),
     };
     const now = ctx.clock.iso();
-    const task = enqueueTask(ctx.db, {
+    const task = await ctx.db.enqueueTask({
       workspaceId: principal.workspaceId,
       projectId: project.id,
       kind: 'generate_captions',
@@ -83,21 +76,23 @@ export function startGeneration(
       maxAttempts: 3,
       now,
     });
-    const updated = updateProjectMeta(ctx.db, project.id, { status: 'transcribing' }, now) ?? project;
-    audit(ctx, { principal, action: 'captions.generate', targetType: 'task', targetId: task.id, metadata: { projectId: project.id, provider: req.provider ?? 'chain' } });
-    return { task: toPublicTask(task), project: buildProjectView(ctx, updated, { includePages: false }) };
+    const updated = (await ctx.db.updateProjectMeta(project.id, { status: 'transcribing' }, now)) ?? project;
+    await audit(ctx, { principal, action: 'captions.generate', targetType: 'task', targetId: task.id, metadata: { projectId: project.id, provider: req.provider ?? 'chain' } });
+    return { task: toPublicTask(task), project: await buildProjectView(ctx, updated, { includePages: false }) };
   });
+  await dispatchTaskBestEffort(ctx, result.task.id);
+  return result;
 }
 
-export function createRenderQuote(ctx: AppContext, principal: Principal, projectId: string, req: CreateRenderQuoteRequest): RenderQuote {
-  const project = requireProject(ctx, principal, projectId);
+export async function createRenderQuote(ctx: AppContext, principal: Principal, projectId: string, req: CreateRenderQuoteRequest): Promise<RenderQuote> {
+  const project = await requireProject(ctx, principal, projectId);
   if (req.expectedVersion !== undefined && req.expectedVersion !== project.version) throw new ApiError('VERSION_CONFLICT');
-  const asset = requireReadySource(ctx, project);
-  requireTranscript(ctx, project);
+  const asset = await requireReadySource(ctx, project);
+  await requireTranscript(ctx, project);
   const settings = req.settings ?? DEFAULT_OUTPUT_SETTINGS;
   const priced = quoteRender({ durationMs: asset.durationMs ?? 0, settings, source: { width: asset.width ?? 1080, height: asset.height ?? 1920 } });
   const now = ctx.clock.now();
-  const quote = createQuote(ctx.db, {
+  const quote = await ctx.db.createQuote({
     workspaceId: principal.workspaceId,
     projectId: project.id,
     projectVersion: project.version,
@@ -111,7 +106,7 @@ export function createRenderQuote(ctx: AppContext, principal: Principal, project
     now: new Date(now).toISOString(),
     expiresAt: new Date(now + ctx.config.limits.quoteTtlSeconds * 1000).toISOString(),
   });
-  audit(ctx, { principal, action: 'render.quote', targetType: 'quote', targetId: quote.id, metadata: { projectId: project.id, creditCost: quote.creditCost, outputs: settings.outputs } });
+  await audit(ctx, { principal, action: 'render.quote', targetType: 'quote', targetId: quote.id, metadata: { projectId: project.id, creditCost: quote.creditCost, outputs: settings.outputs } });
   return toPublicQuote(quote, new Date(now).toISOString());
 }
 
@@ -125,10 +120,10 @@ export interface StartRenderResult {
  * Consume an approved, unexpired quote exactly once: reserve credits, snapshot
  * the exact content, and enqueue the render — all in one transaction.
  */
-export function startRender(ctx: AppContext, principal: Principal, projectId: string, req: CreateRenderRequest): StartRenderResult {
-  return transaction(ctx.db, () => {
-    const project = requireProject(ctx, principal, projectId);
-    const quote = getQuote(ctx.db, principal.workspaceId, req.quoteId);
+export async function startRender(ctx: AppContext, principal: Principal, projectId: string, req: CreateRenderRequest): Promise<StartRenderResult> {
+  const result = await ctx.db.transaction(async () => {
+    const project = await requireProject(ctx, principal, projectId);
+    const quote = await ctx.db.getQuote(principal.workspaceId, req.quoteId);
     if (!quote || quote.projectId !== project.id) throw new ApiError('NOT_FOUND', 'Render quote not found for this project.');
     const nowIso = ctx.clock.iso();
     const status = effectiveStatus(quote, nowIso);
@@ -136,12 +131,12 @@ export function startRender(ctx: AppContext, principal: Principal, projectId: st
     if (status === 'invalidated') throw new ApiError('QUOTE_INVALIDATED');
     if (status === 'consumed') throw new ApiError('QUOTE_INVALIDATED', 'This quote was already used to start a render.');
     if (quote.projectVersion !== project.version || quote.contentHash !== project.contentHash || quote.priceVersion !== PRICE_VERSION) {
-      invalidateOpenQuotes(ctx.db, project.id, 'project or price changed');
+      await ctx.db.invalidateOpenQuotes(project.id, 'project or price changed');
       throw new ApiError('QUOTE_INVALIDATED');
     }
     if (req.approvedCreditCost !== quote.creditCost) throw new ApiError('QUOTE_MISMATCH');
-    const asset = requireReadySource(ctx, project);
-    const revision = requireTranscript(ctx, project);
+    const asset = await requireReadySource(ctx, project);
+    const revision = await requireTranscript(ctx, project);
     const input: RenderExportInput = {
       projectId: project.id,
       assetId: asset.id,
@@ -154,7 +149,7 @@ export function startRender(ctx: AppContext, principal: Principal, projectId: st
       settings: quote.settings,
       creditCost: quote.creditCost,
     };
-    const task = enqueueTask(ctx.db, {
+    const task = await ctx.db.enqueueTask({
       workspaceId: principal.workspaceId,
       projectId: project.id,
       kind: 'render_export',
@@ -163,10 +158,10 @@ export function startRender(ctx: AppContext, principal: Principal, projectId: st
       maxAttempts: 2,
       now: nowIso,
     });
-    const reservation = reserveCredits(ctx.db, { workspaceId: principal.workspaceId, quoteId: quote.id, taskId: task.id, amount: quote.creditCost, now: nowIso });
-    const consumed = consumeQuote(ctx.db, { workspaceId: principal.workspaceId, id: quote.id, taskId: task.id, now: nowIso });
+    const reservation = await ctx.db.reserveCredits({ workspaceId: principal.workspaceId, quoteId: quote.id, taskId: task.id, amount: quote.creditCost, now: nowIso });
+    const consumed = await ctx.db.consumeQuote({ workspaceId: principal.workspaceId, id: quote.id, taskId: task.id, now: nowIso });
     if (consumed.outcome !== 'consumed') throw new ApiError('QUOTE_INVALIDATED');
-    audit(ctx, {
+    await audit(ctx, {
       principal,
       action: 'render.start',
       targetType: 'task',
@@ -175,13 +170,15 @@ export function startRender(ctx: AppContext, principal: Principal, projectId: st
     });
     return { task: toPublicTask(task), quote: toPublicQuote(consumed.quote ?? quote, nowIso), reservedCredits: reservation.reservation.amount };
   });
+  await dispatchTaskBestEffort(ctx, result.task.id);
+  return result;
 }
 
-export function startPreview(ctx: AppContext, principal: Principal, projectId: string, req: CreatePreviewRequest): Task {
-  return transaction(ctx.db, () => {
-    const project = requireProject(ctx, principal, projectId);
-    const asset = requireReadySource(ctx, project);
-    const revision = requireTranscript(ctx, project);
+export async function startPreview(ctx: AppContext, principal: Principal, projectId: string, req: CreatePreviewRequest): Promise<Task> {
+  const result = await ctx.db.transaction(async () => {
+    const project = await requireProject(ctx, principal, projectId);
+    const asset = await requireReadySource(ctx, project);
+    const revision = await requireTranscript(ctx, project);
     const input: RenderPreviewInput = {
       projectId: project.id,
       assetId: asset.id,
@@ -194,7 +191,7 @@ export function startPreview(ctx: AppContext, principal: Principal, projectId: s
       durationMs: req.durationMs ?? 8000,
       resolution: req.resolution ?? '480p',
     };
-    const task = enqueueTask(ctx.db, {
+    const task = await ctx.db.enqueueTask({
       workspaceId: principal.workspaceId,
       projectId: project.id,
       kind: 'render_preview',
@@ -203,7 +200,9 @@ export function startPreview(ctx: AppContext, principal: Principal, projectId: s
       maxAttempts: 2,
       now: ctx.clock.iso(),
     });
-    audit(ctx, { principal, action: 'preview.start', targetType: 'task', targetId: task.id, metadata: { projectId: project.id } });
+    await audit(ctx, { principal, action: 'preview.start', targetType: 'task', targetId: task.id, metadata: { projectId: project.id } });
     return toPublicTask(task);
   });
+  await dispatchTaskBestEffort(ctx, result.id);
+  return result;
 }

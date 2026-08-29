@@ -1,0 +1,7 @@
+output "artifact_repository" { value = google_artifact_registry_repository.images.name }
+output "media_bucket" { value = google_storage_bucket.media.name }
+output "task_queue" { value = google_cloud_tasks_queue.renders.name }
+output "cloud_sql_connection_name" { value = google_sql_database_instance.postgres.connection_name }
+output "worker_service" { value = try(google_cloud_run_v2_service.worker[0].uri, null) }
+output "api_service" { value = try(google_cloud_run_v2_service.api[0].uri, null) }
+output "web_service" { value = try(google_cloud_run_v2_service.web[0].uri, null) }

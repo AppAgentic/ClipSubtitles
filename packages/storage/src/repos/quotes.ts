@@ -7,7 +7,7 @@ export interface QuoteRecord extends RenderQuote {
   consumedByTaskId?: string;
 }
 
-function toQuote(r: Row): QuoteRecord {
+export function toQuote(r: Row): QuoteRecord {
   const q: QuoteRecord = {
     id: String(r.id),
     workspaceId: String(r.workspace_id),

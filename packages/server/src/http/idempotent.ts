@@ -1,7 +1,6 @@
 import type { Context } from 'hono';
 import { IdempotencyKeySchema } from '@clipsubtitles/contracts';
 import { fingerprint } from '@clipsubtitles/core';
-import { abortIdempotent, beginIdempotent, completeIdempotent } from '@clipsubtitles/storage';
 import type { AppEnv } from '../auth/middleware';
 import type { AppContext } from '../context';
 import { ApiError } from '../errors';
@@ -33,7 +32,7 @@ export async function withIdempotency<T>(
 ): Promise<IdempotentOutcome<T>> {
   const status = input.status ?? 201;
   if (!input.key) return { status, body: await run(), replayed: false };
-  const begin = beginIdempotent(ctx.db, {
+  const begin = await ctx.db.beginIdempotent({
     workspaceId: input.workspaceId,
     scope: input.scope,
     key: input.key,
@@ -45,10 +44,10 @@ export async function withIdempotency<T>(
   if (begin.kind === 'in_progress') throw new ApiError('IDEMPOTENCY_IN_PROGRESS');
   try {
     const body = await run();
-    completeIdempotent(ctx.db, { workspaceId: input.workspaceId, scope: input.scope, key: input.key, statusCode: status, response: body, now: ctx.clock.iso() });
+    await ctx.db.completeIdempotent({ workspaceId: input.workspaceId, scope: input.scope, key: input.key, statusCode: status, response: body, now: ctx.clock.iso() });
     return { status, body, replayed: false };
   } catch (err) {
-    abortIdempotent(ctx.db, { workspaceId: input.workspaceId, scope: input.scope, key: input.key });
+    await ctx.db.abortIdempotent({ workspaceId: input.workspaceId, scope: input.scope, key: input.key });
     throw err;
   }
 }

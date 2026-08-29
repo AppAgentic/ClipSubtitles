@@ -23,7 +23,7 @@ export interface AuditEventRecord extends Omit<AuditEventInput, 'now'> {
   createdAt: string;
 }
 
-function toEvent(r: Row): AuditEventRecord {
+export function toEvent(r: Row): AuditEventRecord {
   const e: AuditEventRecord = {
     id: String(r.id),
     actorType: String(r.actor_type) as AuditActorType,

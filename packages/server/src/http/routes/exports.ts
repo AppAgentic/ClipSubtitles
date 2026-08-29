@@ -1,8 +1,20 @@
 import { Readable } from 'node:stream';
 import { createRoute, z } from '@hono/zod-openapi';
-import { AssetIdSchema, ExportIdSchema, ExportListSchema, ExportSchema, ProjectIdSchema, SourceAssetSchema } from '@clipsubtitles/contracts';
-import { getAssetById, getExport } from '@clipsubtitles/storage';
-import { authenticate, clientIp, principalKey, rateLimit, requireScope } from '../../auth/middleware';
+import {
+  AssetIdSchema,
+  ExportIdSchema,
+  ExportListSchema,
+  ExportSchema,
+  ProjectIdSchema,
+  SourceAssetSchema,
+} from '@clipsubtitles/contracts';
+import {
+  authenticate,
+  clientIp,
+  principalKey,
+  rateLimit,
+  requireScope,
+} from '../../auth/middleware';
 import { verifyContentSignature } from '../../auth/urls';
 import type { AppContext } from '../../context';
 import { ApiError } from '../../errors';
@@ -10,7 +22,7 @@ import { getExportView, listExports } from '../../services/account';
 import { receiveUpload } from '../../services/uploads';
 import { assetView } from '../../services/views';
 import { SECURITY, errorResponses, jsonResponse, type Api } from '../openapi';
-import { streamFile } from '../stream';
+import { streamObject } from '../stream';
 
 const SignedQuery = z.object({
   exp: z.coerce.number().int(),
@@ -19,7 +31,12 @@ const SignedQuery = z.object({
   download: z.enum(['1', '0']).optional(),
 });
 
-function checkSignature(ctx: AppContext, kind: 'asset' | 'export' | 'upload', id: string, q: z.infer<typeof SignedQuery>): void {
+function checkSignature(
+  ctx: AppContext,
+  kind: 'asset' | 'export' | 'upload',
+  id: string,
+  q: z.infer<typeof SignedQuery>,
+): void {
   const ok = verifyContentSignature({
     secret: ctx.config.auth.localSecret,
     kind,
@@ -45,12 +62,25 @@ export function registerExportRoutes(api: Api, ctx: AppContext): void {
       summary: 'List exports in the caller workspace',
       security: SECURITY,
       middleware: [auth, limited, requireScope('captions:read')] as const,
-      request: { query: z.object({ projectId: ProjectIdSchema.optional(), limit: z.coerce.number().int().min(1).max(200).optional() }) },
+      request: {
+        query: z.object({
+          projectId: ProjectIdSchema.optional(),
+          limit: z.coerce.number().int().min(1).max(200).optional(),
+        }),
+      },
       responses: { 200: jsonResponse(ExportListSchema, 'Exports'), ...errorResponses() },
     }),
-    (c) => {
+    async (c) => {
       const q = c.req.valid('query');
-      return c.json({ exports: listExports(ctx, c.get('principal'), { ...(q.projectId ? { projectId: q.projectId } : {}), limit: q.limit ?? 50 }) }, 200);
+      return c.json(
+        {
+          exports: await listExports(ctx, c.get('principal'), {
+            ...(q.projectId ? { projectId: q.projectId } : {}),
+            limit: q.limit ?? 50,
+          }),
+        },
+        200,
+      );
     },
   );
 
@@ -63,11 +93,14 @@ export function registerExportRoutes(api: Api, ctx: AppContext): void {
       security: SECURITY,
       middleware: [auth, limited, requireScope('captions:read')] as const,
       request: { params: z.object({ exportId: ExportIdSchema }) },
-      responses: { 200: jsonResponse(ExportSchema, 'Export'), ...errorResponses('RETENTION_EXPIRED') },
+      responses: {
+        200: jsonResponse(ExportSchema, 'Export'),
+        ...errorResponses('RETENTION_EXPIRED'),
+      },
     }),
-    (c) => {
+    async (c) => {
       const { exportId } = c.req.valid('param');
-      return c.json(getExportView(ctx, c.get('principal'), exportId), 200);
+      return c.json(await getExportView(ctx, c.get('principal'), exportId), 200);
     },
   );
 
@@ -79,17 +112,31 @@ export function registerExportRoutes(api: Api, ctx: AppContext): void {
       summary: 'Download export bytes via a signed, short-lived URL (supports Range)',
       middleware: [anon] as const,
       request: { params: z.object({ exportId: ExportIdSchema }), query: SignedQuery },
-      responses: { 200: { description: 'File bytes' }, 206: { description: 'Partial content' }, ...errorResponses('RETENTION_EXPIRED') },
+      responses: {
+        200: { description: 'File bytes' },
+        206: { description: 'Partial content' },
+        ...errorResponses('RETENTION_EXPIRED'),
+      },
     }),
     async (c) => {
       const { exportId } = c.req.valid('param');
       const q = c.req.valid('query');
       checkSignature(ctx, 'export', exportId, q);
-      const e = getExport(ctx.db, q.ws, exportId);
+      const e = await ctx.db.getExport(q.ws, exportId);
       if (!e) throw new ApiError('NOT_FOUND');
       if (e.status === 'purged') throw new ApiError('RETENTION_EXPIRED');
-      return streamFile({
-        path: ctx.store.localPath(e.storageKey),
+      if (ctx.store.signedDownloadUrl) {
+        const url = await ctx.store.signedDownloadUrl(e.storageKey, {
+          expiresSeconds: Math.max(30, q.exp - Math.floor(ctx.clock.now() / 1000)),
+          fileName: e.fileName,
+          download: q.download === '1',
+          contentType: e.mimeType,
+        });
+        return c.redirect(url, 302);
+      }
+      return streamObject({
+        store: ctx.store,
+        key: e.storageKey,
         mimeType: e.mimeType,
         fileName: e.fileName,
         download: q.download === '1',
@@ -106,16 +153,34 @@ export function registerExportRoutes(api: Api, ctx: AppContext): void {
       summary: 'Stream source media for the editor via a signed, short-lived URL (supports Range)',
       middleware: [anon] as const,
       request: { params: z.object({ assetId: AssetIdSchema }), query: SignedQuery },
-      responses: { 200: { description: 'Media bytes' }, 206: { description: 'Partial content' }, ...errorResponses('RETENTION_EXPIRED') },
+      responses: {
+        200: { description: 'Media bytes' },
+        206: { description: 'Partial content' },
+        ...errorResponses('RETENTION_EXPIRED'),
+      },
     }),
     async (c) => {
       const { assetId } = c.req.valid('param');
       const q = c.req.valid('query');
       checkSignature(ctx, 'asset', assetId, q);
-      const asset = getAssetById(ctx.db, assetId);
+      const asset = await ctx.db.getAssetById(assetId);
       if (!asset || asset.workspaceId !== q.ws) throw new ApiError('NOT_FOUND');
       if (asset.status === 'purged' || !asset.storageKey) throw new ApiError('RETENTION_EXPIRED');
-      return streamFile({ path: ctx.store.localPath(asset.storageKey), mimeType: asset.mimeType ?? 'video/mp4', rangeHeader: c.req.header('range') });
+      if (ctx.store.signedDownloadUrl) {
+        const url = await ctx.store.signedDownloadUrl(asset.storageKey, {
+          expiresSeconds: Math.max(30, q.exp - Math.floor(ctx.clock.now() / 1000)),
+          ...(asset.fileName ? { fileName: asset.fileName } : {}),
+          download: false,
+          ...(asset.mimeType ? { contentType: asset.mimeType } : {}),
+        });
+        return c.redirect(url, 302);
+      }
+      return streamObject({
+        store: ctx.store,
+        key: asset.storageKey,
+        mimeType: asset.mimeType ?? 'video/mp4',
+        rangeHeader: c.req.header('range'),
+      });
     },
   );
 
@@ -125,9 +190,26 @@ export function registerExportRoutes(api: Api, ctx: AppContext): void {
       path: '/v1/uploads/{uploadToken}',
       tags: ['Projects'],
       summary: 'Upload the source media in a single bounded PUT to a signed upload target',
-      middleware: [rateLimit(ctx, 'uploads', (c) => `ws:${c.req.query('ws') ?? clientIp(c, ctx.config.trustedProxies)}`)] as const,
-      request: { params: z.object({ uploadToken: z.string().min(16).max(128) }), query: SignedQuery },
-      responses: { 200: jsonResponse(z.object({ asset: SourceAssetSchema }), 'Source stored and probed'), ...errorResponses('PAYLOAD_TOO_LARGE', 'UNSUPPORTED_MEDIA', 'CONFLICT', 'RETENTION_EXPIRED') },
+      middleware: [
+        rateLimit(
+          ctx,
+          'uploads',
+          (c) => `ws:${c.req.query('ws') ?? clientIp(c, ctx.config.trustedProxies)}`,
+        ),
+      ] as const,
+      request: {
+        params: z.object({ uploadToken: z.string().min(16).max(128) }),
+        query: SignedQuery,
+      },
+      responses: {
+        200: jsonResponse(z.object({ asset: SourceAssetSchema }), 'Source stored and probed'),
+        ...errorResponses(
+          'PAYLOAD_TOO_LARGE',
+          'UNSUPPORTED_MEDIA',
+          'CONFLICT',
+          'RETENTION_EXPIRED',
+        ),
+      },
     }),
     async (c) => {
       const { uploadToken } = c.req.valid('param');
@@ -140,7 +222,9 @@ export function registerExportRoutes(api: Api, ctx: AppContext): void {
         token: uploadToken,
         workspaceId: q.ws,
         stream: Readable.fromWeb(body as never),
-        ...(c.req.header('content-type') ? { contentType: c.req.header('content-type') as string } : {}),
+        ...(c.req.header('content-type')
+          ? { contentType: c.req.header('content-type') as string }
+          : {}),
         ...(lengthHeader ? { contentLength: Number(lengthHeader) } : {}),
       });
       return c.json({ asset: assetView(ctx, asset) }, 200);

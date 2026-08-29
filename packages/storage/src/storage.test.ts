@@ -30,15 +30,20 @@ import { commitProjectEdit, createProject, createRevision, getProject, getRevisi
 import { consumeQuote, createQuote, effectiveStatus, expireOpenQuotes, getQuote, invalidateOpenQuotes } from './repos/quotes';
 import {
   claimNextTask,
+  claimTaskById,
   completeTask,
   enqueueTask,
   failTask,
+  getTaskDispatch,
   getTask,
   heartbeatTask,
+  listPendingDispatches,
   listTasks,
+  markTaskDispatched,
   markCancelled,
   reclaimExpiredLeases,
   requestCancel,
+  recordTaskDispatchFailure,
   toPublicTask,
 } from './repos/tasks';
 
@@ -196,6 +201,25 @@ describe('assets and uploads', () => {
 });
 
 describe('task queue', () => {
+  it('records dispatch intent atomically and reconciles failures', () => {
+    const task = enqueueTask(db, { workspaceId: ws, kind: 'render_export', input: {}, now: T0 });
+    expect(listPendingDispatches(db, T0)).toEqual([
+      { taskId: task.id, availableAt: T0, attempts: 0, generation: 0 },
+    ]);
+    recordTaskDispatchFailure(db, task.id, 0, plus(1), 'UNAVAILABLE');
+    expect(listPendingDispatches(db, plus(1))[0]?.attempts).toBe(1);
+    expect(markTaskDispatched(db, task.id, 0, plus(2))).toBe(true);
+    expect(markTaskDispatched(db, task.id, 0, plus(3))).toBe(false);
+    expect(listPendingDispatches(db, plus(3))).toHaveLength(0);
+  });
+
+  it('claims a pushed task by id exactly once', () => {
+    const task = enqueueTask(db, { workspaceId: ws, kind: 'render_preview', input: {}, now: T0 });
+    expect(claimTaskById(db, { id: task.id, workerId: 'push-1', now: T0, leaseMs: 1000 })?.id).toBe(task.id);
+    expect(claimTaskById(db, { id: task.id, workerId: 'push-2', now: T0, leaseMs: 1000 })).toBeNull();
+    expect(claimTaskById(db, { id: 'task_missing', workerId: 'push-2', now: T0, leaseMs: 1000 })).toBeNull();
+  });
+
   it('claims, heartbeats, completes, and lists tasks with public projection', () => {
     const p = seedProject(ws);
     const t = enqueueTask(db, { workspaceId: ws, projectId: p.id, kind: 'generate_captions', input: { a: 1 }, now: T0 });
@@ -225,9 +249,12 @@ describe('task queue', () => {
 
   it('retries retryable failures with backoff until attempts run out', () => {
     const t = enqueueTask(db, { workspaceId: ws, kind: 'render_preview', input: {}, maxAttempts: 2, now: T0 });
+    expect(markTaskDispatched(db, t.id, 0, T0)).toBe(true);
     claimNextTask(db, { workerId: 'w1', now: T0, leaseMs: 1000 });
     const first = failTask(db, { id: t.id, workerId: 'w1', error: { code: 'PROVIDER_UNAVAILABLE', message: 'x', retryable: true }, now: plus(1), backoffMs: 500 });
     expect(first.outcome).toBe('requeued');
+    expect(getTaskDispatch(db, t.id)?.generation).toBe(1);
+    expect(getTaskDispatch(db, t.id)?.deliveredAt).toBeUndefined();
     expect(claimNextTask(db, { workerId: 'w1', now: plus(100), leaseMs: 1000 })).toBeNull();
     const again = claimNextTask(db, { workerId: 'w1', now: plus(600), leaseMs: 1000 });
     expect(again?.attempts).toBe(2);
@@ -259,9 +286,12 @@ describe('task queue', () => {
 
   it('reclaims expired leases (requeue, then fail when out of attempts) and reports cancelled ones', () => {
     const t = enqueueTask(db, { workspaceId: ws, kind: 'generate_captions', input: {}, maxAttempts: 2, now: T0 });
+    expect(markTaskDispatched(db, t.id, 0, T0)).toBe(true);
     claimNextTask(db, { workerId: 'w1', now: T0, leaseMs: 1000 });
     expect(reclaimExpiredLeases(db, plus(500))).toEqual({ requeued: [], failed: [], cancelled: [] });
     expect(reclaimExpiredLeases(db, plus(1500))).toEqual({ requeued: [t.id], failed: [], cancelled: [] });
+    expect(getTaskDispatch(db, t.id)?.generation).toBe(1);
+    expect(getTaskDispatch(db, t.id)?.deliveredAt).toBeUndefined();
     claimNextTask(db, { workerId: 'w2', now: plus(1600), leaseMs: 1000 });
     expect(reclaimExpiredLeases(db, plus(3000))).toEqual({ requeued: [], failed: [t.id], cancelled: [] });
     expect(getTask(db, ws, t.id)?.error?.code).toBe('INTERNAL');
@@ -438,9 +468,9 @@ describe('FileObjectStore', () => {
     expect(await store.stat('ws_a/exports/a.txt')).toEqual({ bytes: 5 });
     expect(await store.delete('ws_a/exports/a.txt')).toBe(true);
     expect(await store.delete('ws_a/exports/a.txt')).toBe(false);
-    expect(() => store.localPath('../etc/passwd')).toThrowError(ObjectKeyError);
-    expect(() => store.localPath('ws_a/../x')).toThrowError(ObjectKeyError);
-    expect(() => store.localPath('/abs')).toThrowError(ObjectKeyError);
+    await expect(store.materialize('../etc/passwd')).rejects.toThrowError(ObjectKeyError);
+    await expect(store.materialize('ws_a/../x')).rejects.toThrowError(ObjectKeyError);
+    await expect(store.materialize('/abs')).rejects.toThrowError(ObjectKeyError);
   });
 
   it('lists and deletes everything under a prefix, including blobs no row references', async () => {

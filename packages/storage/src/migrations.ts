@@ -306,4 +306,29 @@ ALTER TABLE credit_ledger_v2 RENAME TO credit_ledger;
 CREATE INDEX ledger_workspace ON credit_ledger(workspace_id, created_at);
 `,
   },
+  {
+    version: 3,
+    name: 'task_dispatch_outbox',
+    sql: `
+CREATE TABLE task_dispatch_outbox (
+  task_id TEXT PRIMARY KEY REFERENCES tasks(id) ON DELETE CASCADE,
+  available_at TEXT NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  last_error_code TEXT,
+  delivered_at TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX task_dispatch_pending ON task_dispatch_outbox(delivered_at, available_at, updated_at);
+INSERT INTO task_dispatch_outbox (task_id, available_at, created_at, updated_at)
+  SELECT id, run_after, created_at, updated_at FROM tasks WHERE status = 'queued';
+`,
+  },
+  {
+    version: 4,
+    name: 'task_dispatch_generations',
+    sql: `
+ALTER TABLE task_dispatch_outbox ADD COLUMN generation INTEGER NOT NULL DEFAULT 0;
+`,
+  },
 ];

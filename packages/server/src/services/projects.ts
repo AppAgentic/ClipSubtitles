@@ -18,30 +18,7 @@ import {
   segmentationForStyle,
   stateContentHash,
 } from '@clipsubtitles/core';
-import {
-  commitProjectEdit,
-  createAsset,
-  createProject as createProjectRecord,
-  createRevision,
-  createUpload,
-  enqueueTask,
-  getAssetById,
-  getProject,
-  invalidateOpenQuotes,
-  listAssetsForProject,
-  listExportsForProjectAll,
-  listProjects as listProjectRecords,
-  listTasks,
-  markAssetPurged,
-  markExportPurged,
-  requestCancel,
-  softDeleteProject,
-  toPublicTask,
-  transaction,
-  updateAsset,
-  updateProjectMeta,
-  type ProjectRecord,
-} from '@clipsubtitles/storage';
+import { toPublicTask, type ProjectRecord } from '@clipsubtitles/storage';
 import type { Principal } from '../auth/principal';
 import { hashToken, randomToken } from '../auth/tokens';
 import { signContentUrl } from '../auth/urls';
@@ -49,22 +26,37 @@ import type { AppContext } from '../context';
 import { ApiError } from '../errors';
 import { audit } from './audit';
 import { releaseForTask } from './billing';
+import { dispatchTaskBestEffort } from './task-dispatch';
 import { guessFileName, sanitizeFileName, validateSourceUrl } from './source-policy';
-import { buildProjectSummary, buildProjectView, currentRevision, loadCaptionState, type ProjectViewOptions } from './views';
+import {
+  buildProjectSummary,
+  buildProjectView,
+  currentRevision,
+  loadCaptionState,
+  type ProjectViewOptions,
+} from './views';
 
 const UPLOAD_TTL_SECONDS = 3600;
 
-export function requireProject(ctx: AppContext, principal: Principal, projectId: string): ProjectRecord {
-  const project = getProject(ctx.db, principal.workspaceId, projectId);
+export async function requireProject(
+  ctx: AppContext,
+  principal: Principal,
+  projectId: string,
+): Promise<ProjectRecord> {
+  const project = await ctx.db.getProject(principal.workspaceId, projectId);
   if (!project) throw new ApiError('NOT_FOUND');
   return project;
 }
 
-function uploadTarget(ctx: AppContext, project: ProjectRecord, assetId: string): UploadTarget {
+async function uploadTarget(
+  ctx: AppContext,
+  project: ProjectRecord,
+  assetId: string,
+): Promise<UploadTarget> {
   const token = randomToken(32);
   const now = ctx.clock.now();
   const expiresAtSeconds = Math.floor(now / 1000) + UPLOAD_TTL_SECONDS;
-  const upload = createUpload(ctx.db, {
+  const upload = await ctx.db.createUpload({
     workspaceId: project.workspaceId,
     projectId: project.id,
     assetId,
@@ -91,15 +83,23 @@ function uploadTarget(ctx: AppContext, project: ProjectRecord, assetId: string):
   };
 }
 
-export function createProject(ctx: AppContext, principal: Principal, input: CreateProjectRequest): CreateProjectResponse {
+export async function createProject(
+  ctx: AppContext,
+  principal: Principal,
+  input: CreateProjectRequest,
+): Promise<CreateProjectResponse> {
   const style = defaultStyle();
   const segmentation = segmentationForStyle(style, DEFAULT_SEGMENTATION);
   const now = ctx.clock.iso();
-  const sourceUrl = input.sourceUrl ? validateSourceUrl(input.sourceUrl, { allowPrivate: ctx.config.limits.allowPrivateSourceUrls }) : null;
-  const title = input.title ?? (sourceUrl ? guessFileName(sourceUrl) : sanitizeFileName(input.fileName, 'Untitled project'));
+  const sourceUrl = input.sourceUrl
+    ? validateSourceUrl(input.sourceUrl, { allowPrivate: ctx.config.limits.allowPrivateSourceUrls })
+    : null;
+  const title =
+    input.title ??
+    (sourceUrl ? guessFileName(sourceUrl) : sanitizeFileName(input.fileName, 'Untitled project'));
 
-  return transaction(ctx.db, () => {
-    const project = createProjectRecord(ctx.db, {
+  const result = await ctx.db.transaction(async () => {
+    const project = await ctx.db.createProject({
       workspaceId: principal.workspaceId,
       title,
       status: sourceUrl ? 'importing' : 'awaiting_source',
@@ -111,7 +111,7 @@ export function createProject(ctx: AppContext, principal: Principal, input: Crea
     });
     const response: CreateProjectResponse = { project: {} as CaptionProject };
     if (sourceUrl) {
-      const asset = createAsset(ctx.db, {
+      const asset = await ctx.db.createAsset({
         workspaceId: principal.workspaceId,
         projectId: project.id,
         status: 'importing',
@@ -120,8 +120,8 @@ export function createProject(ctx: AppContext, principal: Principal, input: Crea
         sourceUrl: sourceUrl.toString(),
         now,
       });
-      updateProjectMeta(ctx.db, project.id, { sourceAssetId: asset.id }, now);
-      const task = enqueueTask(ctx.db, {
+      await ctx.db.updateProjectMeta(project.id, { sourceAssetId: asset.id }, now);
+      const task = await ctx.db.enqueueTask({
         workspaceId: principal.workspaceId,
         projectId: project.id,
         kind: 'import_source',
@@ -131,7 +131,7 @@ export function createProject(ctx: AppContext, principal: Principal, input: Crea
       });
       response.importTask = toPublicTask(task);
     } else {
-      const asset = createAsset(ctx.db, {
+      const asset = await ctx.db.createAsset({
         workspaceId: principal.workspaceId,
         projectId: project.id,
         status: 'pending_upload',
@@ -139,54 +139,79 @@ export function createProject(ctx: AppContext, principal: Principal, input: Crea
         fileName: sanitizeFileName(input.fileName),
         now,
       });
-      updateProjectMeta(ctx.db, project.id, { sourceAssetId: asset.id }, now);
-      response.uploadTarget = uploadTarget(ctx, project, asset.id);
+      await ctx.db.updateProjectMeta(project.id, { sourceAssetId: asset.id }, now);
+      response.uploadTarget = await uploadTarget(ctx, project, asset.id);
     }
-    const fresh = getProject(ctx.db, principal.workspaceId, project.id) as ProjectRecord;
-    response.project = buildProjectView(ctx, fresh, { includePages: false });
-    audit(ctx, { principal, action: 'project.create', targetType: 'project', targetId: project.id, metadata: { origin: sourceUrl ? 'remote_url' : 'upload' } });
+    const fresh = (await ctx.db.getProject(principal.workspaceId, project.id)) as ProjectRecord;
+    response.project = await buildProjectView(ctx, fresh, { includePages: false });
+    await audit(ctx, {
+      principal,
+      action: 'project.create',
+      targetType: 'project',
+      targetId: project.id,
+      metadata: { origin: sourceUrl ? 'remote_url' : 'upload' },
+    });
     return response;
   });
+  if (result.importTask) {
+    await dispatchTaskBestEffort(ctx, result.importTask.id);
+  }
+  return result;
 }
 
 /**
  * A fresh upload target for a project whose source has not been received yet.
  * A failed upload can be retried: the asset returns to pending_upload.
  */
-export function createUploadTarget(ctx: AppContext, principal: Principal, projectId: string): UploadTarget {
-  return transaction(ctx.db, () => {
-    const project = requireProject(ctx, principal, projectId);
-    const asset = project.sourceAssetId ? getAssetById(ctx.db, project.sourceAssetId) : null;
+export async function createUploadTarget(
+  ctx: AppContext,
+  principal: Principal,
+  projectId: string,
+): Promise<UploadTarget> {
+  return ctx.db.transaction(async () => {
+    const project = await requireProject(ctx, principal, projectId);
+    const asset = project.sourceAssetId ? await ctx.db.getAssetById(project.sourceAssetId) : null;
     if (!asset || asset.status === 'ready' || asset.status === 'importing') {
       throw new ApiError('CONFLICT', 'This project already has a source.');
     }
     const now = ctx.clock.iso();
     if (asset.status === 'failed') {
-      updateAsset(ctx.db, asset.id, { status: 'pending_upload' }, now);
-      updateProjectMeta(ctx.db, project.id, { status: 'awaiting_source' }, now);
+      await ctx.db.updateAsset(asset.id, { status: 'pending_upload' }, now);
+      await ctx.db.updateProjectMeta(project.id, { status: 'awaiting_source' }, now);
     }
     return uploadTarget(ctx, project, asset.id);
   });
 }
 
-export function listProjects(ctx: AppContext, principal: Principal): ProjectSummary[] {
-  return listProjectRecords(ctx.db, principal.workspaceId).map((p) => buildProjectSummary(ctx, p));
+export async function listProjects(
+  ctx: AppContext,
+  principal: Principal,
+): Promise<ProjectSummary[]> {
+  const projects = await ctx.db.listProjects(principal.workspaceId);
+  const summaries: ProjectSummary[] = [];
+  for (const p of projects) summaries.push(await buildProjectSummary(ctx, p));
+  return summaries;
 }
 
-export function getProjectView(ctx: AppContext, principal: Principal, projectId: string, opts: ProjectViewOptions = {}): CaptionProject {
-  return buildProjectView(ctx, requireProject(ctx, principal, projectId), opts);
+export async function getProjectView(
+  ctx: AppContext,
+  principal: Principal,
+  projectId: string,
+  opts: ProjectViewOptions = {},
+): Promise<CaptionProject> {
+  return buildProjectView(ctx, await requireProject(ctx, principal, projectId), opts);
 }
 
-export function patchProject(
+export async function patchProject(
   ctx: AppContext,
   principal: Principal,
   projectId: string,
   req: PatchProjectRequest,
-): { project: CaptionProject; applied: number; newRevision: boolean } {
-  return transaction(ctx.db, () => {
-    const project = requireProject(ctx, principal, projectId);
+): Promise<{ project: CaptionProject; applied: number; newRevision: boolean }> {
+  return ctx.db.transaction(async () => {
+    const project = await requireProject(ctx, principal, projectId);
     if (project.version !== req.expectedVersion) throw new ApiError('VERSION_CONFLICT');
-    const revision = currentRevision(ctx, project);
+    const revision = await currentRevision(ctx, project);
     const state = loadCaptionState(project, revision);
     const outcome = applyPatchOps(state, req.ops, { newWordId: () => newId('word') });
     const now = ctx.clock.iso();
@@ -195,7 +220,7 @@ export function patchProject(
     let finalState = outcome.state;
     if (outcome.transcriptChanged) {
       if (!revision) throw new ApiError('TRANSCRIPT_MISSING');
-      const created = createRevision(ctx.db, {
+      const created = await ctx.db.createRevision({
         projectId: project.id,
         source: 'edit',
         provider: revision.provider,
@@ -211,8 +236,10 @@ export function patchProject(
       // Page ids derive from the revision seed: re-derive pages (same breaks, ids scoped to the new revision).
       finalState = resegmentState({ ...outcome.state, revisionSeed: created.id });
     }
-    const qa = finalState.words.length ? evaluateCaptions(finalState.words, finalState.pages, finalState.segmentation) : null;
-    const updated = commitProjectEdit(ctx.db, {
+    const qa = finalState.words.length
+      ? evaluateCaptions(finalState.words, finalState.pages, finalState.segmentation)
+      : null;
+    const updated = await ctx.db.commitProjectEdit({
       id: project.id,
       workspaceId: principal.workspaceId,
       expectedVersion: req.expectedVersion,
@@ -230,36 +257,57 @@ export function patchProject(
       },
       now,
     });
-    const invalidated = invalidateOpenQuotes(ctx.db, project.id, 'project edited');
-    audit(ctx, {
+    const invalidated = await ctx.db.invalidateOpenQuotes(project.id, 'project edited');
+    await audit(ctx, {
       principal,
       action: 'project.update',
       targetType: 'project',
       targetId: project.id,
-      metadata: { ops: req.ops.map((o) => o.op), newRevision, invalidatedQuotes: invalidated, version: updated.version },
+      metadata: {
+        ops: req.ops.map((o) => o.op),
+        newRevision,
+        invalidatedQuotes: invalidated,
+        version: updated.version,
+      },
     });
-    return { project: buildProjectView(ctx, updated, { includePages: true }), applied: outcome.applied, newRevision };
+    return {
+      project: await buildProjectView(ctx, updated, { includePages: true }),
+      applied: outcome.applied,
+      newRevision,
+    };
   });
 }
 
 /** Delete a project and its media immediately; cancels active tasks and releases reservations. */
-export async function deleteProject(ctx: AppContext, principal: Principal, projectId: string): Promise<void> {
-  const project = requireProject(ctx, principal, projectId);
+export async function deleteProject(
+  ctx: AppContext,
+  principal: Principal,
+  projectId: string,
+): Promise<void> {
+  const project = await requireProject(ctx, principal, projectId);
   const now = ctx.clock.iso();
-  for (const task of listTasks(ctx.db, principal.workspaceId, { projectId: project.id, activeOnly: true, limit: 100 })) {
-    const res = requestCancel(ctx.db, principal.workspaceId, task.id, now);
-    if (res.outcome === 'cancelled' && task.kind === 'render_export') releaseForTask(ctx, task.id, 'project deleted');
+  const active = await ctx.db.listTasks(principal.workspaceId, {
+    projectId: project.id,
+    activeOnly: true,
+    limit: 100,
+  });
+  for (const task of active) {
+    const res = await ctx.db.requestCancel(principal.workspaceId, task.id, now);
+    if (res.outcome === 'cancelled' && task.kind === 'render_export')
+      await releaseForTask(ctx, task.id, 'project deleted');
   }
-  for (const asset of listAssetsForProject(ctx.db, project.id)) {
-    if (asset.storageKey) await ctx.store.delete(asset.storageKey).catch(() => false);
-    if (asset.truthKey) await ctx.store.delete(asset.truthKey).catch(() => false);
-    markAssetPurged(ctx.db, asset.id, now);
+  for (const asset of await ctx.db.listAssetsForProject(project.id)) {
+    // Do not sever the durable key if the provider deletion failed. A retry of
+    // DELETE must still be able to find and remove every private object.
+    if (asset.storageKey) await ctx.store.delete(asset.storageKey);
+    if (asset.truthKey) await ctx.store.delete(asset.truthKey);
+    await ctx.db.markAssetPurged(asset.id, now);
   }
-  for (const e of listExportsForProjectAll(ctx.db, project.id)) {
-    await ctx.store.delete(e.storageKey).catch(() => false);
-    markExportPurged(ctx.db, e.id, now);
+  for (const e of await ctx.db.listExportsForProjectAll(project.id)) {
+    await ctx.store.delete(e.storageKey);
+    await ctx.db.markExportPurged(e.id, now);
   }
-  invalidateOpenQuotes(ctx.db, project.id, 'project deleted');
-  softDeleteProject(ctx.db, principal.workspaceId, project.id, now);
-  audit(ctx, { principal, action: 'project.delete', targetType: 'project', targetId: project.id });
+  await ctx.db.invalidateOpenQuotes(project.id, 'project deleted');
+  await ctx.db.softDeleteProject(principal.workspaceId, project.id, now);
+  await audit(ctx, { principal, action: 'project.delete', targetType: 'project', targetId: project.id });
 }

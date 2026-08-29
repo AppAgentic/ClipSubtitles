@@ -24,7 +24,7 @@ export interface ExportRecord {
   purgedAt?: string;
 }
 
-function toExport(r: Row): ExportRecord {
+export function toExport(r: Row): ExportRecord {
   const e: ExportRecord = {
     id: String(r.id),
     workspaceId: String(r.workspace_id),

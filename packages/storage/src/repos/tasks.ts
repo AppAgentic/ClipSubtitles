@@ -26,7 +26,7 @@ export interface TaskRecord {
   finishedAt?: string;
 }
 
-function toTask(r: Row): TaskRecord {
+export function toTask(r: Row): TaskRecord {
   const t: TaskRecord = {
     id: String(r.id),
     workspaceId: String(r.workspace_id),
@@ -96,7 +96,12 @@ export function enqueueTask(
 ): TaskRecord {
   return transaction(db, () => {
     if (input.idempotencyKey) {
-      const existing = findTaskByIdempotencyKey(db, input.workspaceId, input.kind, input.idempotencyKey);
+      const existing = findTaskByIdempotencyKey(
+        db,
+        input.workspaceId,
+        input.kind,
+        input.idempotencyKey,
+      );
       if (existing) return existing;
     }
     const id = newId('task');
@@ -115,12 +120,117 @@ export function enqueueTask(
       input.now,
       input.now,
     );
+    run(
+      db,
+      `INSERT OR IGNORE INTO task_dispatch_outbox (task_id, available_at, attempts, created_at, updated_at)
+       VALUES (?, ?, 0, ?, ?)`,
+      id,
+      input.runAfter ?? input.now,
+      input.now,
+      input.now,
+    );
     return toTask(one(db, 'SELECT * FROM tasks WHERE id = ?', id) as Row);
   });
 }
 
-export function findTaskByIdempotencyKey(db: Db, workspaceId: string, kind: TaskKind, key: string): TaskRecord | null {
-  const r = one(db, 'SELECT * FROM tasks WHERE workspace_id = ? AND kind = ? AND idempotency_key = ?', workspaceId, kind, key);
+export interface DispatchOutboxRecord {
+  taskId: string;
+  availableAt: string;
+  attempts: number;
+  generation: number;
+  deliveredAt?: string;
+}
+
+export function toDispatchOutbox(row: Row): DispatchOutboxRecord {
+  const deliveredAt = text(row.delivered_at);
+  return {
+    taskId: String(row.task_id),
+    availableAt: String(row.available_at),
+    attempts: num(row.attempts) ?? 0,
+    generation: num(row.generation) ?? 0,
+    ...(deliveredAt ? { deliveredAt } : {}),
+  };
+}
+
+export function getTaskDispatch(db: Db, taskId: string): DispatchOutboxRecord | null {
+  const row = one(
+    db,
+    'SELECT task_id, available_at, attempts, generation, delivered_at FROM task_dispatch_outbox WHERE task_id = ?',
+    taskId,
+  );
+  return row ? toDispatchOutbox(row) : null;
+}
+
+export function listPendingDispatches(db: Db, now: string, limit = 100): DispatchOutboxRecord[] {
+  return many(
+    db,
+    `SELECT task_id, available_at, attempts, generation, delivered_at
+     FROM task_dispatch_outbox
+     WHERE delivered_at IS NULL AND available_at <= ?
+     ORDER BY available_at ASC, created_at ASC LIMIT ?`,
+    now,
+    limit,
+  ).map(toDispatchOutbox);
+}
+
+export function markTaskDispatched(db: Db, taskId: string, generation: number, now: string): boolean {
+  return (
+    run(
+      db,
+      `UPDATE task_dispatch_outbox SET delivered_at = COALESCE(delivered_at, ?), updated_at = ?
+     WHERE task_id = ? AND generation = ? AND delivered_at IS NULL`,
+      now,
+      now,
+      taskId,
+      generation,
+    ).changes === 1
+  );
+}
+
+export function recordTaskDispatchFailure(
+  db: Db,
+  taskId: string,
+  generation: number,
+  now: string,
+  errorCode: string,
+): void {
+  run(
+    db,
+    `UPDATE task_dispatch_outbox SET attempts = attempts + 1, last_error_code = ?, updated_at = ?
+     WHERE task_id = ? AND generation = ? AND delivered_at IS NULL`,
+    errorCode.slice(0, 80),
+    now,
+    taskId,
+    generation,
+  );
+}
+
+function rearmTaskDispatch(db: Db, taskId: string, availableAt: string, now: string): void {
+  run(
+    db,
+    `UPDATE task_dispatch_outbox
+     SET generation = generation + 1, available_at = ?, attempts = 0,
+         last_error_code = NULL, delivered_at = NULL, updated_at = ?
+     WHERE task_id = ?`,
+    availableAt,
+    now,
+    taskId,
+  );
+}
+
+export function findTaskByIdempotencyKey(
+  db: Db,
+  workspaceId: string,
+  kind: TaskKind,
+  key: string,
+): TaskRecord | null {
+  const r = one(
+    db,
+    'SELECT * FROM tasks WHERE workspace_id = ? AND kind = ? AND idempotency_key = ?',
+    workspaceId,
+    kind,
+    key,
+  );
   return r ? toTask(r) : null;
 }
 
@@ -147,7 +257,11 @@ export function listTasks(
   }
   if (opts.activeOnly) clauses.push("status IN ('queued','running')");
   params.push(opts.limit ?? 50);
-  return many(db, `SELECT * FROM tasks WHERE ${clauses.join(' AND ')} ORDER BY created_at DESC LIMIT ?`, ...params).map(toTask);
+  return many(
+    db,
+    `SELECT * FROM tasks WHERE ${clauses.join(' AND ')} ORDER BY created_at DESC LIMIT ?`,
+    ...params,
+  ).map(toTask);
 }
 
 /** Atomically claim the oldest runnable task and lease it to `workerId`. */
@@ -156,7 +270,9 @@ export function claimNextTask(
   input: { workerId: string; now: string; leaseMs: number; kinds?: readonly TaskKind[] },
 ): TaskRecord | null {
   return transaction(db, () => {
-    const kindFilter = input.kinds?.length ? ` AND kind IN (${input.kinds.map(() => '?').join(',')})` : '';
+    const kindFilter = input.kinds?.length
+      ? ` AND kind IN (${input.kinds.map(() => '?').join(',')})`
+      : '';
     const candidate = one(
       db,
       `SELECT id FROM tasks WHERE status = 'queued' AND run_after <= ?${kindFilter} ORDER BY created_at ASC LIMIT 1`,
@@ -181,10 +297,40 @@ export function claimNextTask(
   });
 }
 
+/** Atomically claim one known task for an authenticated push delivery. */
+export function claimTaskById(
+  db: Db,
+  input: { id: string; workerId: string; now: string; leaseMs: number },
+): TaskRecord | null {
+  return transaction(db, () => {
+    const leaseExpires = new Date(Date.parse(input.now) + input.leaseMs).toISOString();
+    const res = run(
+      db,
+      `UPDATE tasks SET status = 'running', lease_owner = ?, lease_expires_at = ?, attempts = attempts + 1,
+         started_at = COALESCE(started_at, ?), updated_at = ?
+       WHERE id = ? AND status = 'queued' AND run_after <= ?`,
+      input.workerId,
+      leaseExpires,
+      input.now,
+      input.now,
+      input.id,
+      input.now,
+    );
+    return res.changes === 1 ? getTaskById(db, input.id) : null;
+  });
+}
+
 /** Extend the lease; reports whether the worker still owns the task and whether cancellation was requested. */
 export function heartbeatTask(
   db: Db,
-  input: { id: string; workerId: string; now: string; leaseMs: number; progress?: number; stage?: string },
+  input: {
+    id: string;
+    workerId: string;
+    now: string;
+    leaseMs: number;
+    progress?: number;
+    stage?: string;
+  },
 ): { owned: boolean; cancelRequested: boolean } {
   return transaction(db, () => {
     const current = getTaskById(db, input.id);
@@ -205,7 +351,10 @@ export function heartbeatTask(
   });
 }
 
-export function completeTask(db: Db, input: { id: string; workerId: string; result: TaskResult; now: string }): TaskRecord | null {
+export function completeTask(
+  db: Db,
+  input: { id: string; workerId: string; result: TaskResult; now: string },
+): TaskRecord | null {
   return transaction(db, () => {
     const res = run(
       db,
@@ -231,8 +380,10 @@ export function failTask(
 ): { outcome: 'requeued' | 'failed' | 'not_owned'; task: TaskRecord | null } {
   return transaction(db, () => {
     const current = getTaskById(db, input.id);
-    if (!current || current.status !== 'running' || current.leaseOwner !== input.workerId) return { outcome: 'not_owned', task: current };
-    const canRetry = input.error.retryable && current.attempts < current.maxAttempts && !current.cancelRequested;
+    if (!current || current.status !== 'running' || current.leaseOwner !== input.workerId)
+      return { outcome: 'not_owned', task: current };
+    const canRetry =
+      input.error.retryable && current.attempts < current.maxAttempts && !current.cancelRequested;
     if (canRetry) {
       const runAfter = new Date(Date.parse(input.now) + (input.backoffMs ?? 0)).toISOString();
       run(
@@ -243,6 +394,7 @@ export function failTask(
         input.now,
         input.id,
       );
+      rearmTaskDispatch(db, input.id, runAfter, input.now);
       return { outcome: 'requeued', task: getTaskById(db, input.id) };
     }
     run(
@@ -266,7 +418,10 @@ export function requestCancel(
   workspaceId: string,
   id: string,
   now: string,
-): { outcome: 'cancelled' | 'cancel_requested' | 'not_cancellable' | 'not_found'; task: TaskRecord | null } {
+): {
+  outcome: 'cancelled' | 'cancel_requested' | 'not_cancellable' | 'not_found';
+  task: TaskRecord | null;
+} {
   return transaction(db, () => {
     const current = getTask(db, workspaceId, id);
     if (!current) return { outcome: 'not_found', task: null };
@@ -289,7 +444,10 @@ export function requestCancel(
 }
 
 /** Worker acknowledges a cancellation of a running task it owns. */
-export function markCancelled(db: Db, input: { id: string; workerId: string; now: string }): TaskRecord | null {
+export function markCancelled(
+  db: Db,
+  input: { id: string; workerId: string; now: string },
+): TaskRecord | null {
   return transaction(db, () => {
     const res = run(
       db,
@@ -308,23 +466,47 @@ export function markCancelled(db: Db, input: { id: string; workerId: string; now
  * fail when out of attempts). Cancel-requested tasks finish as cancelled and
  * are reported so callers can release any credit reservations.
  */
-export function reclaimExpiredLeases(db: Db, now: string): { requeued: string[]; failed: string[]; cancelled: string[] } {
+export function reclaimExpiredLeases(
+  db: Db,
+  now: string,
+): { requeued: string[]; failed: string[]; cancelled: string[] } {
   return transaction(db, () => {
-    const expired = many(db, `SELECT * FROM tasks WHERE status = 'running' AND lease_expires_at IS NOT NULL AND lease_expires_at < ?`, now).map(toTask);
+    const expired = many(
+      db,
+      `SELECT * FROM tasks WHERE status = 'running' AND lease_expires_at IS NOT NULL AND lease_expires_at < ?`,
+      now,
+    ).map(toTask);
     const requeued: string[] = [];
     const failed: string[] = [];
     const cancelled: string[] = [];
     for (const t of expired) {
       if (t.cancelRequested) {
-        run(db, `UPDATE tasks SET status = 'cancelled', lease_owner = NULL, lease_expires_at = NULL, finished_at = ?, updated_at = ? WHERE id = ?`, now, now, t.id);
+        run(
+          db,
+          `UPDATE tasks SET status = 'cancelled', lease_owner = NULL, lease_expires_at = NULL, finished_at = ?, updated_at = ? WHERE id = ?`,
+          now,
+          now,
+          t.id,
+        );
         cancelled.push(t.id);
         continue;
       }
       if (t.attempts < t.maxAttempts) {
-        run(db, `UPDATE tasks SET status = 'queued', lease_owner = NULL, lease_expires_at = NULL, run_after = ?, updated_at = ? WHERE id = ?`, now, now, t.id);
+        run(
+          db,
+          `UPDATE tasks SET status = 'queued', lease_owner = NULL, lease_expires_at = NULL, run_after = ?, updated_at = ? WHERE id = ?`,
+          now,
+          now,
+          t.id,
+        );
+        rearmTaskDispatch(db, t.id, now, now);
         requeued.push(t.id);
       } else {
-        const error: TaskError = { code: 'INTERNAL', message: 'Worker lost the task lease and no attempts remain.', retryable: false };
+        const error: TaskError = {
+          code: 'INTERNAL',
+          message: 'Worker lost the task lease and no attempts remain.',
+          retryable: false,
+        };
         run(
           db,
           `UPDATE tasks SET status = 'failed', error_json = ?, lease_owner = NULL, lease_expires_at = NULL, finished_at = ?, updated_at = ? WHERE id = ?`,

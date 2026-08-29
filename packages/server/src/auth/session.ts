@@ -1,4 +1,3 @@
-import { createSession, ensureUserWorkspace, findActiveSession, getUser, revokeSession, touchSession } from '@clipsubtitles/storage';
 import { SCOPES } from '@clipsubtitles/contracts';
 import type { AppContext } from '../context';
 import type { IdentityUser } from './identity-provider';
@@ -26,9 +25,9 @@ export function sessionCookieOptions(ctx: AppContext): CookieOptions {
 }
 
 /** Create the user/workspace on first sign-in and open a web session. */
-export function establishSession(ctx: AppContext, user: IdentityUser): { token: string; principal: Principal } {
+export async function establishSession(ctx: AppContext, user: IdentityUser): Promise<{ token: string; principal: Principal }> {
   const now = ctx.clock.iso();
-  const { user: record, workspace } = ensureUserWorkspace(ctx.db, {
+  const { user: record, workspace } = await ctx.db.ensureUserWorkspace({
     subject: user.subject,
     ...(user.email ? { email: user.email } : {}),
     ...(user.displayName ? { displayName: user.displayName } : {}),
@@ -37,7 +36,7 @@ export function establishSession(ctx: AppContext, user: IdentityUser): { token: 
     defaultRetention: { sourceDays: ctx.config.limits.sourceRetentionDays, exportDays: ctx.config.limits.exportRetentionDays },
   });
   const token = randomToken(32);
-  const session = createSession(ctx.db, {
+  const session = await ctx.db.createSession({
     tokenHash: hashToken(token),
     userId: record.id,
     workspaceId: workspace.id,
@@ -59,14 +58,14 @@ export function establishSession(ctx: AppContext, user: IdentityUser): { token: 
   return { token, principal };
 }
 
-export function principalFromSessionToken(ctx: AppContext, token: string): Principal | null {
+export async function principalFromSessionToken(ctx: AppContext, token: string): Promise<Principal | null> {
   if (!token || token.length > 256) return null;
   const now = ctx.clock.iso();
-  const session = findActiveSession(ctx.db, hashToken(token), now);
+  const session = await ctx.db.findActiveSession(hashToken(token), now);
   if (!session) return null;
-  const user = getUser(ctx.db, session.userId);
+  const user = await ctx.db.getUser(session.userId);
   if (!user) return null;
-  touchSession(ctx.db, session.id, now);
+  await ctx.db.touchSession(session.id, now);
   const principal: Principal = {
     kind: 'session',
     userId: user.id,
@@ -81,8 +80,8 @@ export function principalFromSessionToken(ctx: AppContext, token: string): Princ
   return principal;
 }
 
-export function endSession(ctx: AppContext, token: string): boolean {
-  const session = findActiveSession(ctx.db, hashToken(token), ctx.clock.iso());
+export async function endSession(ctx: AppContext, token: string): Promise<boolean> {
+  const session = await ctx.db.findActiveSession(hashToken(token), ctx.clock.iso());
   if (!session) return false;
-  return revokeSession(ctx.db, session.id, ctx.clock.iso());
+  return ctx.db.revokeSession(session.id, ctx.clock.iso());
 }

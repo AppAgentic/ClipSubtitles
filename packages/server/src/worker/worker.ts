@@ -1,16 +1,6 @@
 import type { TaskKind, TaskResult } from '@clipsubtitles/contracts';
 import { newId } from '@clipsubtitles/core';
-import {
-  claimNextTask,
-  completeTask,
-  expireOpenQuotes,
-  failTask,
-  heartbeatTask,
-  markCancelled,
-  reclaimExpiredLeases,
-  transaction,
-  type TaskRecord,
-} from '@clipsubtitles/storage';
+import type { TaskRecord } from '@clipsubtitles/storage';
 import type { AppContext } from '../context';
 import { audit } from '../services/audit';
 import { releaseForTask, settleForTask } from '../services/billing';
@@ -111,7 +101,7 @@ export class TaskWorker {
   /** Run maintenance if due, then claim and execute at most one task. Returns true when a task ran. */
   async runOnce(): Promise<boolean> {
     await this.maintenance();
-    const task = claimNextTask(this.ctx.db, {
+    const task = await this.ctx.db.claimNextTask({
       workerId: this.workerId,
       now: this.ctx.clock.iso(),
       leaseMs: this.leaseMs,
@@ -122,16 +112,35 @@ export class TaskWorker {
     return true;
   }
 
+  /** Execute one task selected by an authenticated Cloud Tasks delivery. */
+  async runTaskById(taskId: string): Promise<'succeeded' | 'terminal' | 'retry' | 'busy'> {
+    const existing = await this.ctx.db.getTaskById(taskId);
+    if (!existing) return 'terminal';
+    if (existing.status === 'succeeded' || existing.status === 'failed' || existing.status === 'cancelled') return 'terminal';
+    const task = await this.ctx.db.claimTaskById({
+      id: taskId,
+      workerId: this.workerId,
+      now: this.ctx.clock.iso(),
+      leaseMs: this.leaseMs,
+    });
+    if (!task) return 'busy';
+    await this.execute(task);
+    const final = await this.ctx.db.getTaskById(taskId);
+    if (final?.status === 'succeeded') return 'succeeded';
+    if (final?.status === 'failed' || final?.status === 'cancelled') return 'terminal';
+    return 'retry';
+  }
+
   async maintenance(force = false): Promise<void> {
     const now = this.ctx.clock.now();
     if (!force && now - this.lastMaintenance < this.maintenanceEveryMs) return;
     this.lastMaintenance = now;
-    const reclaimed = reclaimExpiredLeases(this.ctx.db, this.ctx.clock.iso());
-    for (const id of reclaimed.failed) releaseForTask(this.ctx, id, 'worker lease lost');
-    for (const id of reclaimed.cancelled) releaseForTask(this.ctx, id, 'cancelled after lease loss');
+    const reclaimed = await this.ctx.db.reclaimExpiredLeases(this.ctx.clock.iso());
+    for (const id of reclaimed.failed) await releaseForTask(this.ctx, id, 'worker lease lost');
+    for (const id of reclaimed.cancelled) await releaseForTask(this.ctx, id, 'cancelled after lease loss');
     // Terminal render tasks keep no outputs: rows and row-less blobs alike are removed.
     for (const id of [...reclaimed.failed, ...reclaimed.cancelled]) await discardOutputsForTaskId(this.ctx, id);
-    expireOpenQuotes(this.ctx.db, this.ctx.clock.iso());
+    await this.ctx.db.expireOpenQuotes(this.ctx.clock.iso());
     if (force || now - this.lastRetention >= this.retentionEveryMs) {
       this.lastRetention = now;
       await runRetentionSweep(this.ctx).catch((err) => this.ctx.logger.warn('retention sweep failed', { error: String(err) }));
@@ -145,8 +154,8 @@ export class TaskWorker {
     let progress = task.progress;
     let stage = task.stage;
     let leaseLost = false;
-    const heartbeat = () => {
-      const hb = heartbeatTask(this.ctx.db, { id: task.id, workerId: this.workerId, now: this.ctx.clock.iso(), leaseMs: this.leaseMs, progress, ...(stage ? { stage } : {}) });
+    const heartbeat = async (): Promise<void> => {
+      const hb = await this.ctx.db.heartbeatTask({ id: task.id, workerId: this.workerId, now: this.ctx.clock.iso(), leaseMs: this.leaseMs, progress, ...(stage ? { stage } : {}) });
       if (!hb.owned) {
         leaseLost = true;
         controller.abort('lease-lost');
@@ -154,7 +163,9 @@ export class TaskWorker {
         controller.abort('cancel');
       }
     };
-    const timer = setInterval(heartbeat, this.heartbeatMs);
+    const timer = setInterval(() => {
+      void heartbeat().catch((err) => log.warn('heartbeat failed', { error: err instanceof Error ? err.message : String(err) }));
+    }, this.heartbeatMs);
     const tools: HandlerTools = {
       signal: controller.signal,
       workerId: this.workerId,
@@ -167,7 +178,7 @@ export class TaskWorker {
     log.info('task started', { attempt: task.attempts });
     try {
       if (!handler) throw new Error(`No handler for ${task.kind}`);
-      heartbeat();
+      await heartbeat();
       if (controller.signal.aborted) throw new Error('cancelled before start');
       const result = await handler(this.ctx, task, tools);
       clearInterval(timer);
@@ -177,16 +188,16 @@ export class TaskWorker {
       }
       // Completion and billing settlement are one atomic step: credits are only
       // charged when THIS worker still owns the task and the completion is recorded.
-      const done = transaction(this.ctx.db, () => {
-        const completed = completeTask(this.ctx.db, { id: task.id, workerId: this.workerId, result, now: this.ctx.clock.iso() });
-        if (completed && task.kind === 'render_export') settleForTask(this.ctx, task.id);
+      const done = await this.ctx.db.transaction(async () => {
+        const completed = await this.ctx.db.completeTask({ id: task.id, workerId: this.workerId, result, now: this.ctx.clock.iso() });
+        if (completed && task.kind === 'render_export') await settleForTask(this.ctx, task.id);
         return completed;
       });
       if (!done) {
         log.warn('task completion rejected (lease no longer owned); billing untouched');
         return;
       }
-      audit(this.ctx, { workspaceId: task.workspaceId, actorType: 'worker', actorId: this.workerId, action: `task.${task.kind}.succeeded`, targetType: 'task', targetId: task.id });
+      await audit(this.ctx, { workspaceId: task.workspaceId, actorType: 'worker', actorId: this.workerId, action: `task.${task.kind}.succeeded`, targetType: 'task', targetId: task.id });
       log.info('task succeeded');
     } catch (err) {
       clearInterval(timer);
@@ -195,25 +206,25 @@ export class TaskWorker {
         return;
       }
       if (controller.signal.reason === 'cancel' || (controller.signal.aborted && isCancellation(err))) {
-        const cancelled = markCancelled(this.ctx.db, { id: task.id, workerId: this.workerId, now: this.ctx.clock.iso() });
-        if (task.kind === 'render_export') releaseForTask(this.ctx, task.id, 'cancelled');
+        const cancelled = await this.ctx.db.markCancelled({ id: task.id, workerId: this.workerId, now: this.ctx.clock.iso() });
+        if (task.kind === 'render_export') await releaseForTask(this.ctx, task.id, 'cancelled');
         if (cancelled) await discardOutputsForTaskId(this.ctx, task.id);
-        audit(this.ctx, { workspaceId: task.workspaceId, actorType: 'worker', actorId: this.workerId, action: `task.${task.kind}.cancelled`, targetType: 'task', targetId: task.id });
+        await audit(this.ctx, { workspaceId: task.workspaceId, actorType: 'worker', actorId: this.workerId, action: `task.${task.kind}.cancelled`, targetType: 'task', targetId: task.id });
         log.info('task cancelled');
         return;
       }
       const { error, internal } = toTaskError(err);
       const errorRef = newId('errorRef');
-      const outcome = failTask(this.ctx.db, {
+      const outcome = await this.ctx.db.failTask({
         id: task.id,
         workerId: this.workerId,
         error: { ...error, errorRef },
         now: this.ctx.clock.iso(),
         backoffMs: BACKOFF_MS[Math.min(BACKOFF_MS.length - 1, Math.max(0, task.attempts - 1))] ?? 2_000,
       });
-      if (outcome.outcome === 'failed' && task.kind === 'render_export') releaseForTask(this.ctx, task.id, 'render failed');
+      if (outcome.outcome === 'failed' && task.kind === 'render_export') await releaseForTask(this.ctx, task.id, 'render failed');
       if (outcome.outcome === 'failed') await discardOutputsForTaskId(this.ctx, task.id);
-      audit(this.ctx, {
+      await audit(this.ctx, {
         workspaceId: task.workspaceId,
         actorType: 'worker',
         actorId: this.workerId,

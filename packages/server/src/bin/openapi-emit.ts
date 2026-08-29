@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { openDatabase } from '@clipsubtitles/storage';
+import { SqliteStore } from '@clipsubtitles/storage';
 import { testConfig } from '../config';
 import { createAppContext } from '../context';
 import { findRepoRoot } from '../env';
@@ -10,7 +10,7 @@ import { createApp } from '../http/app';
 async function main(): Promise<void> {
   const root = findRepoRoot();
   const config = testConfig({ DATA_DIR: path.join(root, '.data', 'openapi-emit'), API_PUBLIC_URL: 'https://api.clipsubtitles.com', WEB_PUBLIC_URL: 'https://clipsubtitles.com' });
-  const ctx = createAppContext(config, { db: openDatabase({ path: ':memory:' }) });
+  const ctx = await createAppContext(config, { db: SqliteStore.open({ path: ':memory:' }) });
   const app = createApp(ctx);
   const res = await app.request('/openapi.json');
   const doc = await res.json();
@@ -18,7 +18,7 @@ async function main(): Promise<void> {
   await mkdir(path.dirname(out), { recursive: true });
   await writeFile(out, `${JSON.stringify(doc, null, 2)}\n`);
   console.log(`Wrote ${out} (${Object.keys((doc as { paths: Record<string, unknown> }).paths).length} paths)`);
-  ctx.db.close();
+  await ctx.db.close();
 }
 
 main().catch((err) => {

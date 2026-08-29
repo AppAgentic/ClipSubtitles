@@ -69,7 +69,7 @@ export function registerProjectRoutes(api: Api, ctx: AppContext): void {
       middleware: [auth, limited, read] as const,
       responses: { 200: jsonResponse(ProjectListSchema, 'Projects'), ...errorResponses() },
     }),
-    (c) => c.json({ projects: listProjects(ctx, c.get('principal')) }, 200),
+    async (c) => c.json({ projects: await listProjects(ctx, c.get('principal')) }, 200),
   );
 
   api.openapi(
@@ -84,12 +84,12 @@ export function registerProjectRoutes(api: Api, ctx: AppContext): void {
       request: { params: ProjectParams, query: ProjectQuerySchema },
       responses: { 200: jsonResponse(CaptionProjectSchema, 'Project'), ...errorResponses() },
     }),
-    (c) => {
+    async (c) => {
       const { projectId } = c.req.valid('param');
       const q = c.req.valid('query');
       const { includePages, includeWords } = parseInclude(q.include);
       return c.json(
-        getProjectView(ctx, c.get('principal'), projectId, {
+        await getProjectView(ctx, c.get('principal'), projectId, {
           includePages,
           includeWords,
           ...(q.wordsOffset !== undefined ? { wordsOffset: q.wordsOffset } : {}),
@@ -111,9 +111,9 @@ export function registerProjectRoutes(api: Api, ctx: AppContext): void {
       request: { params: ProjectParams, body: jsonBody(PatchProjectRequestSchema) },
       responses: { 200: jsonResponse(PatchProjectResponseSchema, 'Updated project'), ...errorResponses('VERSION_CONFLICT', 'TRANSCRIPT_MISSING') },
     }),
-    (c) => {
+    async (c) => {
       const { projectId } = c.req.valid('param');
-      return c.json(patchProject(ctx, c.get('principal'), projectId, c.req.valid('json')), 200);
+      return c.json(await patchProject(ctx, c.get('principal'), projectId, c.req.valid('json')), 200);
     },
   );
 
@@ -146,9 +146,9 @@ export function registerProjectRoutes(api: Api, ctx: AppContext): void {
       request: { params: ProjectParams },
       responses: { 201: jsonResponse(UploadTargetSchema, 'Upload target'), ...errorResponses('CONFLICT') },
     }),
-    (c) => {
+    async (c) => {
       const { projectId } = c.req.valid('param');
-      return c.json(createUploadTarget(ctx, c.get('principal'), projectId), 201);
+      return c.json(await createUploadTarget(ctx, c.get('principal'), projectId), 201);
     },
   );
 
@@ -194,8 +194,8 @@ export function registerProjectRoutes(api: Api, ctx: AppContext): void {
       const body = c.req.valid('json');
       const principal = c.get('principal');
       const key = idempotencyKeyFrom(c, body);
-      const out = await withIdempotency(ctx, { workspaceId: principal.workspaceId, scope: `previews:${projectId}`, key, payload: body, status: 202 }, () => ({
-        task: startPreview(ctx, principal, projectId, key ? { ...body, idempotencyKey: key } : body),
+      const out = await withIdempotency(ctx, { workspaceId: principal.workspaceId, scope: `previews:${projectId}`, key, payload: body, status: 202 }, async () => ({
+        task: await startPreview(ctx, principal, projectId, key ? { ...body, idempotencyKey: key } : body),
       }));
       return c.json(out.body, out.status as 202);
     },
@@ -212,9 +212,9 @@ export function registerProjectRoutes(api: Api, ctx: AppContext): void {
       request: { params: ProjectParams, body: jsonBody(CreateRenderQuoteRequestSchema) },
       responses: { 201: jsonResponse(RenderQuoteSchema, 'Quote'), ...errorResponses('SOURCE_NOT_READY', 'TRANSCRIPT_MISSING', 'VERSION_CONFLICT') },
     }),
-    (c) => {
+    async (c) => {
       const { projectId } = c.req.valid('param');
-      return c.json(createRenderQuote(ctx, c.get('principal'), projectId, c.req.valid('json')), 201);
+      return c.json(await createRenderQuote(ctx, c.get('principal'), projectId, c.req.valid('json')), 201);
     },
   );
 

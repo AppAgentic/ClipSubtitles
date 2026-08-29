@@ -22,11 +22,11 @@ export function registerTaskRoutes(api: Api, ctx: AppContext): void {
       request: { query: z.object({ projectId: ProjectIdSchema.optional(), active: z.enum(['true', 'false']).optional(), limit: z.coerce.number().int().min(1).max(200).optional() }) },
       responses: { 200: jsonResponse(TaskListSchema, 'Tasks'), ...errorResponses() },
     }),
-    (c) => {
+    async (c) => {
       const q = c.req.valid('query');
       return c.json(
         {
-          tasks: listTasks(ctx, c.get('principal'), {
+          tasks: await listTasks(ctx, c.get('principal'), {
             ...(q.projectId ? { projectId: q.projectId } : {}),
             activeOnly: q.active === 'true',
             limit: q.limit ?? 50,
@@ -48,9 +48,9 @@ export function registerTaskRoutes(api: Api, ctx: AppContext): void {
       request: { params: TaskParams },
       responses: { 200: jsonResponse(z.object({ task: TaskSchema, exports: z.array(ExportSchema).max(LIMITS.maxExportsPerRender).optional() }), 'Task'), ...errorResponses() },
     }),
-    (c) => {
+    async (c) => {
       const { taskId } = c.req.valid('param');
-      return c.json(getTaskView(ctx, c.get('principal'), taskId), 200);
+      return c.json(await getTaskView(ctx, c.get('principal'), taskId), 200);
     },
   );
 
@@ -65,9 +65,9 @@ export function registerTaskRoutes(api: Api, ctx: AppContext): void {
       request: { params: TaskParams },
       responses: { 200: jsonResponse(z.object({ task: TaskSchema }), 'Task'), ...errorResponses('TASK_NOT_CANCELLABLE') },
     }),
-    (c) => {
+    async (c) => {
       const { taskId } = c.req.valid('param');
-      return c.json({ task: cancelTask(ctx, c.get('principal'), taskId) }, 200);
+      return c.json({ task: await cancelTask(ctx, c.get('principal'), taskId) }, 200);
     },
   );
 }

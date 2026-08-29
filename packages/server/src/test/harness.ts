@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { serve, type ServerType } from '@hono/node-server';
 import { SCOPES, type Scope } from '@clipsubtitles/contracts';
-import { openDatabase } from '@clipsubtitles/storage';
+import { SqliteStore } from '@clipsubtitles/storage';
 import { BENCHMARK_CASES, buildFixtures, defaultFixturesDir, runTool } from '@clipsubtitles/transcription';
 import { mintLocalToken } from '../auth/tokens';
 import { testConfig, type AppConfig } from '../config';
@@ -53,7 +53,7 @@ export async function createHarness(overrides: Partial<NodeJS.ProcessEnv> = {}):
     ...overrides,
   });
   const clock = manualClock(Date.now());
-  const ctx = createAppContext(config, { db: openDatabase({ path: ':memory:' }), clock });
+  const ctx = await createAppContext(config, { db: SqliteStore.open({ path: ':memory:' }), clock });
   const app = createApp(ctx);
   const worker = new TaskWorker(ctx, { workerId: 'worker_test', heartbeatMs: 50, leaseMs: 30_000, pollMs: 5, maintenanceEveryMs: 0, retentionEveryMs: 3_600_000 });
   const servers: ServerType[] = [];
@@ -133,7 +133,7 @@ export async function createHarness(overrides: Partial<NodeJS.ProcessEnv> = {}):
     async cleanup() {
       await worker.stop();
       for (const s of servers) await new Promise<void>((resolve) => s.close(() => resolve()));
-      ctx.db.close();
+      await ctx.db.close();
       await rm(dir, { recursive: true, force: true });
     },
   };

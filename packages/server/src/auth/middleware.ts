@@ -2,7 +2,6 @@ import type { Context, MiddlewareHandler } from 'hono';
 import { getCookie } from 'hono/cookie';
 import { SCOPES, type Scope } from '@clipsubtitles/contracts';
 import { newId } from '@clipsubtitles/core';
-import { ensureGrant, ensureUserWorkspace, isTokenRevoked, touchGrant } from '@clipsubtitles/storage';
 import type { AppContext } from '../context';
 import { ApiError } from '../errors';
 import { proxyTrust, resolveClientIp } from './client-ip';
@@ -47,9 +46,9 @@ export async function principalFromBearer(ctx: AppContext, token: string): Promi
     if (err instanceof TokenVerificationError) throw new ApiError('UNAUTHENTICATED', 'The access token is invalid or expired.', { internal: err });
     throw err;
   }
-  if (verified.jti && isTokenRevoked(ctx.db, verified.jti)) throw new ApiError('UNAUTHENTICATED', 'The access token was revoked.');
+  if (verified.jti && (await ctx.db.isTokenRevoked(verified.jti))) throw new ApiError('UNAUTHENTICATED', 'The access token was revoked.');
   const now = ctx.clock.iso();
-  const { user, workspace } = ensureUserWorkspace(ctx.db, {
+  const { user, workspace } = await ctx.db.ensureUserWorkspace({
     subject: verified.subject,
     ...(verified.email ? { email: verified.email } : {}),
     ...(verified.displayName ? { displayName: verified.displayName } : {}),
@@ -60,9 +59,9 @@ export async function principalFromBearer(ctx: AppContext, token: string): Promi
   // Fail closed: a token must carry at least one recognised scope. Unknown or missing scopes grant nothing.
   const scopes: Scope[] = verified.scopes.filter((s): s is Scope => (SCOPES as readonly string[]).includes(s));
   if (scopes.length === 0) throw new ApiError('INSUFFICIENT_SCOPE', 'The access token carries no recognised scopes.');
-  const grant = ensureGrant(ctx.db, { userId: user.id, workspaceId: workspace.id, clientId: verified.clientId, scopes, now });
+  const grant = await ctx.db.ensureGrant({ userId: user.id, workspaceId: workspace.id, clientId: verified.clientId, scopes, now });
   if (grant.revokedAt) throw new ApiError('UNAUTHENTICATED', 'This connection was revoked by the user.');
-  touchGrant(ctx.db, grant.id, now);
+  await ctx.db.touchGrant(grant.id, now);
   const principal: Principal = {
     kind: 'bearer',
     userId: user.id,
@@ -118,7 +117,7 @@ export function authenticate(ctx: AppContext, opts: AuthenticateOptions): Middle
     } else if (opts.modes.includes('session')) {
       const token = getCookie(c, SESSION_COOKIE);
       if (token) {
-        principal = principalFromSessionToken(ctx, token);
+        principal = await principalFromSessionToken(ctx, token);
         if (principal && !passesCsrf(c, ctx)) throw new ApiError('FORBIDDEN', 'Cross-site request blocked.');
       }
     }

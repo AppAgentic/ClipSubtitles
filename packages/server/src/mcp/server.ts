@@ -66,7 +66,7 @@ export const TOOL_HANDLERS: Handlers = {
   async get_caption_project(ctx, principal, raw) {
     const input = MCP_TOOLS[2].inputSchema.parse(raw);
     return {
-      project: getProjectView(ctx, principal, input.projectId, {
+      project: await getProjectView(ctx, principal, input.projectId, {
         includePages: input.pages ?? true,
         includeWords: input.words ?? false,
         ...(input.wordsOffset !== undefined ? { wordsOffset: input.wordsOffset } : {}),
@@ -77,7 +77,7 @@ export const TOOL_HANDLERS: Handlers = {
 
   async update_caption_project(ctx, principal, raw) {
     const input = MCP_TOOLS[3].inputSchema.parse(raw);
-    const res = patchProject(ctx, principal, input.projectId, { expectedVersion: input.expectedVersion, ops: input.ops });
+    const res = await patchProject(ctx, principal, input.projectId, { expectedVersion: input.expectedVersion, ops: input.ops });
     return { project: res.project, applied: res.applied };
   },
 
@@ -95,7 +95,7 @@ export const TOOL_HANDLERS: Handlers = {
   async render_caption_export(ctx, principal, raw) {
     const input = MCP_TOOLS[5].inputSchema.parse(raw);
     if (!input.approval) {
-      const quote = createRenderQuote(ctx, principal, input.projectId, {
+      const quote = await createRenderQuote(ctx, principal, input.projectId, {
         ...(input.settings ? { settings: input.settings } : {}),
         ...(input.expectedVersion !== undefined ? { expectedVersion: input.expectedVersion } : {}),
       });
@@ -115,13 +115,13 @@ export const TOOL_HANDLERS: Handlers = {
 
   async get_caption_task(ctx, principal, raw) {
     const input = MCP_TOOLS[6].inputSchema.parse(raw);
-    const view = getTaskView(ctx, principal, input.taskId);
+    const view = await getTaskView(ctx, principal, input.taskId);
     return { task: view.task, ...(view.exports ? { exports: view.exports } : {}) };
   },
 
   async cancel_caption_task(ctx, principal, raw) {
     const input = MCP_TOOLS[7].inputSchema.parse(raw);
-    return { task: cancelTask(ctx, principal, input.taskId) };
+    return { task: await cancelTask(ctx, principal, input.taskId) };
   },
 };
 
@@ -179,7 +179,7 @@ export function createMcpServer(ctx: AppContext, principal: Principal): McpServe
         try {
           if (!principal.scopes.includes(tool.scope)) throw new ApiError('INSUFFICIENT_SCOPE', `This tool requires the ${tool.scope} scope.`);
           const output = await TOOL_HANDLERS[tool.name](ctx, principal, args);
-          audit(ctx, { principal, action: `mcp.${tool.name}`, outcome: 'ok', metadata: { latencyMs: ctx.clock.now() - started } });
+          await audit(ctx, { principal, action: `mcp.${tool.name}`, outcome: 'ok', metadata: { latencyMs: ctx.clock.now() - started } });
           return {
             content: [{ type: 'text', text: summarize(tool.name, output) }],
             structuredContent: output as Record<string, unknown>,
@@ -189,7 +189,7 @@ export function createMcpServer(ctx: AppContext, principal: Principal): McpServe
           const errorRef = apiErr.errorRef ?? newId('errorRef');
           apiErr.errorRef = errorRef;
           if (apiErr.code === 'INTERNAL') ctx.logger.error('mcp tool internal error', { tool: tool.name, errorRef, internal: apiErr.internal });
-          audit(ctx, {
+          await audit(ctx, {
             principal,
             action: `mcp.${tool.name}`,
             outcome: apiErr.code === 'UNAUTHENTICATED' || apiErr.code === 'INSUFFICIENT_SCOPE' ? 'denied' : 'error',

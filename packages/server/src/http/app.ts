@@ -82,7 +82,8 @@ export function createApp(ctx: AppContext): App {
         requestId: c.get('requestId'),
         internal: internal instanceof Error ? { name: internal.name, message: internal.message, stack: internal.stack?.split('\n').slice(0, 5).join('\n') } : internal,
       });
-      audit(ctx, {
+      // The response is already being written: record the audit alongside it.
+      void audit(ctx, {
         ...(principal ? { principal } : { actorType: 'system' }),
         action: 'http.error',
         outcome: 'error',

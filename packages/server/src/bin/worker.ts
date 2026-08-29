@@ -12,7 +12,7 @@ const overrides =
   config.renderer === 'remotion'
     ? { renderer: new (await import('@clipsubtitles/render-remotion')).RemotionRenderer() }
     : {};
-const ctx = createAppContext(config, overrides);
+const ctx = await createAppContext(config, overrides);
 const worker = new TaskWorker(ctx);
 worker.start();
 console.log(`ClipSubtitles worker ${worker.workerId} started (renderer: ${ctx.renderer.id}, providers: ${config.transcription.providers.join(',')})`);
@@ -20,7 +20,7 @@ console.log(`ClipSubtitles worker ${worker.workerId} started (renderer: ${ctx.re
 async function shutdown(signal: string): Promise<void> {
   ctx.logger.info('worker shutting down', { signal });
   await worker.stop();
-  ctx.db.close();
+  await ctx.db.close();
   process.exit(0);
 }
 process.on('SIGINT', () => void shutdown('SIGINT'));

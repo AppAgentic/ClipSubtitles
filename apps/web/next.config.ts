@@ -5,6 +5,7 @@ import type { NextConfig } from 'next';
 const apiOrigin = process.env.API_INTERNAL_URL ?? process.env.API_PUBLIC_URL ?? 'http://localhost:3101';
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   reactStrictMode: true,
   transpilePackages: ['@clipsubtitles/contracts', '@clipsubtitles/core'],
   poweredByHeader: false,

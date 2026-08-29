@@ -23,7 +23,7 @@ export interface ReservationRecord {
   updatedAt: string;
 }
 
-function toReservation(r: Row): ReservationRecord {
+export function toReservation(r: Row): ReservationRecord {
   const res: ReservationRecord = {
     id: String(r.id),
     workspaceId: String(r.workspace_id),
@@ -39,7 +39,7 @@ function toReservation(r: Row): ReservationRecord {
   return res;
 }
 
-function toLedger(r: Row): LedgerEntry {
+export function toLedger(r: Row): LedgerEntry {
   const e: LedgerEntry = {
     id: String(r.id),
     kind: String(r.kind) as LedgerEntryKind,

@@ -39,7 +39,7 @@ export interface UploadRecord {
   completedAt?: string;
 }
 
-function toAsset(r: Row): AssetRecord {
+export function toAsset(r: Row): AssetRecord {
   const a: AssetRecord = {
     id: String(r.id),
     workspaceId: String(r.workspace_id),
@@ -69,7 +69,7 @@ function toAsset(r: Row): AssetRecord {
   return a;
 }
 
-function toUpload(r: Row): UploadRecord {
+export function toUpload(r: Row): UploadRecord {
   const u: UploadRecord = {
     id: String(r.id),
     workspaceId: String(r.workspace_id),

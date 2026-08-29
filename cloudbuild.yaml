@@ -1,0 +1,46 @@
+substitutions:
+  _REGION: europe-west2
+  _REPOSITORY: clipsubtitles
+  _API_INTERNAL_URL: https://api.clipsubtitles.com
+steps:
+  - name: gcr.io/cloud-builders/docker
+    env: ['DOCKER_BUILDKIT=1']
+    args:
+      - build
+      - --platform=linux/amd64
+      - --target=api
+      - --build-arg
+      - API_INTERNAL_URL=${_API_INTERNAL_URL}
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/api:$COMMIT_SHA
+      - .
+  - name: gcr.io/cloud-builders/docker
+    env: ['DOCKER_BUILDKIT=1']
+    args:
+      - build
+      - --platform=linux/amd64
+      - --target=worker
+      - --build-arg
+      - API_INTERNAL_URL=${_API_INTERNAL_URL}
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/worker:$COMMIT_SHA
+      - .
+  - name: gcr.io/cloud-builders/docker
+    env: ['DOCKER_BUILDKIT=1']
+    args:
+      - build
+      - --platform=linux/amd64
+      - --target=web
+      - --build-arg
+      - API_INTERNAL_URL=${_API_INTERNAL_URL}
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/web:$COMMIT_SHA
+      - .
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/api:$COMMIT_SHA
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/worker:$COMMIT_SHA
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/web:$COMMIT_SHA
+options:
+  machineType: E2_HIGHCPU_8
+  logging: CLOUD_LOGGING_ONLY
+timeout: 1800s
