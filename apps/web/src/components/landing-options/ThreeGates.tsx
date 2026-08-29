@@ -132,28 +132,7 @@ export function ThreeGates() {
           <GatesStory />
         </section>
 
-        {/* 3 · Styles: real controls */}
-        <section className="tg-section tg-styles lo-wrap" aria-labelledby="tg-styles-title">
-          <div className="tg-section-copy">
-            <p className="lo-eyebrow tg-eyebrow">Caption styles</p>
-            <h2 id="tg-styles-title">Polished captions without the timeline work.</h2>
-            <p>
-              Five ready-made looks, four motion presets. Try them here, then reuse the same choices
-              to keep a whole series consistent.
-            </p>
-          </div>
-          <StyleBoard />
-        </section>
-
-        {/* Mid-page CTA */}
-        <section className="tg-mid lo-wrap" aria-labelledby="tg-mid-title">
-          <h2 id="tg-mid-title">Try it on your own clip.</h2>
-          <Link href="/sign-in" className="lo-btn tg-btn-primary">
-            Caption a video
-          </Link>
-        </section>
-
-        {/* 4 · Files and price, together */}
+        {/* 3 · Files and price */}
         <section className="tg-section tg-exports lo-wrap" aria-labelledby="tg-export-title">
           <div className="tg-section-copy">
             <p className="lo-eyebrow tg-eyebrow">Files and price</p>
@@ -216,6 +195,27 @@ export function ThreeGates() {
               </p>
             </div>
           </div>
+        </section>
+
+        {/* 4 · Styles: real controls */}
+        <section className="tg-section tg-styles lo-wrap" aria-labelledby="tg-styles-title">
+          <div className="tg-section-copy">
+            <p className="lo-eyebrow tg-eyebrow">Caption styles</p>
+            <h2 id="tg-styles-title">Polished captions without the timeline work.</h2>
+            <p>
+              Five ready-made looks, four motion presets. Try them here, then reuse the same choices
+              to keep a whole series consistent.
+            </p>
+          </div>
+          <StyleBoard />
+        </section>
+
+        {/* Mid-page CTA */}
+        <section className="tg-mid lo-wrap" aria-labelledby="tg-mid-title">
+          <h2 id="tg-mid-title">Try it on your own clip.</h2>
+          <Link href="/sign-in" className="lo-btn tg-btn-primary">
+            Caption a video
+          </Link>
         </section>
 
         {/* 5 · Audience */}
