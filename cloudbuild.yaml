@@ -3,6 +3,15 @@ substitutions:
   _REPOSITORY: clipsubtitles
   _API_INTERNAL_URL: https://api.clipsubtitles.com
 steps:
+  - name: node:24-bookworm
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        corepack enable
+        corepack prepare pnpm@10.33.1 --activate
+        pnpm install --frozen-lockfile
+        pnpm check
   - name: gcr.io/cloud-builders/docker
     env: ['DOCKER_BUILDKIT=1']
     args:
