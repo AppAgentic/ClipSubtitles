@@ -8,6 +8,8 @@ const require = createRequire(import.meta.url);
 const here = path.dirname(fileURLToPath(import.meta.url));
 const outDir = path.join(here, '..', 'public', 'fonts');
 mkdirSync(outDir, { recursive: true });
+const emojiDir = path.join(here, '..', 'public', 'emoji');
+mkdirSync(emojiDir, { recursive: true });
 for (const [pkg, src, name] of [
   ['inter', '400Regular/Inter_400Regular.ttf', 'Inter_400Regular.ttf'],
   ['inter', '500Medium/Inter_500Medium.ttf', 'Inter_500Medium.ttf'],
@@ -30,4 +32,21 @@ for (const [pkg, src, name] of [
 ]) {
   const to = path.join(outDir, name);
   if (!existsSync(to)) copyFileSync(require.resolve(`@expo-google-fonts/${pkg}/${src}`), to);
+}
+for (const codepoint of [
+  '1f525',
+  '1f680',
+  '2764',
+  '1f4a1',
+  '1f4b0',
+  '1f44f',
+  '2705',
+  '1f602',
+  '1f389',
+  '1f4aa',
+  '1f440',
+  '1f4af',
+]) {
+  const to = path.join(emojiDir, `${codepoint}.svg`);
+  if (!existsSync(to)) copyFileSync(require.resolve(`@twemoji/svg/${codepoint}.svg`), to);
 }

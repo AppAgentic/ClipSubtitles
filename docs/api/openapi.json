@@ -62,9 +62,7 @@
             "$ref": "#/components/schemas/Task"
           }
         },
-        "required": [
-          "project"
-        ]
+        "required": ["project"]
       },
       "CaptionProject": {
         "type": "object",
@@ -80,14 +78,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "awaiting_source",
-              "importing",
-              "ready",
-              "transcribing",
-              "captioned",
-              "failed"
-            ]
+            "enum": ["awaiting_source", "importing", "ready", "transcribing", "captioned", "failed"]
           },
           "version": {
             "type": "integer",
@@ -166,9 +157,7 @@
                 "maxLength": 2048
               }
             },
-            "required": [
-              "editor"
-            ]
+            "required": ["editor"]
           },
           "contentNotice": {
             "type": "string",
@@ -196,10 +185,7 @@
         ]
       },
       "SourceAsset": {
-        "type": [
-          "object",
-          "null"
-        ],
+        "type": ["object", "null"],
         "properties": {
           "id": {
             "type": "string",
@@ -208,21 +194,11 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "pending_upload",
-              "importing",
-              "ready",
-              "failed",
-              "purged"
-            ]
+            "enum": ["pending_upload", "importing", "ready", "failed", "purged"]
           },
           "origin": {
             "type": "string",
-            "enum": [
-              "upload",
-              "remote_url",
-              "fixture"
-            ]
+            "enum": ["upload", "remote_url", "fixture"]
           },
           "fileName": {
             "type": "string",
@@ -275,17 +251,10 @@
             "format": "date-time"
           }
         },
-        "required": [
-          "id",
-          "status",
-          "origin"
-        ]
+        "required": ["id", "status", "origin"]
       },
       "TranscriptView": {
-        "type": [
-          "object",
-          "null"
-        ],
+        "type": ["object", "null"],
         "properties": {
           "id": {
             "type": "string",
@@ -298,12 +267,7 @@
           },
           "source": {
             "type": "string",
-            "enum": [
-              "generated",
-              "edit",
-              "fallback",
-              "import"
-            ]
+            "enum": ["generated", "edit", "fallback", "import"]
           },
           "provider": {
             "type": "string",
@@ -368,11 +332,7 @@
                 "minimum": 0
               }
             },
-            "required": [
-              "offset",
-              "limit",
-              "total"
-            ]
+            "required": ["offset", "limit", "total"]
           }
         },
         "required": [
@@ -432,12 +392,7 @@
             "description": "True when a human/agent explicitly changed the text or timing"
           }
         },
-        "required": [
-          "id",
-          "text",
-          "startMs",
-          "endMs"
-        ]
+        "required": ["id", "text", "startMs", "endMs"]
       },
       "CaptionPage": {
         "type": "object",
@@ -489,11 +444,7 @@
                   "maxLength": 3600
                 }
               },
-              "required": [
-                "startWordIndex",
-                "endWordIndex",
-                "text"
-              ]
+              "required": ["startWordIndex", "endWordIndex", "text"]
             },
             "minItems": 1,
             "maxItems": 3
@@ -527,61 +478,50 @@
               "bold-pop",
               "lower-third",
               "karaoke",
-              "minimal"
+              "minimal",
+              "viral-beast",
+              "submagic-pop",
+              "smooth-pill",
+              "editorial-serif",
+              "neon-box",
+              "kinetic-flow",
+              "retro-arcade",
+              "documentary"
             ]
           },
           "position": {
             "type": "string",
-            "enum": [
-              "top",
-              "center",
-              "lower-third",
-              "bottom"
-            ]
+            "enum": ["top", "center", "lower-third", "bottom"]
           },
           "fontFamily": {
             "type": "string",
-            "enum": [
-              "Inter"
-            ]
+            "enum": ["Inter", "Bebas Neue", "Nunito", "Playfair Display", "Space Mono"]
           },
           "fontWeight": {
             "anyOf": [
               {
                 "type": "number",
-                "enum": [
-                  400
-                ]
+                "enum": [400]
               },
               {
                 "type": "number",
-                "enum": [
-                  500
-                ]
+                "enum": [500]
               },
               {
                 "type": "number",
-                "enum": [
-                  600
-                ]
+                "enum": [600]
               },
               {
                 "type": "number",
-                "enum": [
-                  700
-                ]
+                "enum": [700]
               },
               {
                 "type": "number",
-                "enum": [
-                  800
-                ]
+                "enum": [800]
               },
               {
                 "type": "number",
-                "enum": [
-                  900
-                ]
+                "enum": [900]
               }
             ]
           },
@@ -600,21 +540,15 @@
             "anyOf": [
               {
                 "type": "number",
-                "enum": [
-                  1
-                ]
+                "enum": [1]
               },
               {
                 "type": "number",
-                "enum": [
-                  2
-                ]
+                "enum": [2]
               },
               {
                 "type": "number",
-                "enum": [
-                  3
-                ]
+                "enum": [3]
               }
             ]
           },
@@ -625,18 +559,11 @@
           },
           "textAlign": {
             "type": "string",
-            "enum": [
-              "left",
-              "center",
-              "right"
-            ]
+            "enum": ["left", "center", "right"]
           },
           "textTransform": {
             "type": "string",
-            "enum": [
-              "none",
-              "uppercase"
-            ]
+            "enum": ["none", "uppercase", "lowercase", "capitalize"]
           },
           "textColor": {
             "type": "string",
@@ -656,10 +583,7 @@
                 "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
               }
             },
-            "required": [
-              "widthPct",
-              "color"
-            ]
+            "required": ["widthPct", "color"]
           },
           "shadow": {
             "type": "object",
@@ -682,12 +606,7 @@
                 "maximum": 0.02
               }
             },
-            "required": [
-              "enabled",
-              "color",
-              "blurPct",
-              "offsetYPct"
-            ]
+            "required": ["enabled", "color", "blurPct", "offsetYPct"]
           },
           "background": {
             "type": "object",
@@ -715,23 +634,14 @@
                 "maximum": 0.03
               }
             },
-            "required": [
-              "enabled",
-              "color",
-              "paddingXPct",
-              "paddingYPct",
-              "radiusPct"
-            ]
+            "required": ["enabled", "color", "paddingXPct", "paddingYPct", "radiusPct"]
           },
           "highlight": {
             "type": "object",
             "properties": {
               "mode": {
                 "type": "string",
-                "enum": [
-                  "none",
-                  "word"
-                ]
+                "enum": ["none", "word"]
               },
               "color": {
                 "type": "string",
@@ -748,23 +658,14 @@
                 "description": "Scale applied to the active word"
               }
             },
-            "required": [
-              "mode",
-              "color",
-              "scale"
-            ]
+            "required": ["mode", "color", "scale"]
           },
           "motion": {
             "type": "object",
             "properties": {
               "preset": {
                 "type": "string",
-                "enum": [
-                  "none",
-                  "soft-rise",
-                  "spring-pop",
-                  "karaoke-slide"
-                ]
+                "enum": ["none", "soft-rise", "spring-pop", "karaoke-slide"]
               },
               "enterDurationMs": {
                 "type": "integer",
@@ -788,12 +689,44 @@
               "exitDurationMs": 120,
               "wordTransitionMs": 180
             },
-            "required": [
-              "preset",
-              "enterDurationMs",
-              "exitDurationMs",
-              "wordTransitionMs"
-            ]
+            "required": ["preset", "enterDurationMs", "exitDurationMs", "wordTransitionMs"]
+          },
+          "emoji": {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": ["off", "auto"],
+                "description": "Auto adds visual emoji to matching keywords; transcript text is unchanged"
+              },
+              "timing": {
+                "type": "string",
+                "enum": ["active-word", "keyword-hold", "page"],
+                "description": "Show only with the keyword, from keyword to page end, or for the whole caption page"
+              },
+              "position": {
+                "type": "string",
+                "enum": ["above-word", "above-caption"]
+              },
+              "sizeEm": {
+                "type": "number",
+                "minimum": 0.6,
+                "maximum": 1.8,
+                "description": "Emoji size relative to the caption font size"
+              },
+              "animation": {
+                "type": "string",
+                "enum": ["none", "pop"]
+              }
+            },
+            "default": {
+              "mode": "off",
+              "timing": "active-word",
+              "position": "above-word",
+              "sizeEm": 1.15,
+              "animation": "pop"
+            },
+            "required": ["mode", "timing", "position", "sizeEm", "animation"]
           },
           "safeMarginPct": {
             "type": "number",
@@ -840,21 +773,15 @@
             "anyOf": [
               {
                 "type": "number",
-                "enum": [
-                  1
-                ]
+                "enum": [1]
               },
               {
                 "type": "number",
-                "enum": [
-                  2
-                ]
+                "enum": [2]
               },
               {
                 "type": "number",
-                "enum": [
-                  3
-                ]
+                "enum": [3]
               }
             ]
           },
@@ -913,10 +840,7 @@
         ]
       },
       "CaptionQaSummary": {
-        "type": [
-          "object",
-          "null"
-        ],
+        "type": ["object", "null"],
         "properties": {
           "pageCount": {
             "type": "integer",
@@ -945,22 +869,14 @@
                 },
                 "severity": {
                   "type": "string",
-                  "enum": [
-                    "warning",
-                    "error"
-                  ]
+                  "enum": ["warning", "error"]
                 },
                 "message": {
                   "type": "string",
                   "maxLength": 200
                 }
               },
-              "required": [
-                "pageId",
-                "kind",
-                "severity",
-                "message"
-              ]
+              "required": ["pageId", "kind", "severity", "message"]
             },
             "maxItems": 500
           },
@@ -977,13 +893,7 @@
             "description": "True when pages cover every transcript word exactly once, in order"
           }
         },
-        "required": [
-          "pageCount",
-          "issues",
-          "maxCps",
-          "averageCps",
-          "fidelity"
-        ]
+        "required": ["pageCount", "issues", "maxCps", "averageCps", "fidelity"]
       },
       "Task": {
         "type": "object",
@@ -1006,13 +916,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "queued",
-              "running",
-              "succeeded",
-              "failed",
-              "cancelled"
-            ]
+            "enum": ["queued", "running", "succeeded", "failed", "cancelled"]
           },
           "progress": {
             "type": "integer",
@@ -1127,11 +1031,7 @@
             "maxLength": 64
           }
         },
-        "required": [
-          "code",
-          "message",
-          "retryable"
-        ]
+        "required": ["code", "message", "retryable"]
       },
       "TaskResult": {
         "oneOf": [
@@ -1140,9 +1040,7 @@
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": [
-                  "generate_captions"
-                ]
+                "enum": ["generate_captions"]
               },
               "projectId": {
                 "type": "string",
@@ -1202,9 +1100,7 @@
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": [
-                  "render_preview"
-                ]
+                "enum": ["render_preview"]
               },
               "projectId": {
                 "type": "string",
@@ -1226,22 +1122,14 @@
                 "maxLength": 64
               }
             },
-            "required": [
-              "kind",
-              "projectId",
-              "exportId",
-              "projectVersion",
-              "contentHash"
-            ]
+            "required": ["kind", "projectId", "exportId", "projectVersion", "contentHash"]
           },
           {
             "type": "object",
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": [
-                  "render_export"
-                ]
+                "enum": ["render_export"]
               },
               "projectId": {
                 "type": "string",
@@ -1290,9 +1178,7 @@
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": [
-                  "import_source"
-                ]
+                "enum": ["import_source"]
               },
               "projectId": {
                 "type": "string",
@@ -1310,21 +1196,14 @@
                 "maximum": 86400000
               }
             },
-            "required": [
-              "kind",
-              "projectId",
-              "assetId",
-              "durationMs"
-            ]
+            "required": ["kind", "projectId", "assetId", "durationMs"]
           },
           {
             "type": "object",
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": [
-                  "finalize_upload"
-                ]
+                "enum": ["finalize_upload"]
               },
               "projectId": {
                 "type": "string",
@@ -1342,21 +1221,14 @@
                 "maximum": 86400000
               }
             },
-            "required": [
-              "kind",
-              "projectId",
-              "assetId",
-              "durationMs"
-            ]
+            "required": ["kind", "projectId", "assetId", "durationMs"]
           },
           {
             "type": "object",
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": [
-                  "retention_sweep"
-                ]
+                "enum": ["retention_sweep"]
               },
               "purgedAssets": {
                 "type": "integer",
@@ -1367,11 +1239,7 @@
                 "minimum": 0
               }
             },
-            "required": [
-              "kind",
-              "purgedAssets",
-              "purgedExports"
-            ]
+            "required": ["kind", "purgedAssets", "purgedExports"]
           }
         ]
       },
@@ -1385,13 +1253,7 @@
           },
           "kind": {
             "type": "string",
-            "enum": [
-              "mp4",
-              "overlay",
-              "srt",
-              "vtt",
-              "preview"
-            ]
+            "enum": ["mp4", "overlay", "srt", "vtt", "preview"]
           },
           "projectId": {
             "type": "string",
@@ -1444,10 +1306,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "available",
-              "purged"
-            ]
+            "enum": ["available", "purged"]
           },
           "createdAt": {
             "type": "string",
@@ -1495,9 +1354,7 @@
               },
               "method": {
                 "type": "string",
-                "enum": [
-                  "PUT"
-                ]
+                "enum": ["PUT"]
               },
               "url": {
                 "type": "string",
@@ -1525,9 +1382,7 @@
               },
               "transport": {
                 "type": "string",
-                "enum": [
-                  "proxy"
-                ]
+                "enum": ["proxy"]
               }
             },
             "required": [
@@ -1551,9 +1406,7 @@
               },
               "method": {
                 "type": "string",
-                "enum": [
-                  "PUT"
-                ]
+                "enum": ["PUT"]
               },
               "url": {
                 "type": "string",
@@ -1581,9 +1434,7 @@
               },
               "transport": {
                 "type": "string",
-                "enum": [
-                  "direct"
-                ]
+                "enum": ["direct"]
               },
               "expectedBytes": {
                 "type": "integer",
@@ -1680,24 +1531,15 @@
                       "maxLength": 300
                     }
                   },
-                  "required": [
-                    "path",
-                    "message"
-                  ]
+                  "required": ["path", "message"]
                 },
                 "maxItems": 50
               }
             },
-            "required": [
-              "code",
-              "message",
-              "retryable"
-            ]
+            "required": ["code", "message", "retryable"]
           }
         },
-        "required": [
-          "error"
-        ],
+        "required": ["error"],
         "description": "Public error envelope"
       },
       "CreateProjectRequest": {
@@ -1746,10 +1588,7 @@
                 "pattern": "^[a-f0-9]{64}$"
               }
             },
-            "required": [
-              "bytes",
-              "mimeType"
-            ],
+            "required": ["bytes", "mimeType"],
             "additionalProperties": false,
             "description": "Known browser file metadata; enables an exact-size direct object-store target when supported"
           },
@@ -1797,10 +1636,7 @@
             "pattern": "^[a-f0-9]{64}$"
           }
         },
-        "required": [
-          "bytes",
-          "mimeType"
-        ],
+        "required": ["bytes", "mimeType"],
         "additionalProperties": false
       },
       "CompleteDirectUploadRequest": {
@@ -1827,14 +1663,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "awaiting_source",
-              "importing",
-              "ready",
-              "transcribing",
-              "captioned",
-              "failed"
-            ]
+            "enum": ["awaiting_source", "importing", "ready", "transcribing", "captioned", "failed"]
           },
           "version": {
             "type": "integer",
@@ -1865,15 +1694,7 @@
             "format": "date-time"
           }
         },
-        "required": [
-          "id",
-          "title",
-          "status",
-          "version",
-          "pageCount",
-          "createdAt",
-          "updatedAt"
-        ]
+        "required": ["id", "title", "status", "version", "pageCount", "createdAt", "updatedAt"]
       },
       "PatchProjectRequest": {
         "type": "object",
@@ -1892,10 +1713,7 @@
             "maxItems": 200
           }
         },
-        "required": [
-          "expectedVersion",
-          "ops"
-        ],
+        "required": ["expectedVersion", "ops"],
         "additionalProperties": false
       },
       "PatchOp": {
@@ -1905,9 +1723,7 @@
             "properties": {
               "op": {
                 "type": "string",
-                "enum": [
-                  "set_title"
-                ]
+                "enum": ["set_title"]
               },
               "title": {
                 "type": "string",
@@ -1915,10 +1731,7 @@
                 "maxLength": 200
               }
             },
-            "required": [
-              "op",
-              "title"
-            ],
+            "required": ["op", "title"],
             "additionalProperties": false
           },
           {
@@ -1926,9 +1739,7 @@
             "properties": {
               "op": {
                 "type": "string",
-                "enum": [
-                  "set_language"
-                ]
+                "enum": ["set_language"]
               },
               "language": {
                 "type": "string",
@@ -1938,10 +1749,7 @@
                 "description": "Language tag (BCP-47 subset)"
               }
             },
-            "required": [
-              "op",
-              "language"
-            ],
+            "required": ["op", "language"],
             "additionalProperties": false
           },
           {
@@ -1949,9 +1757,7 @@
             "properties": {
               "op": {
                 "type": "string",
-                "enum": [
-                  "replace_word_text"
-                ]
+                "enum": ["replace_word_text"]
               },
               "wordId": {
                 "type": "string",
@@ -1964,11 +1770,7 @@
                 "maxLength": 120
               }
             },
-            "required": [
-              "op",
-              "wordId",
-              "text"
-            ],
+            "required": ["op", "wordId", "text"],
             "additionalProperties": false
           },
           {
@@ -1976,9 +1778,7 @@
             "properties": {
               "op": {
                 "type": "string",
-                "enum": [
-                  "set_word_timing"
-                ]
+                "enum": ["set_word_timing"]
               },
               "wordId": {
                 "type": "string",
@@ -1996,12 +1796,7 @@
                 "maximum": 86400000
               }
             },
-            "required": [
-              "op",
-              "wordId",
-              "startMs",
-              "endMs"
-            ],
+            "required": ["op", "wordId", "startMs", "endMs"],
             "additionalProperties": false
           },
           {
@@ -2009,9 +1804,7 @@
             "properties": {
               "op": {
                 "type": "string",
-                "enum": [
-                  "delete_word"
-                ]
+                "enum": ["delete_word"]
               },
               "wordId": {
                 "type": "string",
@@ -2019,10 +1812,7 @@
                 "description": "word identifier"
               }
             },
-            "required": [
-              "op",
-              "wordId"
-            ],
+            "required": ["op", "wordId"],
             "additionalProperties": false
           },
           {
@@ -2030,15 +1820,10 @@
             "properties": {
               "op": {
                 "type": "string",
-                "enum": [
-                  "insert_word"
-                ]
+                "enum": ["insert_word"]
               },
               "afterWordId": {
-                "type": [
-                  "string",
-                  "null"
-                ],
+                "type": ["string", "null"],
                 "pattern": "^w_[0-9a-hjkmnp-tv-z]{16,32}$",
                 "description": "null inserts at the beginning"
               },
@@ -2058,13 +1843,7 @@
                 "maximum": 86400000
               }
             },
-            "required": [
-              "op",
-              "afterWordId",
-              "text",
-              "startMs",
-              "endMs"
-            ],
+            "required": ["op", "afterWordId", "text", "startMs", "endMs"],
             "additionalProperties": false
           },
           {
@@ -2072,9 +1851,7 @@
             "properties": {
               "op": {
                 "type": "string",
-                "enum": [
-                  "split_page"
-                ]
+                "enum": ["split_page"]
               },
               "pageId": {
                 "type": "string",
@@ -2087,11 +1864,7 @@
                 "description": "word identifier"
               }
             },
-            "required": [
-              "op",
-              "pageId",
-              "beforeWordId"
-            ],
+            "required": ["op", "pageId", "beforeWordId"],
             "additionalProperties": false
           },
           {
@@ -2099,9 +1872,7 @@
             "properties": {
               "op": {
                 "type": "string",
-                "enum": [
-                  "merge_page_with_next"
-                ]
+                "enum": ["merge_page_with_next"]
               },
               "pageId": {
                 "type": "string",
@@ -2109,10 +1880,7 @@
                 "description": "page identifier"
               }
             },
-            "required": [
-              "op",
-              "pageId"
-            ],
+            "required": ["op", "pageId"],
             "additionalProperties": false
           },
           {
@@ -2120,9 +1888,7 @@
             "properties": {
               "op": {
                 "type": "string",
-                "enum": [
-                  "resegment"
-                ]
+                "enum": ["resegment"]
               },
               "segmentation": {
                 "type": "object",
@@ -2136,21 +1902,15 @@
                     "anyOf": [
                       {
                         "type": "number",
-                        "enum": [
-                          1
-                        ]
+                        "enum": [1]
                       },
                       {
                         "type": "number",
-                        "enum": [
-                          2
-                        ]
+                        "enum": [2]
                       },
                       {
                         "type": "number",
-                        "enum": [
-                          3
-                        ]
+                        "enum": [3]
                       }
                     ]
                   },
@@ -2198,9 +1958,7 @@
                 "additionalProperties": false
               }
             },
-            "required": [
-              "op"
-            ],
+            "required": ["op"],
             "additionalProperties": false
           },
           {
@@ -2208,9 +1966,7 @@
             "properties": {
               "op": {
                 "type": "string",
-                "enum": [
-                  "set_style"
-                ]
+                "enum": ["set_style"]
               },
               "style": {
                 "type": "object",
@@ -2222,61 +1978,50 @@
                       "bold-pop",
                       "lower-third",
                       "karaoke",
-                      "minimal"
+                      "minimal",
+                      "viral-beast",
+                      "submagic-pop",
+                      "smooth-pill",
+                      "editorial-serif",
+                      "neon-box",
+                      "kinetic-flow",
+                      "retro-arcade",
+                      "documentary"
                     ]
                   },
                   "position": {
                     "type": "string",
-                    "enum": [
-                      "top",
-                      "center",
-                      "lower-third",
-                      "bottom"
-                    ]
+                    "enum": ["top", "center", "lower-third", "bottom"]
                   },
                   "fontFamily": {
                     "type": "string",
-                    "enum": [
-                      "Inter"
-                    ]
+                    "enum": ["Inter", "Bebas Neue", "Nunito", "Playfair Display", "Space Mono"]
                   },
                   "fontWeight": {
                     "anyOf": [
                       {
                         "type": "number",
-                        "enum": [
-                          400
-                        ]
+                        "enum": [400]
                       },
                       {
                         "type": "number",
-                        "enum": [
-                          500
-                        ]
+                        "enum": [500]
                       },
                       {
                         "type": "number",
-                        "enum": [
-                          600
-                        ]
+                        "enum": [600]
                       },
                       {
                         "type": "number",
-                        "enum": [
-                          700
-                        ]
+                        "enum": [700]
                       },
                       {
                         "type": "number",
-                        "enum": [
-                          800
-                        ]
+                        "enum": [800]
                       },
                       {
                         "type": "number",
-                        "enum": [
-                          900
-                        ]
+                        "enum": [900]
                       }
                     ]
                   },
@@ -2295,21 +2040,15 @@
                     "anyOf": [
                       {
                         "type": "number",
-                        "enum": [
-                          1
-                        ]
+                        "enum": [1]
                       },
                       {
                         "type": "number",
-                        "enum": [
-                          2
-                        ]
+                        "enum": [2]
                       },
                       {
                         "type": "number",
-                        "enum": [
-                          3
-                        ]
+                        "enum": [3]
                       }
                     ]
                   },
@@ -2320,18 +2059,11 @@
                   },
                   "textAlign": {
                     "type": "string",
-                    "enum": [
-                      "left",
-                      "center",
-                      "right"
-                    ]
+                    "enum": ["left", "center", "right"]
                   },
                   "textTransform": {
                     "type": "string",
-                    "enum": [
-                      "none",
-                      "uppercase"
-                    ]
+                    "enum": ["none", "uppercase", "lowercase", "capitalize"]
                   },
                   "textColor": {
                     "type": "string",
@@ -2409,10 +2141,7 @@
                     "properties": {
                       "mode": {
                         "type": "string",
-                        "enum": [
-                          "none",
-                          "word"
-                        ]
+                        "enum": ["none", "word"]
                       },
                       "color": {
                         "type": "string",
@@ -2436,12 +2165,7 @@
                     "properties": {
                       "preset": {
                         "type": "string",
-                        "enum": [
-                          "none",
-                          "soft-rise",
-                          "spring-pop",
-                          "karaoke-slide"
-                        ]
+                        "enum": ["none", "soft-rise", "spring-pop", "karaoke-slide"]
                       },
                       "enterDurationMs": {
                         "type": "integer",
@@ -2457,6 +2181,36 @@
                         "type": "integer",
                         "minimum": 60,
                         "maximum": 600
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "emoji": {
+                    "type": "object",
+                    "properties": {
+                      "mode": {
+                        "type": "string",
+                        "enum": ["off", "auto"],
+                        "description": "Auto adds visual emoji to matching keywords; transcript text is unchanged"
+                      },
+                      "timing": {
+                        "type": "string",
+                        "enum": ["active-word", "keyword-hold", "page"],
+                        "description": "Show only with the keyword, from keyword to page end, or for the whole caption page"
+                      },
+                      "position": {
+                        "type": "string",
+                        "enum": ["above-word", "above-caption"]
+                      },
+                      "sizeEm": {
+                        "type": "number",
+                        "minimum": 0.6,
+                        "maximum": 1.8,
+                        "description": "Emoji size relative to the caption font size"
+                      },
+                      "animation": {
+                        "type": "string",
+                        "enum": ["none", "pop"]
                       }
                     },
                     "additionalProperties": false
@@ -2477,10 +2231,7 @@
                 "additionalProperties": false
               }
             },
-            "required": [
-              "op",
-              "style"
-            ],
+            "required": ["op", "style"],
             "additionalProperties": false
           },
           {
@@ -2488,9 +2239,7 @@
             "properties": {
               "op": {
                 "type": "string",
-                "enum": [
-                  "set_preset"
-                ]
+                "enum": ["set_preset"]
               },
               "preset": {
                 "type": "string",
@@ -2499,14 +2248,19 @@
                   "bold-pop",
                   "lower-third",
                   "karaoke",
-                  "minimal"
+                  "minimal",
+                  "viral-beast",
+                  "submagic-pop",
+                  "smooth-pill",
+                  "editorial-serif",
+                  "neon-box",
+                  "kinetic-flow",
+                  "retro-arcade",
+                  "documentary"
                 ]
               }
             },
-            "required": [
-              "op",
-              "preset"
-            ],
+            "required": ["op", "preset"],
             "additionalProperties": false
           },
           {
@@ -2514,24 +2268,14 @@
             "properties": {
               "op": {
                 "type": "string",
-                "enum": [
-                  "set_position"
-                ]
+                "enum": ["set_position"]
               },
               "position": {
                 "type": "string",
-                "enum": [
-                  "top",
-                  "center",
-                  "lower-third",
-                  "bottom"
-                ]
+                "enum": ["top", "center", "lower-third", "bottom"]
               }
             },
-            "required": [
-              "op",
-              "position"
-            ],
+            "required": ["op", "position"],
             "additionalProperties": false
           }
         ]
@@ -2563,17 +2307,20 @@
               "bold-pop",
               "lower-third",
               "karaoke",
-              "minimal"
+              "minimal",
+              "viral-beast",
+              "submagic-pop",
+              "smooth-pill",
+              "editorial-serif",
+              "neon-box",
+              "kinetic-flow",
+              "retro-arcade",
+              "documentary"
             ]
           },
           "position": {
             "type": "string",
-            "enum": [
-              "top",
-              "center",
-              "lower-third",
-              "bottom"
-            ]
+            "enum": ["top", "center", "lower-third", "bottom"]
           },
           "segmentation": {
             "type": "object",
@@ -2587,21 +2334,15 @@
                 "anyOf": [
                   {
                     "type": "number",
-                    "enum": [
-                      1
-                    ]
+                    "enum": [1]
                   },
                   {
                     "type": "number",
-                    "enum": [
-                      2
-                    ]
+                    "enum": [2]
                   },
                   {
                     "type": "number",
-                    "enum": [
-                      3
-                    ]
+                    "enum": [3]
                   }
                 ]
               },
@@ -2678,11 +2419,7 @@
           },
           "resolution": {
             "type": "string",
-            "enum": [
-              "360p",
-              "480p",
-              "720p"
-            ]
+            "enum": ["360p", "480p", "720p"]
           },
           "idempotencyKey": {
             "type": "string",
@@ -2745,12 +2482,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "open",
-              "consumed",
-              "expired",
-              "invalidated"
-            ]
+            "enum": ["open", "consumed", "expired", "invalidated"]
           },
           "invalidatedReason": {
             "type": "string",
@@ -2788,72 +2520,45 @@
             "type": "array",
             "items": {
               "type": "string",
-              "enum": [
-                "mp4",
-                "overlay",
-                "srt",
-                "vtt"
-              ]
+              "enum": ["mp4", "overlay", "srt", "vtt"]
             },
             "minItems": 1,
             "maxItems": 4
           },
           "resolution": {
             "type": "string",
-            "enum": [
-              "720p",
-              "1080p",
-              "source"
-            ]
+            "enum": ["720p", "1080p", "source"]
           },
           "fps": {
             "anyOf": [
               {
                 "type": "number",
-                "enum": [
-                  24
-                ]
+                "enum": [24]
               },
               {
                 "type": "number",
-                "enum": [
-                  25
-                ]
+                "enum": [25]
               },
               {
                 "type": "number",
-                "enum": [
-                  30
-                ]
+                "enum": [30]
               },
               {
                 "type": "number",
-                "enum": [
-                  60
-                ]
+                "enum": [60]
               },
               {
                 "type": "string",
-                "enum": [
-                  "source"
-                ]
+                "enum": ["source"]
               }
             ]
           },
           "quality": {
             "type": "string",
-            "enum": [
-              "standard",
-              "high"
-            ]
+            "enum": ["standard", "high"]
           }
         },
-        "required": [
-          "outputs",
-          "resolution",
-          "fps",
-          "quality"
-        ],
+        "required": ["outputs", "resolution", "fps", "quality"],
         "additionalProperties": false
       },
       "ExpectedOutput": {
@@ -2861,12 +2566,7 @@
         "properties": {
           "kind": {
             "type": "string",
-            "enum": [
-              "mp4",
-              "overlay",
-              "srt",
-              "vtt"
-            ]
+            "enum": ["mp4", "overlay", "srt", "vtt"]
           },
           "container": {
             "type": "string",
@@ -2892,13 +2592,7 @@
             "minimum": 0
           }
         },
-        "required": [
-          "kind",
-          "container",
-          "mimeType",
-          "priced",
-          "credits"
-        ]
+        "required": ["kind", "container", "mimeType", "priced", "credits"]
       },
       "CreateRenderQuoteRequest": {
         "type": "object",
@@ -2934,11 +2628,7 @@
             "description": "Client-generated idempotency key (8-128 chars)"
           }
         },
-        "required": [
-          "quoteId",
-          "approvedCreditCost",
-          "idempotencyKey"
-        ],
+        "required": ["quoteId", "approvedCreditCost", "idempotencyKey"],
         "additionalProperties": false
       },
       "Me": {
@@ -2960,9 +2650,7 @@
                 "maxLength": 120
               }
             },
-            "required": [
-              "id"
-            ]
+            "required": ["id"]
           },
           "workspace": {
             "$ref": "#/components/schemas/Workspace"
@@ -2971,30 +2659,18 @@
             "type": "array",
             "items": {
               "type": "string",
-              "enum": [
-                "captions:read",
-                "captions:write"
-              ]
+              "enum": ["captions:read", "captions:write"]
             }
           },
           "authKind": {
             "type": "string",
-            "enum": [
-              "session",
-              "bearer"
-            ]
+            "enum": ["session", "bearer"]
           },
           "credits": {
             "$ref": "#/components/schemas/CreditBalance"
           }
         },
-        "required": [
-          "user",
-          "workspace",
-          "scopes",
-          "authKind",
-          "credits"
-        ]
+        "required": ["user", "workspace", "scopes", "authKind", "credits"]
       },
       "Workspace": {
         "type": "object",
@@ -3016,12 +2692,7 @@
             "format": "date-time"
           }
         },
-        "required": [
-          "id",
-          "name",
-          "retention",
-          "createdAt"
-        ]
+        "required": ["id", "name", "retention", "createdAt"]
       },
       "RetentionPolicy": {
         "type": "object",
@@ -3037,10 +2708,7 @@
             "maximum": 90
           }
         },
-        "required": [
-          "sourceDays",
-          "exportDays"
-        ]
+        "required": ["sourceDays", "exportDays"]
       },
       "CreditBalance": {
         "type": "object",
@@ -3060,12 +2728,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "available",
-          "reserved",
-          "total",
-          "priceVersion"
-        ]
+        "required": ["available", "reserved", "total", "priceVersion"]
       },
       "Connection": {
         "type": "object",
@@ -3087,10 +2750,7 @@
             "type": "array",
             "items": {
               "type": "string",
-              "enum": [
-                "captions:read",
-                "captions:write"
-              ]
+              "enum": ["captions:read", "captions:write"]
             }
           },
           "createdAt": {
@@ -3106,12 +2766,7 @@
             "format": "date-time"
           }
         },
-        "required": [
-          "id",
-          "clientId",
-          "scopes",
-          "createdAt"
-        ]
+        "required": ["id", "clientId", "scopes", "createdAt"]
       },
       "LedgerEntry": {
         "type": "object",
@@ -3122,13 +2777,7 @@
           },
           "kind": {
             "type": "string",
-            "enum": [
-              "grant",
-              "reserve",
-              "settle",
-              "release",
-              "adjust"
-            ]
+            "enum": ["grant", "reserve", "settle", "release", "adjust"]
           },
           "amount": {
             "type": "integer",
@@ -3162,14 +2811,7 @@
             "format": "date-time"
           }
         },
-        "required": [
-          "id",
-          "kind",
-          "amount",
-          "availableAfter",
-          "reservedAfter",
-          "createdAt"
-        ]
+        "required": ["id", "kind", "amount", "availableAfter", "reservedAfter", "createdAt"]
       },
       "PriceTable": {
         "type": "object",
@@ -3277,9 +2919,7 @@
   "paths": {
     "/v1/projects": {
       "post": {
-        "tags": [
-          "Projects"
-        ],
+        "tags": ["Projects"],
         "summary": "Create a caption project",
         "description": "Returns an upload target (single bounded PUT) or, when sourceUrl is given, starts a bounded remote import task.",
         "security": [
@@ -3395,9 +3035,7 @@
         }
       },
       "get": {
-        "tags": [
-          "Projects"
-        ],
+        "tags": ["Projects"],
         "summary": "List projects in the caller workspace",
         "security": [
           {
@@ -3423,9 +3061,7 @@
                       "maxItems": 200
                     }
                   },
-                  "required": [
-                    "projects"
-                  ]
+                  "required": ["projects"]
                 }
               }
             }
@@ -3495,9 +3131,7 @@
     },
     "/v1/projects/{projectId}/direct-upload-targets": {
       "post": {
-        "tags": [
-          "Projects"
-        ],
+        "tags": ["Projects"],
         "summary": "Issue an exact-size direct object-store PUT, with protected proxy fallback",
         "security": [
           {
@@ -3627,9 +3261,7 @@
     },
     "/v1/projects/{projectId}/uploads/{uploadId}/complete": {
       "post": {
-        "tags": [
-          "Projects"
-        ],
+        "tags": ["Projects"],
         "summary": "Snapshot a direct upload and enqueue durable media verification",
         "security": [
           {
@@ -3686,9 +3318,7 @@
                       "$ref": "#/components/schemas/Task"
                     }
                   },
-                  "required": [
-                    "task"
-                  ]
+                  "required": ["task"]
                 }
               }
             }
@@ -3798,9 +3428,7 @@
     },
     "/v1/projects/{projectId}": {
       "get": {
-        "tags": [
-          "Projects"
-        ],
+        "tags": ["Projects"],
         "summary": "Get a project",
         "description": "include=pages,words selects caption pages and a bounded window of transcript words.",
         "security": [
@@ -3836,10 +3464,7 @@
           },
           {
             "schema": {
-              "type": [
-                "integer",
-                "null"
-              ],
+              "type": ["integer", "null"],
               "minimum": 0
             },
             "required": false,
@@ -3931,9 +3556,7 @@
         }
       },
       "patch": {
-        "tags": [
-          "Projects"
-        ],
+        "tags": ["Projects"],
         "summary": "Apply constrained edits with an optimistic version check",
         "security": [
           {
@@ -3987,11 +3610,7 @@
                       "description": "True when the patch produced a new transcript revision"
                     }
                   },
-                  "required": [
-                    "project",
-                    "applied",
-                    "newRevision"
-                  ]
+                  "required": ["project", "applied", "newRevision"]
                 }
               }
             }
@@ -4069,9 +3688,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "Projects"
-        ],
+        "tags": ["Projects"],
         "summary": "Delete a project and its media immediately",
         "security": [
           {
@@ -4163,9 +3780,7 @@
     },
     "/v1/projects/{projectId}/upload-targets": {
       "post": {
-        "tags": [
-          "Projects"
-        ],
+        "tags": ["Projects"],
         "summary": "Issue a fresh bounded upload target for a project awaiting its source",
         "security": [
           {
@@ -4274,9 +3889,7 @@
     },
     "/v1/projects/{projectId}/captions": {
       "post": {
-        "tags": [
-          "Captions"
-        ],
+        "tags": ["Captions"],
         "summary": "Start transcription, normalization, segmentation, and initial styling",
         "security": [
           {
@@ -4325,10 +3938,7 @@
                       "$ref": "#/components/schemas/CaptionProject"
                     }
                   },
-                  "required": [
-                    "task",
-                    "project"
-                  ]
+                  "required": ["task", "project"]
                 }
               }
             }
@@ -4408,9 +4018,7 @@
     },
     "/v1/projects/{projectId}/previews": {
       "post": {
-        "tags": [
-          "Captions"
-        ],
+        "tags": ["Captions"],
         "summary": "Create a fast low-resolution preview task (free, rate limited)",
         "security": [
           {
@@ -4456,9 +4064,7 @@
                       "$ref": "#/components/schemas/Task"
                     }
                   },
-                  "required": [
-                    "task"
-                  ]
+                  "required": ["task"]
                 }
               }
             }
@@ -4538,9 +4144,7 @@
     },
     "/v1/projects/{projectId}/render-quotes": {
       "post": {
-        "tags": [
-          "Rendering"
-        ],
+        "tags": ["Rendering"],
         "summary": "Create an immutable render quote (settings, version/hash, expected outputs, credit estimate)",
         "security": [
           {
@@ -4660,9 +4264,7 @@
     },
     "/v1/projects/{projectId}/renders": {
       "post": {
-        "tags": [
-          "Rendering"
-        ],
+        "tags": ["Rendering"],
         "summary": "Consume an approved quote: reserve credits and start the final render",
         "description": "Requires the quote id, the exact approved credit cost, and an idempotency key. Duplicate requests return the same task and never double-charge.",
         "security": [
@@ -4715,11 +4317,7 @@
                       "type": "integer"
                     }
                   },
-                  "required": [
-                    "task",
-                    "quote",
-                    "reservedCredits"
-                  ]
+                  "required": ["task", "quote", "reservedCredits"]
                 }
               }
             }
@@ -4819,9 +4417,7 @@
     },
     "/v1/tasks": {
       "get": {
-        "tags": [
-          "Tasks"
-        ],
+        "tags": ["Tasks"],
         "summary": "List recent tasks in the caller workspace",
         "security": [
           {
@@ -4846,10 +4442,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "true",
-                "false"
-              ]
+              "enum": ["true", "false"]
             },
             "required": false,
             "name": "active",
@@ -4882,9 +4475,7 @@
                       "maxItems": 200
                     }
                   },
-                  "required": [
-                    "tasks"
-                  ]
+                  "required": ["tasks"]
                 }
               }
             }
@@ -4954,9 +4545,7 @@
     },
     "/v1/tasks/{taskId}": {
       "get": {
-        "tags": [
-          "Tasks"
-        ],
+        "tags": ["Tasks"],
         "summary": "Get durable task progress, bounded errors, and finished exports",
         "security": [
           {
@@ -4998,9 +4587,7 @@
                       "maxItems": 4
                     }
                   },
-                  "required": [
-                    "task"
-                  ]
+                  "required": ["task"]
                 }
               }
             }
@@ -5070,9 +4657,7 @@
     },
     "/v1/tasks/{taskId}/cancel": {
       "post": {
-        "tags": [
-          "Tasks"
-        ],
+        "tags": ["Tasks"],
         "summary": "Request cancellation (queued tasks cancel immediately, running tasks cooperatively)",
         "security": [
           {
@@ -5107,9 +4692,7 @@
                       "$ref": "#/components/schemas/Task"
                     }
                   },
-                  "required": [
-                    "task"
-                  ]
+                  "required": ["task"]
                 }
               }
             }
@@ -5189,9 +4772,7 @@
     },
     "/v1/exports": {
       "get": {
-        "tags": [
-          "Exports"
-        ],
+        "tags": ["Exports"],
         "summary": "List exports in the caller workspace",
         "security": [
           {
@@ -5240,9 +4821,7 @@
                       "maxItems": 200
                     }
                   },
-                  "required": [
-                    "exports"
-                  ]
+                  "required": ["exports"]
                 }
               }
             }
@@ -5312,9 +4891,7 @@
     },
     "/v1/exports/{exportId}": {
       "get": {
-        "tags": [
-          "Exports"
-        ],
+        "tags": ["Exports"],
         "summary": "Get export metadata and a short-lived download URL",
         "security": [
           {
@@ -5423,9 +5000,7 @@
     },
     "/v1/exports/{exportId}/content": {
       "get": {
-        "tags": [
-          "Exports"
-        ],
+        "tags": ["Exports"],
         "summary": "Download export bytes via a signed, short-lived URL (supports Range)",
         "parameters": [
           {
@@ -5441,10 +5016,7 @@
           },
           {
             "schema": {
-              "type": [
-                "integer",
-                "null"
-              ]
+              "type": ["integer", "null"]
             },
             "required": false,
             "name": "exp",
@@ -5471,10 +5043,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "0",
-                "1"
-              ]
+              "enum": ["0", "1"]
             },
             "required": false,
             "name": "download",
@@ -5563,9 +5132,7 @@
     },
     "/v1/assets/{assetId}/content": {
       "get": {
-        "tags": [
-          "Exports"
-        ],
+        "tags": ["Exports"],
         "summary": "Stream source media for the editor via a signed, short-lived URL (supports Range)",
         "parameters": [
           {
@@ -5581,10 +5148,7 @@
           },
           {
             "schema": {
-              "type": [
-                "integer",
-                "null"
-              ]
+              "type": ["integer", "null"]
             },
             "required": false,
             "name": "exp",
@@ -5611,10 +5175,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "0",
-                "1"
-              ]
+              "enum": ["0", "1"]
             },
             "required": false,
             "name": "download",
@@ -5703,9 +5264,7 @@
     },
     "/v1/uploads/{uploadToken}": {
       "put": {
-        "tags": [
-          "Projects"
-        ],
+        "tags": ["Projects"],
         "summary": "Upload the source media in a single bounded PUT to a signed upload target",
         "parameters": [
           {
@@ -5720,10 +5279,7 @@
           },
           {
             "schema": {
-              "type": [
-                "integer",
-                "null"
-              ]
+              "type": ["integer", "null"]
             },
             "required": false,
             "name": "exp",
@@ -5750,10 +5306,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "0",
-                "1"
-              ]
+              "enum": ["0", "1"]
             },
             "required": false,
             "name": "download",
@@ -5772,9 +5325,7 @@
                       "$ref": "#/components/schemas/SourceAsset"
                     }
                   },
-                  "required": [
-                    "asset"
-                  ]
+                  "required": ["asset"]
                 }
               }
             }
@@ -5884,9 +5435,7 @@
     },
     "/v1/me": {
       "get": {
-        "tags": [
-          "Account"
-        ],
+        "tags": ["Account"],
         "summary": "Identity, workspace, scopes, and credits derived from the verified credential",
         "security": [
           {
@@ -5972,9 +5521,7 @@
     },
     "/v1/workspace": {
       "patch": {
-        "tags": [
-          "Account"
-        ],
+        "tags": ["Account"],
         "summary": "Update workspace name and retention windows",
         "security": [
           {
@@ -6094,9 +5641,7 @@
     },
     "/v1/connections": {
       "get": {
-        "tags": [
-          "Account"
-        ],
+        "tags": ["Account"],
         "summary": "List agent/OAuth connections (grants) for the workspace",
         "security": [
           {
@@ -6122,9 +5667,7 @@
                       "maxItems": 100
                     }
                   },
-                  "required": [
-                    "connections"
-                  ]
+                  "required": ["connections"]
                 }
               }
             }
@@ -6194,9 +5737,7 @@
     },
     "/v1/connections/{grantId}/revoke": {
       "post": {
-        "tags": [
-          "Account"
-        ],
+        "tags": ["Account"],
         "summary": "Revoke an agent connection; its tokens stop working immediately",
         "security": [
           {
@@ -6295,9 +5836,7 @@
     },
     "/v1/credits": {
       "get": {
-        "tags": [
-          "Billing"
-        ],
+        "tags": ["Billing"],
         "summary": "Credit balance",
         "security": [
           {
@@ -6383,9 +5922,7 @@
     },
     "/v1/credits/ledger": {
       "get": {
-        "tags": [
-          "Billing"
-        ],
+        "tags": ["Billing"],
         "summary": "Append-only credit ledger (grants, reservations, settlements, releases)",
         "security": [
           {
@@ -6411,9 +5948,7 @@
                       "maxItems": 500
                     }
                   },
-                  "required": [
-                    "entries"
-                  ]
+                  "required": ["entries"]
                 }
               }
             }
@@ -6483,9 +6018,7 @@
     },
     "/v1/prices": {
       "get": {
-        "tags": [
-          "Billing"
-        ],
+        "tags": ["Billing"],
         "summary": "Current credit price table and version",
         "responses": {
           "200": {

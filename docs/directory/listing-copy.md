@@ -26,7 +26,8 @@ Working with an assistant, you can:
 - **Generate captions** with word-level timing, automatically segmented into
   readable pages and lines. Segmentation respects your manual splits and merges.
 - **Edit precisely** — change words, split or merge lines, move page boundaries,
-  and restyle (font size, position, colours, highlight mode) through a versioned
+  and restyle (font family, size, position, casing, colours, motion, highlight
+  and optional keyword emojis) through a versioned
   project. Every change bumps the version and content hash, so nothing renders
   that you did not see.
 - **Preview** a short window before committing.
@@ -38,7 +39,7 @@ Working with an assistant, you can:
   versions, tasks and downloads are there.
 
 ClipSubtitles is built agent-first: a typed REST API with OpenAPI, and an MCP
-server with eight tools over Streamable HTTP, share one contract with the web
+server with nine tools over Streamable HTTP, share one contract with the web
 studio.
 
 ## Category

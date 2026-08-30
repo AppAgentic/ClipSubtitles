@@ -2,13 +2,14 @@ import { z } from 'zod';
 import type { Scope } from './auth';
 import { IdempotencyKeySchema, ProjectIdSchema, QuoteIdSchema, TaskIdSchema } from './ids';
 import { LIMITS } from './limits';
+import { CaptionProjectSchema, PatchOpSchema, ProjectStatusSchema } from './project';
 import {
-  CaptionProjectSchema,
-  PatchOpSchema,
-  ProjectStatusSchema,
-} from './project';
-import { CreatePreviewRequestSchema, ExportSchema, OutputSettingsSchema, RenderQuoteSchema } from './render';
-import { CaptionPositionSchema, StylePresetIdSchema } from './style';
+  CreatePreviewRequestSchema,
+  ExportSchema,
+  OutputSettingsSchema,
+  RenderQuoteSchema,
+} from './render';
+import { CaptionPositionSchema, StyleConfigSchema, StylePresetIdSchema } from './style';
 import { TaskSchema } from './tasks';
 import { LanguageTagSchema, VocabularySchema } from './transcript';
 
@@ -25,6 +26,7 @@ export const MCP_TOOL_NAMES = [
   'render_caption_export',
   'get_caption_task',
   'cancel_caption_task',
+  'get_caption_style_catalog',
 ] as const;
 export type McpToolName = (typeof MCP_TOOL_NAMES)[number];
 
@@ -73,7 +75,10 @@ export const CreateCaptionProjectTool = describe({
   inputSchema: z
     .object({
       title: z.string().trim().min(1).max(LIMITS.titleMaxChars).optional(),
-      sourceUrl: z.url({ protocol: /^https?$/ }).max(LIMITS.maxSourceUrlChars).optional(),
+      sourceUrl: z
+        .url({ protocol: /^https?$/ })
+        .max(LIMITS.maxSourceUrlChars)
+        .optional(),
       language: LanguageTagSchema.optional(),
       idempotencyKey: IdempotencyKeySchema.optional(),
     })
@@ -132,7 +137,10 @@ export const GetCaptionProjectTool = describe({
     .object({
       projectId: ProjectIdSchema,
       pages: z.boolean().optional().describe('Include caption pages (default true)'),
-      words: z.boolean().optional().describe('Include a window of transcript words (default false)'),
+      words: z
+        .boolean()
+        .optional()
+        .describe('Include a window of transcript words (default false)'),
       wordsOffset: z.number().int().nonnegative().optional(),
       wordsLimit: z.number().int().positive().max(LIMITS.maxWordsWindow).optional(),
     })
@@ -266,6 +274,26 @@ export const CancelCaptionTaskTool = describe({
   cost: 'free',
 });
 
+export const GetCaptionStyleCatalogTool = describe({
+  name: 'get_caption_style_catalog',
+  description:
+    'Read every available caption preset and the complete bounded style-control surface before choosing a look. Agents may start from any preset, then use update_caption_project set_style to change font family/weight/size, casing, alignment, colours, outline, shadow, plate, active-word highlight, motion, emoji timing/position/size/animation, and safe placement. Use resegment to control words and lines per caption without changing transcript text.',
+  inputSchema: z.object({}).strict(),
+  outputSchema: z.object({
+    presets: z.array(StyleConfigSchema),
+    guidance: z.array(z.string()),
+  }),
+  annotations: {
+    title: 'Get caption style catalog',
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+  scope: 'captions:read',
+  cost: 'free',
+});
+
 export const MCP_TOOLS = [
   CreateCaptionProjectTool,
   GenerateCaptionsTool,
@@ -275,6 +303,7 @@ export const MCP_TOOLS = [
   RenderCaptionExportTool,
   GetCaptionTaskTool,
   CancelCaptionTaskTool,
+  GetCaptionStyleCatalogTool,
 ] as const;
 
 export const MCP_SERVER_INFO = {

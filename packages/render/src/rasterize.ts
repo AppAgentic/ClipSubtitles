@@ -9,6 +9,7 @@ import {
 } from '@clipsubtitles/core';
 import { ensureFontsRegistered } from './fonts';
 import { cssFont, createCanvasMeasurer } from './measure';
+import { emojiImage } from './emoji-assets';
 
 export interface RasterizeInput {
   page: CaptionPage;
@@ -145,6 +146,31 @@ export function drawLayout(
       ctx.fillText(word.text, word.x, centerY);
       ctx.restore();
     }
+  }
+  if (layout.emoji) {
+    const emojiScale =
+      layout.emoji.animation === 'pop' &&
+      layout.emoji.wordIndex === layout.activeWordIndex &&
+      motion.activeWordScale &&
+      motion.activeWordScale > 1
+        ? motion.activeWordScale
+        : 1;
+    const cx = layout.emoji.x + layout.emoji.size / 2;
+    const cy = layout.emoji.y + layout.emoji.size / 2;
+    ctx.save();
+    if (emojiScale !== 1) {
+      ctx.translate(cx, cy);
+      ctx.scale(emojiScale, emojiScale);
+      ctx.translate(-cx, -cy);
+    }
+    ctx.drawImage(
+      emojiImage(layout.emoji.codepoint),
+      layout.emoji.x,
+      layout.emoji.y,
+      layout.emoji.size,
+      layout.emoji.size,
+    );
+    ctx.restore();
   }
   ctx.restore();
 }

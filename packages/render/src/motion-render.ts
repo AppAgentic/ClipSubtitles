@@ -54,7 +54,7 @@ export function planMotionFrames(input: MotionFrameInput): MotionFramePlan {
   let maxY = 0;
   for (const page of input.pages) {
     const activeIndexes: Array<number | null> =
-      input.style.highlight.mode === 'word'
+      input.style.highlight.mode === 'word' || input.style.emoji.mode === 'auto'
         ? [
             null,
             ...Array.from(
@@ -73,8 +73,12 @@ export function planMotionFrames(input: MotionFrameInput): MotionFramePlan {
         measure,
       });
       layouts.set(layoutKey(page, activeWordIndex), layout);
-      minY = Math.min(minY, layout.block.y);
-      maxY = Math.max(maxY, layout.block.y + layout.block.height);
+      minY = Math.min(minY, layout.block.y, layout.emoji?.y ?? layout.block.y);
+      maxY = Math.max(
+        maxY,
+        layout.block.y + layout.block.height,
+        layout.emoji ? layout.emoji.y + layout.emoji.size : 0,
+      );
     }
   }
   const shorter = Math.min(input.frame.width, input.frame.height);
@@ -113,7 +117,7 @@ export async function* renderMotionFrames(
     const page = visualPageAtMs(input.pages, timeMs);
     if (page) {
       const activeWordIndex =
-        input.style.highlight.mode === 'word'
+        input.style.highlight.mode === 'word' || input.style.emoji.mode === 'auto'
           ? activeWordIndexInPage(page, input.words, timeMs)
           : null;
       const layout = plan.layouts.get(layoutKey(page, activeWordIndex));

@@ -87,6 +87,41 @@ describe('layoutCaption', () => {
     );
   });
 
+  it('positions a semantic emoji without changing caption text', () => {
+    const wordIndex = words.findIndex((word) => word.text.toLowerCase() === 'look');
+    expect(wordIndex).toBeGreaterThanOrEqual(0);
+    const emojiStyle = {
+      ...stylePreset('bold-pop'),
+      emoji: {
+        mode: 'auto',
+        timing: 'active-word',
+        position: 'above-word',
+        sizeEm: 1.15,
+        animation: 'pop',
+      } as const,
+    };
+    const emojiPages = segmentWords(words, segmentationForStyle(emojiStyle));
+    const emojiPage = emojiPages.find(
+      (candidate) => wordIndex >= candidate.startWordIndex && wordIndex <= candidate.endWordIndex,
+    )!;
+    const layout = layoutCaption({
+      page: emojiPage,
+      words,
+      style: emojiStyle,
+      frame,
+      measure,
+      activeWordIndex: wordIndex,
+    });
+    expect(layout.emoji).toMatchObject({ codepoint: '1f440', wordIndex, label: 'eyes' });
+    expect(layout.emoji!.y + layout.emoji!.size).toBeLessThan(layout.block.y);
+    expect(
+      layout.lines
+        .flatMap((line) => line.words)
+        .map((word) => word.text)
+        .join(' '),
+    ).not.toContain('👀');
+  });
+
   it('reserves enough horizontal room for a scaled active word', () => {
     const style = stylePreset('viral-beast');
     const styledPages = segmentWords(words, segmentationForStyle(style));

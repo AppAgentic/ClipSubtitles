@@ -62,6 +62,9 @@ importers:
       '@fontsource/ibm-plex-mono':
         specifier: ^5.3.0
         version: 5.3.0
+      '@twemoji/svg':
+        specifier: 15.0.0
+        version: 15.0.0
       next:
         specifier: ^16.3.3
         version: 16.3.3(@playwright/test@1.62.1)(@types/node@24.13.3)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -145,6 +148,9 @@ importers:
       '@napi-rs/canvas':
         specifier: ^1.0.8
         version: 1.0.8
+      '@twemoji/svg':
+        specifier: 15.0.0
+        version: 15.0.0
     devDependencies:
       '@clipsubtitles/transcription':
         specifier: workspace:*
@@ -185,6 +191,9 @@ importers:
       '@remotion/renderer':
         specifier: 4.0.518
         version: 4.0.518(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@twemoji/svg':
+        specifier: 15.0.0
+        version: 15.0.0
       react:
         specifier: ^19.2.8
         version: 19.2.8
@@ -1949,6 +1958,9 @@ packages:
   '@tootallnate/once@2.0.1':
     resolution: {integrity: sha512-HqmEUIGRJ5fSXchkVgR5F7qn48bDBzv0kWj/Kfu5e6uci4UlEeng4331LnBkWffb++Ei3FOVLxo8JJWMFBDMeQ==}
     engines: {node: '>= 10'}
+
+  '@twemoji/svg@15.0.0':
+    resolution: {integrity: sha512-ZSPef2B6nBaYnfgdTbAy4jgW95o7pi2xPGwGCU+WMTxo7J6B1lMPTWwSq/wTuiMq+N0khQ90CcvYp1wFoQpo/w==}
 
   '@tybys/wasm-util@0.10.3':
     resolution: {integrity: sha512-F3fo1MYrRJYL3zER0OUOmkutjr1Vp23m7OsSgp7nq4SP6OqX6C/56XFIPAl5bt3zaBRjmW7SGz3u/6LwFpYcOg==}
@@ -5325,14 +5337,14 @@ snapshots:
       '@remotion/timeline-utils': 4.0.518(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@rspack/core': 1.7.11(@swc/helpers@0.5.23)
       '@rspack/plugin-react-refresh': 1.6.1(react-refresh@0.18.0)
-      css-loader: 7.1.4(@rspack/core@1.7.11(@swc/helpers@0.5.23))(webpack@5.105.0(esbuild@0.28.2)(postcss@8.5.26))
+      css-loader: 7.1.4(@rspack/core@1.7.11(@swc/helpers@0.5.23))(webpack@5.105.0(esbuild@0.28.1)(postcss@8.5.26))
       esbuild: 0.28.1
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)
       react-refresh: 0.18.0
       remotion: 4.0.518(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      style-loader: 4.0.0(webpack@5.105.0(esbuild@0.28.2)(postcss@8.5.26))
-      webpack: 5.105.0(esbuild@0.28.1)(postcss@8.5.26)
+      style-loader: 4.0.0(webpack@5.105.0(esbuild@0.28.1)(postcss@8.5.26))
+      webpack: 5.105.0(esbuild@0.28.2)(postcss@8.5.26)
     transitivePeerDependencies:
       - '@minify-html/node'
       - '@swc/core'
@@ -5900,6 +5912,8 @@ snapshots:
 
   '@tootallnate/once@2.0.1': {}
 
+  '@twemoji/svg@15.0.0': {}
+
   '@tybys/wasm-util@0.10.3':
     dependencies:
       tslib: 2.8.1
@@ -6415,7 +6429,7 @@ snapshots:
       shebang-command: 2.0.0
       which: 2.0.2
 
-  css-loader@7.1.4(@rspack/core@1.7.11(@swc/helpers@0.5.23))(webpack@5.105.0(esbuild@0.28.2)(postcss@8.5.26)):
+  css-loader@7.1.4(@rspack/core@1.7.11(@swc/helpers@0.5.23))(webpack@5.105.0(esbuild@0.28.1)(postcss@8.5.26)):
     dependencies:
       icss-utils: 5.1.0(postcss@8.5.26)
       postcss: 8.5.26
@@ -7989,7 +8003,7 @@ snapshots:
 
   stubs@3.0.0: {}
 
-  style-loader@4.0.0(webpack@5.105.0(esbuild@0.28.2)(postcss@8.5.26)):
+  style-loader@4.0.0(webpack@5.105.0(esbuild@0.28.1)(postcss@8.5.26)):
     dependencies:
       webpack: 5.105.0(esbuild@0.28.2)(postcss@8.5.26)
 
@@ -8032,18 +8046,7 @@ snapshots:
       - encoding
       - supports-color
 
-  terser-webpack-plugin@5.6.1(esbuild@0.28.1)(postcss@8.5.26)(webpack@5.105.0(esbuild@0.28.2)(postcss@8.5.26)):
-    dependencies:
-      '@jridgewell/trace-mapping': 0.3.31
-      jest-worker: 27.5.1
-      schema-utils: 4.3.3
-      terser: 5.51.2
-      webpack: 5.105.0(esbuild@0.28.2)(postcss@8.5.26)
-    optionalDependencies:
-      esbuild: 0.28.1
-      postcss: 8.5.26
-
-  terser-webpack-plugin@5.6.1(esbuild@0.28.2)(postcss@8.5.26)(webpack@5.105.0(esbuild@0.28.2)(postcss@8.5.26)):
+  terser-webpack-plugin@5.6.1(esbuild@0.28.2)(postcss@8.5.26)(webpack@5.105.0(esbuild@0.28.1)(postcss@8.5.26)):
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       jest-worker: 27.5.1
@@ -8213,47 +8216,6 @@ snapshots:
 
   webpack-sources@3.5.1: {}
 
-  webpack@5.105.0(esbuild@0.28.1)(postcss@8.5.26):
-    dependencies:
-      '@types/eslint-scope': 3.7.7
-      '@types/estree': 1.0.9
-      '@types/json-schema': 7.0.15
-      '@webassemblyjs/ast': 1.14.1
-      '@webassemblyjs/wasm-edit': 1.14.1
-      '@webassemblyjs/wasm-parser': 1.14.1
-      acorn: 8.18.0
-      acorn-import-phases: 1.0.4(acorn@8.18.0)
-      browserslist: 4.28.8
-      chrome-trace-event: 1.0.4
-      enhanced-resolve: 5.24.5
-      es-module-lexer: 2.3.2
-      eslint-scope: 5.1.1
-      events: 3.3.0
-      glob-to-regexp: 0.4.1
-      graceful-fs: 4.2.11
-      json-parse-even-better-errors: 2.3.1
-      loader-runner: 4.3.2
-      mime-types: 2.1.35
-      neo-async: 2.6.2
-      schema-utils: 4.3.3
-      tapable: 2.3.3
-      terser-webpack-plugin: 5.6.1(esbuild@0.28.1)(postcss@8.5.26)(webpack@5.105.0(esbuild@0.28.2)(postcss@8.5.26))
-      watchpack: 2.5.2
-      webpack-sources: 3.5.1
-    transitivePeerDependencies:
-      - '@minify-html/node'
-      - '@swc/core'
-      - '@swc/css'
-      - '@swc/html'
-      - clean-css
-      - cssnano
-      - csso
-      - esbuild
-      - html-minifier-terser
-      - lightningcss
-      - postcss
-      - uglify-js
-
   webpack@5.105.0(esbuild@0.28.2)(postcss@8.5.26):
     dependencies:
       '@types/eslint-scope': 3.7.7
@@ -8278,7 +8240,7 @@ snapshots:
       neo-async: 2.6.2
       schema-utils: 4.3.3
       tapable: 2.3.3
-      terser-webpack-plugin: 5.6.1(esbuild@0.28.2)(postcss@8.5.26)(webpack@5.105.0(esbuild@0.28.2)(postcss@8.5.26))
+      terser-webpack-plugin: 5.6.1(esbuild@0.28.2)(postcss@8.5.26)(webpack@5.105.0(esbuild@0.28.1)(postcss@8.5.26))
       watchpack: 2.5.2
       webpack-sources: 3.5.1
     transitivePeerDependencies:

@@ -2,6 +2,7 @@
 
 import type {
   CaptionPosition,
+  FontFamily,
   MotionPreset,
   StyleConfig,
   StylePatch,
@@ -120,6 +121,23 @@ export function StyleInspector({
         />
       </Field>
 
+      <Field label="Font">
+        <select
+          value={style.fontFamily}
+          disabled={busy}
+          onChange={(event) => onStyle({ fontFamily: event.target.value as FontFamily })}
+          className="h-9 w-full rounded-lg border border-line-strong bg-bg-elev px-3 text-[12px] text-ink focus:border-signal"
+        >
+          {(
+            ['Inter', 'Bebas Neue', 'Nunito', 'Playfair Display', 'Space Mono'] as FontFamily[]
+          ).map((font) => (
+            <option key={font} value={font}>
+              {font}
+            </option>
+          ))}
+        </select>
+      </Field>
+
       <Field label="Weight">
         <Segmented
           value={String(style.fontWeight)}
@@ -132,11 +150,19 @@ export function StyleInspector({
         />
       </Field>
 
-      <Toggle
-        checked={style.textTransform === 'uppercase'}
-        onChange={(v) => onStyle({ textTransform: v ? 'uppercase' : 'none' })}
-        label="Uppercase"
-      />
+      <Field label="Casing">
+        <Segmented
+          value={style.textTransform}
+          onChange={(textTransform) => onStyle({ textTransform })}
+          size="sm"
+          options={[
+            { value: 'none', label: 'As said' },
+            { value: 'uppercase', label: 'ABC' },
+            { value: 'lowercase', label: 'abc' },
+            { value: 'capitalize', label: 'Title' },
+          ]}
+        />
+      </Field>
 
       <section className="grid grid-cols-3 gap-2">
         <ColorField
@@ -230,6 +256,54 @@ export function StyleInspector({
           ]}
         />
       </Field>
+
+      <Toggle
+        checked={style.emoji.mode === 'auto'}
+        onChange={(enabled) => onStyle({ emoji: { mode: enabled ? 'auto' : 'off' } })}
+        label="Auto keyword emojis"
+      />
+      {style.emoji.mode === 'auto' ? (
+        <>
+          <Field label="Emoji timing">
+            <Segmented
+              value={style.emoji.timing}
+              onChange={(timing) => onStyle({ emoji: { timing } })}
+              size="sm"
+              options={[
+                { value: 'active-word', label: 'With word' },
+                { value: 'keyword-hold', label: 'Then hold' },
+                { value: 'page', label: 'Whole caption' },
+              ]}
+            />
+          </Field>
+          <Field label="Emoji position">
+            <Segmented
+              value={style.emoji.position}
+              onChange={(position) => onStyle({ emoji: { position } })}
+              size="sm"
+              options={[
+                { value: 'above-word', label: 'Above word' },
+                { value: 'above-caption', label: 'Above caption' },
+              ]}
+            />
+          </Field>
+          <Field label="Emoji size">
+            <Slider
+              value={style.emoji.sizeEm}
+              min={0.6}
+              max={1.8}
+              step={0.05}
+              onChange={(sizeEm) => onStyle({ emoji: { sizeEm } })}
+              format={(value) => `${value.toFixed(2)}×`}
+            />
+          </Field>
+          <Toggle
+            checked={style.emoji.animation === 'pop'}
+            onChange={(enabled) => onStyle({ emoji: { animation: enabled ? 'pop' : 'none' } })}
+            label="Pop emoji on keyword"
+          />
+        </>
+      ) : null}
 
       <Field
         label="Lines per page"

@@ -33,8 +33,9 @@ describe('error contract', () => {
       }).success,
     ).toBe(true);
     expect(
-      ApiErrorSchema.safeParse({ error: { code: 'PROVIDER_STACK_TRACE', message: 'x', retryable: false } })
-        .success,
+      ApiErrorSchema.safeParse({
+        error: { code: 'PROVIDER_STACK_TRACE', message: 'x', retryable: false },
+      }).success,
     ).toBe(false);
   });
 });
@@ -49,7 +50,9 @@ describe('id schemas', () => {
 
   it('bounds idempotency keys', () => {
     expect(IdempotencyKeySchema.safeParse('short').success).toBe(false);
-    expect(IdempotencyKeySchema.safeParse('a'.repeat(LIMITS.maxIdempotencyKeyChars + 1)).success).toBe(false);
+    expect(
+      IdempotencyKeySchema.safeParse('a'.repeat(LIMITS.maxIdempotencyKeyChars + 1)).success,
+    ).toBe(false);
     expect(IdempotencyKeySchema.safeParse('render:proj_1:attempt-1').success).toBe(true);
     expect(IdempotencyKeySchema.safeParse('has spaces here').success).toBe(false);
   });
@@ -57,20 +60,35 @@ describe('id schemas', () => {
 
 describe('request schemas are strict and bounded', () => {
   it('rejects unknown keys and caller-supplied ownership fields', () => {
-    const r = CreateProjectRequestSchema.safeParse({ title: 'x', workspaceId: 'ws_abc', userId: 'u1' });
+    const r = CreateProjectRequestSchema.safeParse({
+      title: 'x',
+      workspaceId: 'ws_abc',
+      userId: 'u1',
+    });
     expect(r.success).toBe(false);
   });
 
   it('rejects non-http source URLs', () => {
-    expect(CreateProjectRequestSchema.safeParse({ sourceUrl: 'file:///etc/passwd' }).success).toBe(false);
-    expect(CreateProjectRequestSchema.safeParse({ sourceUrl: 'ftp://host/x.mp4' }).success).toBe(false);
-    expect(CreateProjectRequestSchema.safeParse({ sourceUrl: 'https://example.com/x.mp4' }).success).toBe(true);
+    expect(CreateProjectRequestSchema.safeParse({ sourceUrl: 'file:///etc/passwd' }).success).toBe(
+      false,
+    );
+    expect(CreateProjectRequestSchema.safeParse({ sourceUrl: 'ftp://host/x.mp4' }).success).toBe(
+      false,
+    );
+    expect(
+      CreateProjectRequestSchema.safeParse({ sourceUrl: 'https://example.com/x.mp4' }).success,
+    ).toBe(true);
   });
 
   it('caps patch operations', () => {
-    const ops = Array.from({ length: LIMITS.maxPatchOps + 1 }, () => ({ op: 'set_title', title: 't' }));
+    const ops = Array.from({ length: LIMITS.maxPatchOps + 1 }, () => ({
+      op: 'set_title',
+      title: 't',
+    }));
     expect(PatchProjectRequestSchema.safeParse({ expectedVersion: 1, ops }).success).toBe(false);
-    expect(PatchProjectRequestSchema.safeParse({ expectedVersion: 1, ops: ops.slice(0, 3) }).success).toBe(true);
+    expect(
+      PatchProjectRequestSchema.safeParse({ expectedVersion: 1, ops: ops.slice(0, 3) }).success,
+    ).toBe(true);
   });
 
   it('rejects inverted word timing', () => {
@@ -83,18 +101,32 @@ describe('request schemas are strict and bounded', () => {
 
   it('requires unique output kinds', () => {
     expect(
-      OutputSettingsSchema.safeParse({ outputs: ['mp4', 'mp4'], resolution: '1080p', fps: 'source', quality: 'standard' })
-        .success,
+      OutputSettingsSchema.safeParse({
+        outputs: ['mp4', 'mp4'],
+        resolution: '1080p',
+        fps: 'source',
+        quality: 'standard',
+      }).success,
     ).toBe(false);
   });
 
   it('bounds word text and confidence', () => {
     expect(
-      TranscriptWordSchema.safeParse({ id: 'w_01j5abcdefghjkmnpqrs', text: '', startMs: 0, endMs: 10 }).success,
+      TranscriptWordSchema.safeParse({
+        id: 'w_01j5abcdefghjkmnpqrs',
+        text: '',
+        startMs: 0,
+        endMs: 10,
+      }).success,
     ).toBe(false);
     expect(
-      TranscriptWordSchema.safeParse({ id: 'w_01j5abcdefghjkmnpqrs', text: 'hi', startMs: 0, endMs: 10, confidence: 2 })
-        .success,
+      TranscriptWordSchema.safeParse({
+        id: 'w_01j5abcdefghjkmnpqrs',
+        text: 'hi',
+        startMs: 0,
+        endMs: 10,
+        confidence: 2,
+      }).success,
     ).toBe(false);
   });
 
@@ -104,9 +136,9 @@ describe('request schemas are strict and bounded', () => {
 });
 
 describe('MCP registry', () => {
-  it('exposes exactly the eight contracted tools with annotations and scopes', () => {
+  it('exposes exactly the nine contracted tools with annotations and scopes', () => {
     expect(MCP_TOOLS.map((t) => t.name)).toEqual([...MCP_TOOL_NAMES]);
-    expect(MCP_TOOLS).toHaveLength(8);
+    expect(MCP_TOOLS).toHaveLength(9);
     for (const tool of MCP_TOOLS) {
       expect(tool.description.length).toBeGreaterThan(40);
       expect(tool.annotations.title.length).toBeGreaterThan(0);

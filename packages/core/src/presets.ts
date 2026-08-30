@@ -48,6 +48,13 @@ const BASE: StyleConfig = {
   },
   highlight: { mode: 'none', color: '#FFD84D', scale: 1 },
   motion: { preset: 'soft-rise', enterDurationMs: 150, exitDurationMs: 100, wordTransitionMs: 100 },
+  emoji: {
+    mode: 'off',
+    timing: 'active-word',
+    position: 'above-word',
+    sizeEm: 1.15,
+    animation: 'pop',
+  },
   safeMarginPct: 0.08,
   lowerThirdOffsetPct: 0.22,
 };
@@ -382,6 +389,7 @@ export function applyStylePatch(base: StyleConfig, patch: StylePatch): StyleConf
     background: { ...base.background, ...definedEntries(patch.background) },
     highlight: { ...base.highlight, ...definedEntries(patch.highlight) },
     motion: { ...base.motion, ...definedEntries(patch.motion) },
+    emoji: { ...base.emoji, ...definedEntries(patch.emoji) },
   };
   return StyleConfigSchema.parse(merged);
 }

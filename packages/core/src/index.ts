@@ -8,6 +8,7 @@ export * from './segmentation';
 export * from './qa';
 export * from './layout';
 export * from './motion';
+export * from './emoji';
 export * from './state';
 export * from './patch';
 export * from './subtitles';

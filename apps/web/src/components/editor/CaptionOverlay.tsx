@@ -41,7 +41,9 @@ export function CaptionOverlay({
   const page = visualPageAtMs(pages, timeMs);
   if (!page || frame.width < 8) return null;
   const activeWordIndex =
-    style.highlight.mode === 'word' ? activeWordIndexInPage(page, words, timeMs) : null;
+    style.highlight.mode === 'word' || style.emoji.mode === 'auto'
+      ? activeWordIndexInPage(page, words, timeMs)
+      : null;
   const layout = layoutCaption({ page, words, style, frame, activeWordIndex, measure });
   const motion = captionMotionState({ page, words, style, timeMs, activeWordIndex });
   const shadow = layout.shadow
@@ -110,6 +112,26 @@ export function CaptionOverlay({
               height: pill.height,
               borderRadius: layout.font.sizePx * 0.2,
               background: highlightBackground,
+            }}
+          />
+        ) : null}
+        {layout.emoji ? (
+          <img
+            src={`/emoji/${layout.emoji.codepoint}.svg`}
+            alt=""
+            className="absolute"
+            style={{
+              left: layout.emoji.x,
+              top: layout.emoji.y,
+              width: layout.emoji.size,
+              height: layout.emoji.size,
+              transform:
+                style.emoji.animation === 'pop' &&
+                layout.emoji.wordIndex === activeWordIndex &&
+                motion.activeWordScale !== 1
+                  ? `scale(${motion.activeWordScale})`
+                  : undefined,
+              transformOrigin: 'center center',
             }}
           />
         ) : null}

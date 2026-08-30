@@ -18,6 +18,7 @@ export const FontFamilySchema = z.enum([
   'Playfair Display',
   'Space Mono',
 ]);
+export type FontFamily = z.infer<typeof FontFamilySchema>;
 export const FontWeightSchema = z.union([
   z.literal(400),
   z.literal(500),
@@ -26,7 +27,7 @@ export const FontWeightSchema = z.union([
   z.literal(800),
   z.literal(900),
 ]);
-export const TextTransformSchema = z.enum(['none', 'uppercase']);
+export const TextTransformSchema = z.enum(['none', 'uppercase', 'lowercase', 'capitalize']);
 export const HighlightModeSchema = z.enum(['none', 'word']);
 export const TextAlignSchema = z.enum(['left', 'center', 'right']);
 export const MotionPresetSchema = z.enum(['none', 'soft-rise', 'spring-pop', 'karaoke-slide']);
@@ -37,6 +38,21 @@ export const MotionConfigSchema = z.object({
   exitDurationMs: z.number().int().min(0).max(600),
   wordTransitionMs: z.number().int().min(60).max(600),
 });
+
+export const EmojiConfigSchema = z.object({
+  mode: z
+    .enum(['off', 'auto'])
+    .describe('Auto adds visual emoji to matching keywords; transcript text is unchanged'),
+  timing: z
+    .enum(['active-word', 'keyword-hold', 'page'])
+    .describe(
+      'Show only with the keyword, from keyword to page end, or for the whole caption page',
+    ),
+  position: z.enum(['above-word', 'above-caption']),
+  sizeEm: z.number().min(0.6).max(1.8).describe('Emoji size relative to the caption font size'),
+  animation: z.enum(['none', 'pop']),
+});
+export type EmojiConfig = z.infer<typeof EmojiConfigSchema>;
 
 export const StylePresetIdSchema = z.enum([
   'clean',
@@ -110,6 +126,13 @@ export const StyleConfigSchema = z
       exitDurationMs: 120,
       wordTransitionMs: 180,
     }),
+    emoji: EmojiConfigSchema.default({
+      mode: 'off',
+      timing: 'active-word',
+      position: 'above-word',
+      sizeEm: 1.15,
+      animation: 'pop',
+    }),
     safeMarginPct: z
       .number()
       .min(0.02)
@@ -132,6 +155,7 @@ export const StylePatchSchema = StyleConfigSchema.partial()
     background: StyleConfigSchema.shape.background.partial().strict().optional(),
     highlight: StyleConfigSchema.shape.highlight.partial().strict().optional(),
     motion: MotionConfigSchema.partial().strict().optional(),
+    emoji: EmojiConfigSchema.partial().strict().optional(),
   })
   .strict();
 export type StylePatch = z.infer<typeof StylePatchSchema>;

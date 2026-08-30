@@ -139,6 +139,26 @@ export function CaptionLayer({
           }}
         />
       ) : null}
+      {layout.emoji ? (
+        <img
+          src={staticFile(`emoji/${layout.emoji.codepoint}.svg`)}
+          alt=""
+          style={{
+            position: 'absolute',
+            left: layout.emoji.x,
+            top: layout.emoji.y,
+            width: layout.emoji.size,
+            height: layout.emoji.size,
+            transform:
+              layout.emoji.animation === 'pop' &&
+              layout.emoji.wordIndex === layout.activeWordIndex &&
+              motion.activeWordScale !== 1
+                ? `scale(${motion.activeWordScale})`
+                : undefined,
+            transformOrigin: 'center center',
+          }}
+        />
+      ) : null}
       {layout.lines.map((line, li) =>
         line.words.map((w) => {
           const active = w.active && layout.highlight.mode === 'word';

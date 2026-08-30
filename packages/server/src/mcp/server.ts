@@ -8,17 +8,24 @@ import {
   type McpToolDescriptor,
   type McpToolName,
 } from '@clipsubtitles/contracts';
-import { newId } from '@clipsubtitles/core';
+import { newId, STYLE_PRESETS } from '@clipsubtitles/core';
 import type { Principal } from '../auth/principal';
 import type { AppContext } from '../context';
 import { ApiError, toApiError } from '../errors';
 import { withIdempotency } from '../http/idempotent';
 import { audit } from '../services/audit';
-import { createRenderQuote, startGeneration, startPreview, startRender } from '../services/captions';
+import {
+  createRenderQuote,
+  startGeneration,
+  startPreview,
+  startRender,
+} from '../services/captions';
 import { createProject, getProjectView, patchProject } from '../services/projects';
 import { cancelTask, getTaskView } from '../services/tasks';
 
-type Handlers = { [K in McpToolName]: (ctx: AppContext, principal: Principal, input: unknown) => Promise<unknown> };
+type Handlers = {
+  [K in McpToolName]: (ctx: AppContext, principal: Principal, input: unknown) => Promise<unknown>;
+};
 
 function pointer(p: { id: string; title: string; status: string; version: number }) {
   return { id: p.id, title: p.title, status: p.status, version: p.version };
@@ -30,14 +37,23 @@ function taskPointer(t: { id: string; status: string; progress: number }) {
 
 export const TOOL_HANDLERS: Handlers = {
   async create_caption_project(ctx, principal, raw) {
-    const input = (MCP_TOOLS[0] as McpToolDescriptor<z.ZodObject, z.ZodObject>).inputSchema.parse(raw) as {
+    const input = (MCP_TOOLS[0] as McpToolDescriptor<z.ZodObject, z.ZodObject>).inputSchema.parse(
+      raw,
+    ) as {
       title?: string;
       sourceUrl?: string;
       language?: string;
       idempotencyKey?: string;
     };
-    const out = await withIdempotency(ctx, { workspaceId: principal.workspaceId, scope: 'projects.create', key: input.idempotencyKey, payload: input }, () =>
-      createProject(ctx, principal, input),
+    const out = await withIdempotency(
+      ctx,
+      {
+        workspaceId: principal.workspaceId,
+        scope: 'projects.create',
+        key: input.idempotencyKey,
+        payload: input,
+      },
+      () => createProject(ctx, principal, input),
     );
     const res = out.body;
     const nextSteps = res.uploadTarget
@@ -45,10 +61,19 @@ export const TOOL_HANDLERS: Handlers = {
           `Ask the user to open ${res.uploadTarget.webUploadUrl} and upload the video (expires ${res.uploadTarget.expiresAt}).`,
           'Then call generate_captions with the projectId.',
         ]
-      : ['Poll get_caption_task with importTask.id until it succeeds, then call generate_captions.'];
+      : [
+          'Poll get_caption_task with importTask.id until it succeeds, then call generate_captions.',
+        ];
     return {
       project: pointer(res.project),
-      ...(res.uploadTarget ? { uploadTarget: { webUploadUrl: res.uploadTarget.webUploadUrl, expiresAt: res.uploadTarget.expiresAt } } : {}),
+      ...(res.uploadTarget
+        ? {
+            uploadTarget: {
+              webUploadUrl: res.uploadTarget.webUploadUrl,
+              expiresAt: res.uploadTarget.expiresAt,
+            },
+          }
+        : {}),
       ...(res.importTask ? { importTask: taskPointer(res.importTask) } : {}),
       nextSteps,
     };
@@ -57,8 +82,16 @@ export const TOOL_HANDLERS: Handlers = {
   async generate_captions(ctx, principal, raw) {
     const input = MCP_TOOLS[1].inputSchema.parse(raw);
     const { projectId, ...rest } = input;
-    const out = await withIdempotency(ctx, { workspaceId: principal.workspaceId, scope: `captions:${projectId}`, key: rest.idempotencyKey, payload: input, status: 202 }, () =>
-      startGeneration(ctx, principal, projectId, rest),
+    const out = await withIdempotency(
+      ctx,
+      {
+        workspaceId: principal.workspaceId,
+        scope: `captions:${projectId}`,
+        key: rest.idempotencyKey,
+        payload: input,
+        status: 202,
+      },
+      () => startGeneration(ctx, principal, projectId, rest),
     );
     return { task: taskPointer(out.body.task), project: pointer(out.body.project) };
   },
@@ -77,17 +110,32 @@ export const TOOL_HANDLERS: Handlers = {
 
   async update_caption_project(ctx, principal, raw) {
     const input = MCP_TOOLS[3].inputSchema.parse(raw);
-    const res = await patchProject(ctx, principal, input.projectId, { expectedVersion: input.expectedVersion, ops: input.ops });
+    const res = await patchProject(ctx, principal, input.projectId, {
+      expectedVersion: input.expectedVersion,
+      ops: input.ops,
+    });
     return { project: res.project, applied: res.applied };
   },
 
   async render_caption_preview(ctx, principal, raw) {
     const input = MCP_TOOLS[4].inputSchema.parse(raw);
     const decision = ctx.limiters.previews.take(`p:${principal.workspaceId}`, ctx.clock.now());
-    if (!decision.ok) throw new ApiError('RATE_LIMITED', 'Preview limit reached for this workspace. Try again later.');
+    if (!decision.ok)
+      throw new ApiError(
+        'RATE_LIMITED',
+        'Preview limit reached for this workspace. Try again later.',
+      );
     const { projectId, ...rest } = input;
-    const out = await withIdempotency(ctx, { workspaceId: principal.workspaceId, scope: `previews:${projectId}`, key: rest.idempotencyKey, payload: input, status: 202 }, () =>
-      startPreview(ctx, principal, projectId, rest),
+    const out = await withIdempotency(
+      ctx,
+      {
+        workspaceId: principal.workspaceId,
+        scope: `previews:${projectId}`,
+        key: rest.idempotencyKey,
+        payload: input,
+        status: 202,
+      },
+      () => startPreview(ctx, principal, projectId, rest),
     );
     return { task: taskPointer(out.body) };
   },
@@ -107,8 +155,21 @@ export const TOOL_HANDLERS: Handlers = {
     }
     const approval = input.approval;
     const key = input.idempotencyKey ?? `mcp:${approval.quoteId}`;
-    const out = await withIdempotency(ctx, { workspaceId: principal.workspaceId, scope: `renders:${input.projectId}`, key, payload: approval, status: 202 }, () =>
-      startRender(ctx, principal, input.projectId, { quoteId: approval.quoteId, approvedCreditCost: approval.approvedCreditCost, idempotencyKey: key }),
+    const out = await withIdempotency(
+      ctx,
+      {
+        workspaceId: principal.workspaceId,
+        scope: `renders:${input.projectId}`,
+        key,
+        payload: approval,
+        status: 202,
+      },
+      () =>
+        startRender(ctx, principal, input.projectId, {
+          quoteId: approval.quoteId,
+          approvedCreditCost: approval.approvedCreditCost,
+          idempotencyKey: key,
+        }),
     );
     return { status: 'render_started', quote: out.body.quote, task: taskPointer(out.body.task) };
   },
@@ -123,15 +184,37 @@ export const TOOL_HANDLERS: Handlers = {
     const input = MCP_TOOLS[7].inputSchema.parse(raw);
     return { task: await cancelTask(ctx, principal, input.taskId) };
   },
+
+  async get_caption_style_catalog(_ctx, _principal, raw) {
+    MCP_TOOLS[8].inputSchema.parse(raw);
+    return {
+      presets: Object.values(STYLE_PRESETS),
+      guidance: [
+        'Choose a preset for a coherent starting point, then patch only the attributes the user requested.',
+        'Auto emoji are decorative overlays and never alter transcript words or SRT/VTT exports.',
+        'Use active-word timing for a brief accent, keyword-hold to keep the emoji through the rest of the caption, or page for deliberate anticipation.',
+        'Use resegment maxWordsPerPage/maxLinesPerPage for rapid single-word or short-phrase formats.',
+        'Render a free preview after style changes before requesting a paid export quote.',
+      ],
+    };
+  },
 };
 
 function summarize(name: McpToolName, output: unknown): string {
   const o = output as Record<string, unknown>;
   switch (name) {
     case 'get_caption_project': {
-      const p = o.project as { id: string; status: string; version: number; pageCount: number; title: string };
+      const p = o.project as {
+        id: string;
+        status: string;
+        version: number;
+        pageCount: number;
+        title: string;
+      };
       return `Project ${p.id} "${p.title}" · status ${p.status} · v${p.version} · ${p.pageCount} caption pages. ${CONTENT_NOTICE}`;
     }
+    case 'get_caption_style_catalog':
+      return `${(o.presets as unknown[]).length} caption presets plus bounded font, layout, motion, highlight and emoji controls.`;
     case 'render_caption_export': {
       const q = o.quote as { creditCost: number; id: string; expiresAt: string };
       return o.status === 'quote_required'
@@ -177,9 +260,15 @@ export function createMcpServer(ctx: AppContext, principal: Principal): McpServe
       async (args: Record<string, unknown>): Promise<CallToolResult> => {
         const started = ctx.clock.now();
         try {
-          if (!principal.scopes.includes(tool.scope)) throw new ApiError('INSUFFICIENT_SCOPE', `This tool requires the ${tool.scope} scope.`);
+          if (!principal.scopes.includes(tool.scope))
+            throw new ApiError('INSUFFICIENT_SCOPE', `This tool requires the ${tool.scope} scope.`);
           const output = await TOOL_HANDLERS[tool.name](ctx, principal, args);
-          await audit(ctx, { principal, action: `mcp.${tool.name}`, outcome: 'ok', metadata: { latencyMs: ctx.clock.now() - started } });
+          await audit(ctx, {
+            principal,
+            action: `mcp.${tool.name}`,
+            outcome: 'ok',
+            metadata: { latencyMs: ctx.clock.now() - started },
+          });
           return {
             content: [{ type: 'text', text: summarize(tool.name, output) }],
             structuredContent: output as Record<string, unknown>,
@@ -188,11 +277,19 @@ export function createMcpServer(ctx: AppContext, principal: Principal): McpServe
           const apiErr = toApiError(err);
           const errorRef = apiErr.errorRef ?? newId('errorRef');
           apiErr.errorRef = errorRef;
-          if (apiErr.code === 'INTERNAL') ctx.logger.error('mcp tool internal error', { tool: tool.name, errorRef, internal: apiErr.internal });
+          if (apiErr.code === 'INTERNAL')
+            ctx.logger.error('mcp tool internal error', {
+              tool: tool.name,
+              errorRef,
+              internal: apiErr.internal,
+            });
           await audit(ctx, {
             principal,
             action: `mcp.${tool.name}`,
-            outcome: apiErr.code === 'UNAUTHENTICATED' || apiErr.code === 'INSUFFICIENT_SCOPE' ? 'denied' : 'error',
+            outcome:
+              apiErr.code === 'UNAUTHENTICATED' || apiErr.code === 'INSUFFICIENT_SCOPE'
+                ? 'denied'
+                : 'error',
             errorRef,
             metadata: { code: apiErr.code, latencyMs: ctx.clock.now() - started },
           });
@@ -213,7 +310,7 @@ export function createMcpServer(ctx: AppContext, principal: Principal): McpServe
 export function llmInstructions(ctx: AppContext): string {
   return [
     'ClipSubtitles turns a short video into accurate, editable, styled captions and rendered exports.',
-    'Workflow: create_caption_project -> generate_captions -> get_caption_project -> (update_caption_project) -> render_caption_preview (free) -> render_caption_export (quote, then explicit approval) -> get_caption_task.',
+    'Workflow: get_caption_style_catalog (optional) -> create_caption_project -> generate_captions -> get_caption_project -> (update_caption_project) -> render_caption_preview (free) -> render_caption_export (quote, then explicit approval) -> get_caption_task.',
     'Never rewrite spoken words yourself; use explicit per-word edit ops only when the user asks.',
     'Paid renders: always show the quote (credits, outputs, project version, expiry) and get explicit approval before passing approval.',
     CONTENT_NOTICE,

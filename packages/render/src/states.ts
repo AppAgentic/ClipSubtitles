@@ -37,8 +37,9 @@ export function planStates(input: {
   windowStartMs: number;
   windowEndMs: number;
 }): StatePlan {
-  const highlight = input.style.highlight.mode === 'word';
-  const raw = visualStates(input.words, input.pages, highlight);
+  const needsWordStates =
+    input.style.highlight.mode === 'word' || input.style.emoji.mode === 'auto';
+  const raw = visualStates(input.words, input.pages, needsWordStates);
   const states = new Map<string, PlannedState>();
   states.set(BLANK_KEY, { key: BLANK_KEY, page: null, activeWordIndex: null });
   const timeline: TimelineSegment[] = [];
@@ -49,11 +50,13 @@ export function planStates(input: {
     if (end <= start) continue;
     if (start > cursor) timeline.push({ startMs: cursor, endMs: start, key: BLANK_KEY });
     const key = `${s.page.id}:${s.activeWordIndex ?? '-'}`;
-    if (!states.has(key)) states.set(key, { key, page: s.page, activeWordIndex: s.activeWordIndex });
+    if (!states.has(key))
+      states.set(key, { key, page: s.page, activeWordIndex: s.activeWordIndex });
     timeline.push({ startMs: start, endMs: end, key });
     cursor = end;
   }
-  if (cursor < input.windowEndMs) timeline.push({ startMs: cursor, endMs: input.windowEndMs, key: BLANK_KEY });
+  if (cursor < input.windowEndMs)
+    timeline.push({ startMs: cursor, endMs: input.windowEndMs, key: BLANK_KEY });
   return { frame: input.frame, states, timeline, blankKey: BLANK_KEY };
 }
 

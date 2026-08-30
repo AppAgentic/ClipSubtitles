@@ -1,4 +1,5 @@
 import type { CaptionPage, StyleConfig, TranscriptWord } from '@clipsubtitles/contracts';
+import { semanticEmojiForPage } from './emoji';
 
 export interface FrameSize {
   width: number;
@@ -51,6 +52,16 @@ export interface CaptionLayout {
   shadow: { color: string; blurPx: number; offsetYPx: number } | null;
   highlight: StyleConfig['highlight'];
   activeWordIndex: number | null;
+  emoji: {
+    glyph: string;
+    codepoint: string;
+    label: string;
+    animation: StyleConfig['emoji']['animation'];
+    wordIndex: number;
+    x: number;
+    y: number;
+    size: number;
+  } | null;
   lines: LayoutLine[];
 }
 
@@ -60,7 +71,15 @@ export const HORIZONTAL_MARGIN_PCT = 0.05;
 export const MIN_FIT_SCALE = 0.55;
 
 export function displayText(text: string, transform: StyleConfig['textTransform']): string {
-  return transform === 'uppercase' ? text.toLocaleUpperCase() : text;
+  if (transform === 'uppercase') return text.toLocaleUpperCase();
+  if (transform === 'lowercase') return text.toLocaleLowerCase();
+  if (transform === 'capitalize') {
+    return text.replace(
+      /(^|[\s-])(\p{L})/gu,
+      (_match, boundary: string, letter: string) => `${boundary}${letter.toLocaleUpperCase()}`,
+    );
+  }
+  return text;
 }
 
 /**
@@ -204,6 +223,30 @@ export function layoutCaption(input: LayoutInput): CaptionLayout {
     };
   });
 
+  const semanticEmoji = semanticEmojiForPage({ page, words, config: style.emoji, activeWordIndex });
+  let emoji: CaptionLayout['emoji'] = null;
+  if (semanticEmoji) {
+    const size = Math.round(fontPx * style.emoji.sizeEm);
+    const anchorLine = lines.find((line) =>
+      line.words.some((word) => word.wordIndex === semanticEmoji.wordIndex),
+    );
+    const anchorWord = anchorLine?.words.find((word) => word.wordIndex === semanticEmoji.wordIndex);
+    const centerX =
+      style.emoji.position === 'above-word' && anchorWord
+        ? anchorWord.x + anchorWord.width / 2
+        : blockLeft + blockWidth / 2;
+    emoji = {
+      ...semanticEmoji,
+      animation: style.emoji.animation,
+      x: Math.round(Math.max(0, Math.min(W - size, centerX - size / 2))),
+      // Horizontal placement may follow the keyword, but vertical placement
+      // always clears the complete caption block. Anchoring above a word on a
+      // second line would otherwise collide with the first line.
+      y: Math.round(Math.max(0, blockTop - size - fontPx * 0.18)),
+      size,
+    };
+  }
+
   return {
     frame,
     font,
@@ -232,6 +275,7 @@ export function layoutCaption(input: LayoutInput): CaptionLayout {
       : null,
     highlight: style.highlight,
     activeWordIndex,
+    emoji,
     lines,
   };
 }

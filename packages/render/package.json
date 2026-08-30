@@ -24,7 +24,8 @@
     "@expo-google-fonts/nunito": "0.4.2",
     "@expo-google-fonts/playfair-display": "0.4.2",
     "@expo-google-fonts/space-mono": "0.4.2",
-    "@napi-rs/canvas": "^1.0.8"
+    "@napi-rs/canvas": "^1.0.8",
+    "@twemoji/svg": "15.0.0"
   },
   "devDependencies": {
     "@clipsubtitles/transcription": "workspace:*",

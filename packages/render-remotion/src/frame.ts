@@ -27,6 +27,8 @@ export function frameState(
   return {
     page,
     activeWordIndex:
-      style.highlight.mode === 'word' ? activeWordIndexInPage(page, words, timeMs) : null,
+      style.highlight.mode === 'word' || style.emoji.mode === 'auto'
+        ? activeWordIndexInPage(page, words, timeMs)
+        : null,
   };
 }

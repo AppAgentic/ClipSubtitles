@@ -78,6 +78,28 @@ describe('rasterizeCaption', () => {
     expect(measure('hello', { family: 'Inter', weight: 700, sizePx: 80 })).toBeCloseTo(w1 * 2, 0);
   });
 
+  it('rasterizes bundled semantic emoji deterministically and offline', async () => {
+    const wordIndex = words.findIndex((word) => word.text.toLowerCase() === 'look');
+    const page = pages.find(
+      (candidate) => wordIndex >= candidate.startWordIndex && wordIndex <= candidate.endWordIndex,
+    )!;
+    const style = {
+      ...stylePreset('bold-pop'),
+      emoji: {
+        mode: 'auto',
+        timing: 'active-word',
+        position: 'above-word',
+        sizeEm: 1.2,
+        animation: 'pop',
+      } as const,
+    };
+    const a = rasterizeCaption({ page, words, style, frame, activeWordIndex: wordIndex });
+    const b = rasterizeCaption({ page, words, style, frame, activeWordIndex: wordIndex });
+    expect(a.layout.emoji).toMatchObject({ codepoint: '1f440' });
+    expect(a.png.equals(b.png)).toBe(true);
+    expect(await opaqueBounds(a.png)).not.toBeNull();
+  });
+
   it('transparent frames are fully transparent', async () => {
     expect(await opaqueBounds(transparentPng(frame))).toBeNull();
   });
