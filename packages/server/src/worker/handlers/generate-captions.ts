@@ -68,8 +68,8 @@ export async function generateCaptionsHandler(
     tools.progress(20, 'transcribing');
     let providers: TranscriptionProvider[] = ctx.providers.chain;
     if (input.provider) {
-      const forced = ctx.providers.byId(input.provider);
-      if (!forced) throw new TaskFailure('VALIDATION_FAILED', 'Unknown provider.');
+      const forced = ctx.providers.chain.find((provider) => provider.id === input.provider);
+      if (!forced) throw new TaskFailure('VALIDATION_FAILED', 'Provider is not enabled.');
       providers = [forced];
     }
     const outcome = await transcribeWithFallback(

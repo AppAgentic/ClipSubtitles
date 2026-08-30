@@ -234,6 +234,20 @@ describe('projects, uploads, and captions', () => {
     expect(CaptionProjectSchema.safeParse(project).success).toBe(true);
   });
 
+  it('rejects a forced transcription provider outside the enabled chain before enqueueing', async () => {
+    const project = await uploadProject('disabled-provider.mp4');
+    const rejected = await h.api<{ error: { code: string; details?: Array<{ message: string }> } }>(
+      'POST',
+      `/v1/projects/${project.id}/captions`,
+      { token, body: { provider: 'mock-noisy' } },
+    );
+    expect(rejected.status).toBe(400);
+    expect(rejected.body.error.code).toBe('VALIDATION_FAILED');
+    expect(rejected.body.error.details?.[0]?.message).toBe('Provider is not enabled.');
+    const unchanged = await h.api<CaptionProject>('GET', `/v1/projects/${project.id}`, { token });
+    expect(unchanged.body.status).toBe('ready');
+  });
+
   it('applies constrained patches with optimistic versions and invalidates quotes', async () => {
     const project = await captionedProject();
     const word = project.transcript!.words![0]!;

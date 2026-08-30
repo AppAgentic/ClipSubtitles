@@ -19,8 +19,8 @@ export const KNOWN_PROVIDER_IDS = [
   'mock-noisy',
   'mock-drifty',
   'mock-flaky',
-  'gemini',
   'elevenlabs',
+  'gemini',
 ] as const;
 export type KnownProviderId = (typeof KNOWN_PROVIDER_IDS)[number];
 
@@ -48,15 +48,15 @@ export function createProviderRegistry(
     ...Object.values(MOCK_PROFILES).map(
       (profile) => new MockTranscriptionProvider({ ...mockOpts, profile }),
     ),
-    new GeminiTranscribeProvider({
-      ...(env.GEMINI_API_KEY ? { apiKey: env.GEMINI_API_KEY } : {}),
-      ...(env.GEMINI_TRANSCRIBE_MODEL ? { model: env.GEMINI_TRANSCRIBE_MODEL } : {}),
-      usdPerMinute: price(env, 'gemini'),
-    }),
     new ElevenLabsScribeProvider({
       ...(env.ELEVENLABS_API_KEY ? { apiKey: env.ELEVENLABS_API_KEY } : {}),
       ...(env.ELEVENLABS_SCRIBE_MODEL ? { model: env.ELEVENLABS_SCRIBE_MODEL } : {}),
       usdPerMinute: price(env, 'elevenlabs'),
+    }),
+    new GeminiTranscribeProvider({
+      ...(env.GEMINI_API_KEY ? { apiKey: env.GEMINI_API_KEY } : {}),
+      ...(env.GEMINI_TRANSCRIBE_MODEL ? { model: env.GEMINI_TRANSCRIBE_MODEL } : {}),
+      usdPerMinute: price(env, 'gemini'),
     }),
   ];
   const byId = (id: string) => all.find((p) => p.id === id);
@@ -68,10 +68,6 @@ export function createProviderRegistry(
   for (const id of ids) {
     const p = byId(id);
     if (p) chain.push(p);
-  }
-  if (chain.length === 0) {
-    const fallback = byId('mock');
-    if (fallback) chain.push(fallback);
   }
   return { all, byId, chain };
 }

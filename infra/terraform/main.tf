@@ -5,6 +5,20 @@ locals {
   api_image    = "${var.region}-docker.pkg.dev/${var.project_id}/${local.repository}/api:${var.image_tag}"
   worker_image = "${var.region}-docker.pkg.dev/${var.project_id}/${local.repository}/worker:${var.image_tag}"
   web_image    = "${var.region}-docker.pkg.dev/${var.project_id}/${local.repository}/web:${var.image_tag}"
+  api_secret_names = toset([
+    "auth-local-secret",
+    "workos-api-key",
+    "workos-client-id",
+    "workos-authkit-issuer",
+    "workos-webhook-secret",
+    "postgres-password",
+    "r2-access-key-id",
+    "r2-secret-access-key",
+  ])
+  worker_secret_names = setunion(local.api_secret_names, toset([
+    "elevenlabs-api-key",
+    "gemini-api-key",
+  ]))
 }
 
 resource "google_project_service" "required" {
@@ -176,7 +190,7 @@ resource "google_service_account_iam_member" "worker_can_mint_task_oidc" {
 }
 
 resource "google_secret_manager_secret" "runtime" {
-  for_each  = toset(["auth-local-secret", "workos-api-key", "workos-client-id", "workos-authkit-issuer", "workos-webhook-secret", "postgres-password", "r2-access-key-id", "r2-secret-access-key"])
+  for_each  = local.worker_secret_names
   secret_id = "clipsubtitles-${var.environment}-${each.value}"
   replication {
     auto {}
@@ -186,7 +200,10 @@ resource "google_secret_manager_secret" "runtime" {
 }
 
 resource "google_secret_manager_secret_iam_member" "api" {
-  for_each  = google_secret_manager_secret.runtime
+  for_each = {
+    for name, secret in google_secret_manager_secret.runtime : name => secret
+    if contains(local.api_secret_names, name)
+  }
   secret_id = each.value.id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.api.email}"
@@ -237,6 +254,10 @@ resource "google_cloud_run_v2_service" "api" {
       env {
         name  = "AUTH_MODE"
         value = "workos"
+      }
+      env {
+        name  = "TRANSCRIPTION_PROVIDERS"
+        value = var.transcription_providers
       }
       env {
         name  = "API_PUBLIC_URL"
@@ -497,6 +518,36 @@ resource "google_cloud_run_v2_service" "worker" {
       env {
         name  = "AUTH_MODE"
         value = "workos"
+      }
+      env {
+        name  = "TRANSCRIPTION_PROVIDERS"
+        value = var.transcription_providers
+      }
+      env {
+        name  = "ELEVENLABS_SCRIBE_MODEL"
+        value = var.elevenlabs_scribe_model
+      }
+      env {
+        name  = "GEMINI_TRANSCRIBE_MODEL"
+        value = var.gemini_transcribe_model
+      }
+      env {
+        name = "ELEVENLABS_API_KEY"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.runtime["elevenlabs-api-key"].secret_id
+            version = "latest"
+          }
+        }
+      }
+      env {
+        name = "GEMINI_API_KEY"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.runtime["gemini-api-key"].secret_id
+            version = "latest"
+          }
+        }
       }
       env {
         name = "AUTH_LOCAL_SECRET"

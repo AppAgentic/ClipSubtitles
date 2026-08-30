@@ -31,9 +31,10 @@ export interface ElevenLabsOptions {
 }
 
 /**
- * ElevenLabs Scribe adapter (config-gated). Request/response mapping follows
- * the public speech-to-text API shape; it has NOT been exercised against the
- * live API in this repository — see PARKED_ACTIONS.md.
+ * Direct ElevenLabs Scribe adapter (config-gated). The model was selected by a
+ * bounded live product-clip benchmark through ElevenLabs' official fal partner
+ * route. This direct API mapping has not yet had its staging smoke; production
+ * credential binding remains an external gate — see PARKED_ACTIONS.md.
  */
 export class ElevenLabsScribeProvider implements TranscriptionProvider {
   readonly id = 'elevenlabs';
@@ -73,7 +74,12 @@ export class ElevenLabsScribeProvider implements TranscriptionProvider {
       diarize: 'true',
       tag_audio_events: 'false',
     };
-    if (input.languageHint) fields.language_code = input.languageHint;
+    if (input.languageHint) {
+      // Scribe accepts ISO-639 language codes, while our public contract accepts
+      // BCP-47 tags. Keep only the primary subtag (for example en-GB -> en).
+      const [primaryLanguage] = input.languageHint.split(/[-_]/, 1);
+      if (primaryLanguage) fields.language_code = primaryLanguage.toLowerCase();
+    }
     const form = await audioFormData(input.audioPath, 'file', fields);
     const httpOpts = { providerId: this.id, timeoutMs: 300_000, ...(signal ? { signal } : {}), ...(this.fetchImpl ? { fetchImpl: this.fetchImpl } : {}) };
     const res = await providerFetchJson<ScribeResponse>(

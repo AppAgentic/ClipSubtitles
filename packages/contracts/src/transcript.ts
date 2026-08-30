@@ -36,7 +36,7 @@ export const TranscriptRevisionSummarySchema = z.object({
   id: RevisionIdSchema,
   revisionNumber: z.number().int().positive(),
   source: TranscriptSourceSchema,
-  provider: z.string().max(64).describe('Adapter id that produced the words (e.g. mock, gemini)'),
+  provider: z.string().max(64).describe('Adapter id that produced the words (e.g. mock, elevenlabs)'),
   model: z.string().max(120).optional(),
   language: LanguageTagSchema,
   wordCount: z.number().int().nonnegative(),

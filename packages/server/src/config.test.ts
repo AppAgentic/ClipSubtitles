@@ -64,3 +64,30 @@ describe('database configuration', () => {
     ).not.toContain('injected-secret');
   });
 });
+
+describe('production transcription configuration', () => {
+  const productionBase = {
+    NODE_ENV: 'production',
+    AUTH_LOCAL_SECRET: 'production-secret-that-is-at-least-32-characters',
+  };
+
+  it('fails closed when production would use the local mock provider', () => {
+    expect(() => loadConfig(productionBase)).toThrowError(
+      'Production TRANSCRIPTION_PROVIDERS must contain only known live providers.',
+    );
+    expect(() =>
+      loadConfig({ ...productionBase, TRANSCRIPTION_PROVIDERS: 'elevenlabs,mock' }),
+    ).toThrowError(ConfigError);
+    expect(() =>
+      loadConfig({ ...productionBase, TRANSCRIPTION_PROVIDERS: 'eleven-labs,gemeni' }),
+    ).toThrowError(ConfigError);
+  });
+
+  it('accepts the approved live provider chain', () => {
+    const config = loadConfig({
+      ...productionBase,
+      TRANSCRIPTION_PROVIDERS: 'elevenlabs,gemini',
+    });
+    expect(config.transcription.providers).toEqual(['elevenlabs', 'gemini']);
+  });
+});

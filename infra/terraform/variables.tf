@@ -44,6 +44,26 @@ variable "worker_public_url" {
   default     = ""
 }
 
+variable "transcription_providers" {
+  description = "Ordered production transcription chain. Mock providers are forbidden in Cloud Run."
+  type        = string
+  default     = "elevenlabs,gemini"
+  validation {
+    condition     = var.transcription_providers == "elevenlabs,gemini"
+    error_message = "transcription_providers must preserve the approved elevenlabs,gemini production order"
+  }
+}
+
+variable "elevenlabs_scribe_model" {
+  type    = string
+  default = "scribe_v2"
+}
+
+variable "gemini_transcribe_model" {
+  type    = string
+  default = "gemini-3.5-transcribe"
+}
+
 variable "object_store_driver" {
   description = "Production media store. R2 is the economical default; GCS remains the same-cloud fallback."
   type        = string

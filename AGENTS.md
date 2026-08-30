@@ -13,9 +13,10 @@ other MCP clients, or the web editor.
   recovery surface.
 - The public machine surface is a small, goal-oriented MCP toolset backed by a
   typed REST API.
-- Gemini 3.5 Transcribe is the production transcription model. ElevenLabs
-  Scribe v2 is the only supported live fallback and remains benchmarked against
-  Gemini on the same corpus before production fallback ordering changes.
+- Direct ElevenLabs Scribe v2 is the production transcription model. Gemini
+  3.5 Transcribe is the only supported live fallback. A two-repeat benchmark on
+  six real product voice clips selected this order; keep broadening the canary
+  before making universal multilingual or multi-speaker accuracy claims.
 - Transcripts use a provider-neutral word-level schema.
 - Caption grouping uses semantic and prosody-aware segmentation without
   rewriting spoken words.
@@ -56,8 +57,8 @@ Hardening already in place: per-workspace ledger idempotency (migration 2),
 fail-closed client-IP resolution behind `TRUSTED_PROXIES`, and atomic export
 publishing with cleanup on every terminal task state
 (`packages/server/src/services/outputs.ts`).
-External gates (live provider benchmark, WorkOS tenant, cloud resources,
-directory submission) are listed in `PARKED_ACTIONS.md`. Read
+External gates (WorkOS tenant, cloud resources, directory submission) are
+listed in `PARKED_ACTIONS.md`. Read
 `docs/architecture.md` and `docs/decisions/` before changing boundaries.
 
 ## Commands

@@ -50,9 +50,9 @@ export async function startGeneration(
     const project = await requireProject(ctx, principal, projectId);
     const asset = await requireReadySource(ctx, project);
     if (req.provider) {
-      const p = ctx.providers.byId(req.provider);
-      if (!p || !p.isConfigured()) {
-        throw new ApiError('VALIDATION_FAILED', undefined, { details: [{ path: 'provider', message: 'Unknown or unconfigured provider.' }] });
+      const enabled = ctx.providers.chain.some((provider) => provider.id === req.provider);
+      if (!enabled) {
+        throw new ApiError('VALIDATION_FAILED', undefined, { details: [{ path: 'provider', message: 'Provider is not enabled.' }] });
       }
     }
     const input: GenerateCaptionsInput = {

@@ -103,13 +103,14 @@ behind adapters.
 
 `video -> audio extraction/VAD -> transcription adapter -> normalized words -> semantic/prosody segmentation -> template styling -> Remotion preview/export -> deterministic QA`
 
-Benchmark before selecting the production default:
+The 2026-08-30 bounded product-audio canary selected the production order:
 
-1. Gemini 3.5 Transcribe in verbatim mode with word timestamps and diarization.
-   Custom vocabulary is capability-gated because the 2026-08-30 public preview
-   rejects it when timestamps are enabled.
-2. ElevenLabs Scribe v2.
-3. Provider-neutral benchmark and fallback evaluation against the Gemini baseline.
+1. Direct ElevenLabs Scribe v2 primary.
+2. Gemini 3.5 Transcribe fallback in verbatim mode with word timestamps and
+   diarization. Custom vocabulary is capability-gated because the 2026-08-30
+   public preview rejects it when timestamps are enabled.
+3. Continue provider-neutral comparisons against the Gemini baseline as the
+   real-audio corpus expands.
 
 The evaluation set must cover clean speech, music, accents, code-switching,
 poor microphones, and multiple languages. Score word/entity accuracy,
@@ -128,7 +129,7 @@ timestamp drift, caption-break quality, latency, failure rate, and cost.
 
 ## Acceptance Gates
 
-- Better transcript/entity accuracy than the production Gemini baseline or
+- Better transcript/entity accuracy than the Gemini comparison baseline or
   equivalent quality with materially simpler timing support.
 - No cumulative timestamp drift on the benchmark set.
 - Reading-speed, line-length, transcript-fidelity, and A/V-sync QA passes.

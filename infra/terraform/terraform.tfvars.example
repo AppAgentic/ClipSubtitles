@@ -2,5 +2,12 @@ project_id      = "clipsubtitles-staging"
 environment     = "staging"
 deploy_services = false
 image_tag       = "replace-with-immutable-git-sha"
+
+# Approved live order. Secrets are separate Secret Manager versions and never
+# belong in tfvars.
+transcription_providers = "elevenlabs,gemini"
+elevenlabs_scribe_model = "scribe_v2"
+gemini_transcribe_model = "gemini-3.5-transcribe"
+
 object_store_driver = "r2"
 r2_endpoint          = "https://replace-with-account-id.r2.cloudflarestorage.com"

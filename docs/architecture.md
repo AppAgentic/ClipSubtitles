@@ -55,6 +55,11 @@ task claims. The PostgreSQL 17 migration/concurrency suite covers migration
 startup, rollback/pinning, billing, idempotency, revision numbering, leases,
 outbox redelivery, direct-upload completion, and optimistic edits. Terraform still defaults
 `deploy_services=false` until the dedicated project, secrets, and plan are approved.
+The worker receives the approved `elevenlabs,gemini` provider order plus provider
+keys from Secret Manager; the API receives the order for validation but cannot
+read transcription keys. Production startup fails closed if any mock provider is
+configured. Secret versions and a direct Scribe staging smoke remain external
+approval gates.
 
 ## Request path
 

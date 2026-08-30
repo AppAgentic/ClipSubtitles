@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { KNOWN_PROVIDER_IDS } from '@clipsubtitles/transcription';
 import { z } from 'zod';
 import { createProxyTrust } from './auth/client-ip';
 
@@ -251,6 +252,22 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   if (e.NODE_ENV === 'production' && e.AUTH_LOCAL_SECRET.startsWith('local-dev-secret')) {
     throw new ConfigError('AUTH_LOCAL_SECRET must be set to a strong secret in production.');
   }
+  const transcriptionProviders = e.TRANSCRIPTION_PROVIDERS.split(',')
+    .map((provider) => provider.trim())
+    .filter(Boolean);
+  if (
+    e.NODE_ENV === 'production' &&
+    (transcriptionProviders.length === 0 ||
+      transcriptionProviders.some(
+        (provider) =>
+          provider.startsWith('mock') ||
+          !KNOWN_PROVIDER_IDS.includes(provider as (typeof KNOWN_PROVIDER_IDS)[number]),
+      ))
+  ) {
+    throw new ConfigError(
+      'Production TRANSCRIPTION_PROVIDERS must contain only known live providers.',
+    );
+  }
   if (e.AUTH_LOCAL_SECRET.length < 32)
     throw new ConfigError('AUTH_LOCAL_SECRET must be at least 32 characters.');
   let objectStore: AppConfig['objectStore'];
@@ -331,9 +348,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       tokenTtlSeconds: 3600,
     },
     transcription: {
-      providers: e.TRANSCRIPTION_PROVIDERS.split(',')
-        .map((s) => s.trim())
-        .filter(Boolean),
+      providers: transcriptionProviders,
     },
     renderer: e.RENDERER,
     ffmpegPath: e.FFMPEG_PATH,

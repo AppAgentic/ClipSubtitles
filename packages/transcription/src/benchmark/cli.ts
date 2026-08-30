@@ -42,7 +42,7 @@ function parseArgs(argv: string[]): CliArgs {
     else if (a === '--baseline') args.baseline = next();
     else if (a === '--help' || a === '-h') {
       console.log(
-        'Usage: pnpm benchmark [--providers mock,mock-noisy,gemini,elevenlabs] [--repeats N] [--cases id,id] [--baseline gemini] [--out DIR] [--fixtures DIR]',
+        'Usage: pnpm benchmark [--providers mock,mock-noisy,elevenlabs,gemini] [--repeats N] [--cases id,id] [--baseline gemini] [--out DIR] [--fixtures DIR]',
       );
       process.exit(0);
     }

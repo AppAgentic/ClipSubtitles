@@ -56,7 +56,7 @@ describe('corpus', () => {
 describe('audio + fixtures + benchmark end to end', () => {
   it('exposes only Gemini and ElevenLabs as live transcription providers', () => {
     const registry = createProviderRegistry({
-      TRANSCRIPTION_PROVIDERS: 'gemini,elevenlabs,unknown-provider',
+      TRANSCRIPTION_PROVIDERS: 'elevenlabs,gemini,unknown-provider',
       GEMINI_API_KEY: 'configured-for-registry-test',
       ELEVENLABS_API_KEY: 'configured-for-registry-test',
     });
@@ -65,15 +65,25 @@ describe('audio + fixtures + benchmark end to end', () => {
       'mock-noisy',
       'mock-drifty',
       'mock-flaky',
-      'gemini',
       'elevenlabs',
+      'gemini',
     ]);
-    expect(registry.chain.map((provider) => provider.id)).toEqual(['gemini', 'elevenlabs']);
+    expect(registry.chain.map((provider) => provider.id)).toEqual(['elevenlabs', 'gemini']);
     expect(
       registry.all
         .filter((provider) => !provider.id.startsWith('mock'))
         .map((provider) => provider.id),
-    ).toEqual(['gemini', 'elevenlabs']);
+    ).toEqual(['elevenlabs', 'gemini']);
+
+    const reverse = createProviderRegistry({
+      TRANSCRIPTION_PROVIDERS: 'gemini,elevenlabs',
+      GEMINI_API_KEY: 'configured-for-registry-test',
+      ELEVENLABS_API_KEY: 'configured-for-registry-test',
+    });
+    expect(reverse.chain.map((provider) => provider.id)).toEqual(['gemini', 'elevenlabs']);
+    expect(
+      createProviderRegistry({ TRANSCRIPTION_PROVIDERS: 'eleven-labs,gemeni' }).chain,
+    ).toEqual([]);
   });
 
   it('WAV encode/parse round trips', () => {
