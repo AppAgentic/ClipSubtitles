@@ -1,0 +1,17 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "com.clipsubtitles/mcp",
+  "title": "ClipSubtitles",
+  "description": "Create, review, style, preview and export accurate video captions through an agent-ready workflow.",
+  "version": "0.1.0",
+  "repository": {
+    "url": "https://github.com/AppAgentic/ClipSubtitles",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://api.clipsubtitles.com/api/mcp"
+    }
+  ]
+}

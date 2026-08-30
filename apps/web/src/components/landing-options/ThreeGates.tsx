@@ -6,6 +6,7 @@ import { CaptionFrame, PAGE_ONE, StyleBoard } from './StyleBoard';
 import { SITE_URL } from '@/components/marketing/seo-pages';
 import { FootageReel } from '@/components/marketing/FootageReel';
 import { ConnectAgent } from './ConnectAgent';
+import { HeroConnect } from './HeroConnect';
 import './landing-options.css';
 import './three-gates.css';
 
@@ -111,10 +112,7 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
                 See how it works
               </a>
             </div>
-            <p className="tg-tertiary">
-              Building something?{' '}
-              <a href="#connect">Add ClipSubtitles to your agent.</a>
-            </p>
+            <HeroConnect />
           </div>
 
           <div className="tg-hero-proof">

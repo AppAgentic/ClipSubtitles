@@ -2,10 +2,24 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ConnectAgent } from './ConnectAgent';
+import { HeroConnect } from './HeroConnect';
 
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+});
+
+describe('HeroConnect', () => {
+  it('keeps the primary client commands and one-click links above the fold', () => {
+    render(<HeroConnect />);
+    expect(screen.getByRole('tab', { name: 'Claude Code' }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByText(/claude mcp add --transport http/)).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Cursor' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'VS Code' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Full setup guide/ }).getAttribute('href')).toBe('#connect');
+    fireEvent.keyDown(screen.getByRole('tab', { name: 'Claude Code' }), { key: 'ArrowRight' });
+    expect(screen.getByRole('tab', { name: 'Codex' }).getAttribute('aria-selected')).toBe('true');
+  });
 });
 
 describe('ConnectAgent', () => {
