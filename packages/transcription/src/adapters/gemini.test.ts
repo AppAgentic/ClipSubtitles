@@ -69,7 +69,10 @@ describe('GeminiTranscribeProvider', () => {
     });
     sdk.delete.mockResolvedValue({});
 
-    const provider = new GeminiTranscribeProvider({ apiKey: 'test-key' });
+    const provider = new GeminiTranscribeProvider({
+      apiKey: 'test-key\n',
+      model: 'gemini-3.5-transcribe\n',
+    });
     const result = await provider.transcribe({
       audioPath,
       durationMs: 1_000,
@@ -79,6 +82,9 @@ describe('GeminiTranscribeProvider', () => {
     });
 
     expect(result.model).toBe('gemini-3.5-transcribe');
+    expect(sdk.constructor).toHaveBeenCalledWith(
+      expect.objectContaining({ apiKey: 'test-key' }),
+    );
     expect(result.words).toEqual([
       { text: 'Hello', startMs: 100, endMs: 450, speaker: 'spk:0' },
       { text: 'world', startMs: 500, endMs: 850, speaker: 'spk:0' },

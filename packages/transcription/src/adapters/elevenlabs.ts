@@ -53,8 +53,8 @@ export class ElevenLabsScribeProvider implements TranscriptionProvider {
   private readonly fetchImpl: FetchLike | undefined;
 
   constructor(opts: ElevenLabsOptions = {}) {
-    this.apiKey = opts.apiKey;
-    this.model = opts.model ?? 'scribe_v2';
+    this.apiKey = opts.apiKey?.trim() || undefined;
+    this.model = opts.model?.trim() || 'scribe_v2';
     this.baseUrl = opts.baseUrl ?? 'https://api.elevenlabs.io';
     this.fetchImpl = opts.fetchImpl;
     this.usdPerMinute = opts.usdPerMinute ?? null;

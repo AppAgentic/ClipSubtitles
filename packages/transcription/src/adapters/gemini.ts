@@ -93,8 +93,8 @@ export class GeminiTranscribeProvider implements TranscriptionProvider {
   private readonly maxUploadBytes: number;
 
   constructor(opts: GeminiOptions = {}) {
-    this.apiKey = opts.apiKey;
-    this.model = opts.model ?? 'gemini-3.5-transcribe';
+    this.apiKey = opts.apiKey?.trim() || undefined;
+    this.model = opts.model?.trim() || 'gemini-3.5-transcribe';
     this.baseUrl = opts.baseUrl;
     this.usdPerMinute = opts.usdPerMinute ?? null;
     this.maxUploadBytes = opts.maxUploadBytes ?? 250 * 1024 * 1024;

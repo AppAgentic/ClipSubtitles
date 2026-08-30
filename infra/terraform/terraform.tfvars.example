@@ -2,6 +2,7 @@ project_id      = "clipsubtitles-staging"
 environment     = "staging"
 deploy_services = false
 image_tag       = "replace-with-immutable-git-sha"
+runtime_config_revision = "initial"
 
 # Approved live order. Secrets are separate Secret Manager versions and never
 # belong in tfvars.

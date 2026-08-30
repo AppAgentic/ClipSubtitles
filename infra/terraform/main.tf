@@ -568,6 +568,10 @@ resource "google_cloud_run_v2_service" "worker" {
         value = "production"
       }
       env {
+        name  = "RUNTIME_CONFIG_REVISION"
+        value = var.runtime_config_revision
+      }
+      env {
         name  = "AUTH_MODE"
         value = "workos"
       }

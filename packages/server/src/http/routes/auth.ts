@@ -86,7 +86,7 @@ export function registerAuthRoutes(app: Hono<AppEnv>, ctx: AppContext): void {
     return c.body(null, 204);
   });
 
-  // WorkOS webhooks (config-gated). Event names follow the WorkOS events catalogue and are unverified live.
+  // WorkOS webhooks are config-gated and signature/timestamp verified before mutation.
   app.post('/auth/webhooks/workos', async (c) => {
     const secret = ctx.config.auth.workos?.webhookSecret;
     if (!secret) throw new ApiError('NOT_FOUND');

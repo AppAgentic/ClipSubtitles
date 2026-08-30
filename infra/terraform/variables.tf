@@ -40,6 +40,12 @@ variable "image_tag" {
   default = "unset"
 }
 
+variable "runtime_config_revision" {
+  description = "Operator-controlled marker used to roll runtime revisions after rotating latest-version secrets without rebuilding images."
+  type        = string
+  default     = "initial"
+}
+
 variable "api_public_url" {
   type    = string
   default = "https://api.clipsubtitles.com"

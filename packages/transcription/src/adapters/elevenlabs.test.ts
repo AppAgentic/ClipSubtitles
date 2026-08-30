@@ -37,7 +37,8 @@ describe('ElevenLabsScribeProvider', () => {
     });
 
     const provider = new ElevenLabsScribeProvider({
-      apiKey: 'test-key',
+      apiKey: 'test-key\n',
+      model: 'scribe_v2\n',
       fetchImpl,
       usdPerMinute: 0.22 / 60,
     });
