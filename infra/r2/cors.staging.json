@@ -1,0 +1,13 @@
+{
+  "rules": [
+    {
+      "allowed": {
+        "origins": [
+          "https://clipsubtitles-staging-web-486013933077.europe-west2.run.app"
+        ],
+        "methods": ["PUT"],
+        "headers": ["Content-Type"]
+      }
+    }
+  ]
+}
