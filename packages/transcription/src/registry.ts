@@ -10,6 +10,7 @@ export interface ProviderEnv {
   GEMINI_TRANSCRIBE_MODEL?: string | undefined;
   ELEVENLABS_API_KEY?: string | undefined;
   ELEVENLABS_SCRIBE_MODEL?: string | undefined;
+  ELEVENLABS_ERROR_DIAGNOSTICS?: string | undefined;
   /** Optional list prices for cost scoring, e.g. BENCHMARK_USD_PER_MINUTE_GEMINI=0.01 */
   [key: `BENCHMARK_USD_PER_MINUTE_${string}`]: string | undefined;
 }
@@ -51,6 +52,9 @@ export function createProviderRegistry(
     new ElevenLabsScribeProvider({
       ...(env.ELEVENLABS_API_KEY ? { apiKey: env.ELEVENLABS_API_KEY } : {}),
       ...(env.ELEVENLABS_SCRIBE_MODEL ? { model: env.ELEVENLABS_SCRIBE_MODEL } : {}),
+      captureErrorDiagnostic:
+        env.ELEVENLABS_ERROR_DIAGNOSTICS === '1' ||
+        env.ELEVENLABS_ERROR_DIAGNOSTICS === 'true',
       usdPerMinute: price(env, 'elevenlabs'),
     }),
     new GeminiTranscribeProvider({

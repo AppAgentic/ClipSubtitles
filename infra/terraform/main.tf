@@ -584,6 +584,12 @@ resource "google_cloud_run_v2_service" "worker" {
         value = var.elevenlabs_scribe_model
       }
       env {
+        # Temporary, bounded provider diagnostics are enabled in staging only.
+        # The adapter retains only error type/code and request/trace IDs.
+        name  = "ELEVENLABS_ERROR_DIAGNOSTICS"
+        value = var.environment == "staging" ? "true" : "false"
+      }
+      env {
         name  = "GEMINI_TRANSCRIBE_MODEL"
         value = var.gemini_transcribe_model
       }

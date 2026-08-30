@@ -1,4 +1,4 @@
-import { ProviderError, type TranscriptionInput, type TranscriptionProvider, type TranscriptionResult } from './provider';
+import { ProviderError, type ProviderDiagnostic, type TranscriptionInput, type TranscriptionProvider, type TranscriptionResult } from './provider';
 
 export interface FallbackAttempt {
   providerId: string;
@@ -6,6 +6,8 @@ export interface FallbackAttempt {
   errorCode?: string;
   /** Sanitized adapter message (status class only; never response bodies or credentials). */
   errorMessage?: string;
+  /** Strictly allowlisted provider metadata; never response messages or bodies. */
+  diagnostic?: ProviderDiagnostic;
   latencyMs: number;
 }
 
@@ -60,6 +62,7 @@ export async function transcribeWithFallback(
         outcome: 'failed',
         errorCode: pe.code,
         errorMessage: pe.message,
+        ...(pe.diagnostic ? { diagnostic: pe.diagnostic } : {}),
         latencyMs: now() - started,
       };
       attempts.push(attempt);
@@ -75,5 +78,6 @@ export async function transcribeWithFallback(
     anyConfigured ? 'UNAVAILABLE' : 'NOT_CONFIGURED',
     anyConfigured ? 'All configured transcription providers failed.' : 'No transcription provider is configured.',
     anyConfigured && hasRetryableFailure,
+    lastError?.diagnostic,
   );
 }

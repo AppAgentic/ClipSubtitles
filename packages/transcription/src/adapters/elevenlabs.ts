@@ -28,6 +28,7 @@ export interface ElevenLabsOptions {
   baseUrl?: string;
   fetchImpl?: FetchLike;
   usdPerMinute?: number | null;
+  captureErrorDiagnostic?: boolean;
 }
 
 /**
@@ -51,12 +52,14 @@ export class ElevenLabsScribeProvider implements TranscriptionProvider {
   private readonly apiKey: string | undefined;
   private readonly baseUrl: string;
   private readonly fetchImpl: FetchLike | undefined;
+  private readonly captureErrorDiagnostic: boolean;
 
   constructor(opts: ElevenLabsOptions = {}) {
     this.apiKey = opts.apiKey?.trim() || undefined;
     this.model = opts.model?.trim() || 'scribe_v2';
     this.baseUrl = opts.baseUrl ?? 'https://api.elevenlabs.io';
     this.fetchImpl = opts.fetchImpl;
+    this.captureErrorDiagnostic = opts.captureErrorDiagnostic ?? false;
     this.usdPerMinute = opts.usdPerMinute ?? null;
   }
 
@@ -81,7 +84,13 @@ export class ElevenLabsScribeProvider implements TranscriptionProvider {
       if (primaryLanguage) fields.language_code = primaryLanguage.toLowerCase();
     }
     const form = await audioFormData(input.audioPath, 'file', fields);
-    const httpOpts = { providerId: this.id, timeoutMs: 300_000, ...(signal ? { signal } : {}), ...(this.fetchImpl ? { fetchImpl: this.fetchImpl } : {}) };
+    const httpOpts = {
+      providerId: this.id,
+      timeoutMs: 300_000,
+      captureErrorDiagnostic: this.captureErrorDiagnostic,
+      ...(signal ? { signal } : {}),
+      ...(this.fetchImpl ? { fetchImpl: this.fetchImpl } : {}),
+    };
     const res = await providerFetchJson<ScribeResponse>(
       `${this.baseUrl}/v1/speech-to-text`,
       { method: 'POST', headers: { 'xi-api-key': this.apiKey }, body: form },

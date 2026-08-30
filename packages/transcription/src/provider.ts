@@ -47,16 +47,36 @@ export type ProviderErrorCode =
   | 'CANCELLED'
   | 'UNSUPPORTED';
 
+/**
+ * Strictly allowlisted provider error metadata for private diagnostics.
+ * Never add response messages, bodies, credentials, or media-derived content.
+ */
+export interface ProviderDiagnostic {
+  httpStatus?: number;
+  providerErrorType?: string;
+  providerErrorCode?: string;
+  requestId?: string;
+  traceId?: string;
+}
+
 export class ProviderError extends Error {
   readonly code: ProviderErrorCode;
   readonly providerId: string;
   readonly retryable: boolean;
-  constructor(providerId: string, code: ProviderErrorCode, message: string, retryable = false) {
+  readonly diagnostic: ProviderDiagnostic | undefined;
+  constructor(
+    providerId: string,
+    code: ProviderErrorCode,
+    message: string,
+    retryable = false,
+    diagnostic?: ProviderDiagnostic,
+  ) {
     super(message);
     this.name = 'ProviderError';
     this.code = code;
     this.providerId = providerId;
     this.retryable = retryable;
+    this.diagnostic = diagnostic;
   }
 }
 

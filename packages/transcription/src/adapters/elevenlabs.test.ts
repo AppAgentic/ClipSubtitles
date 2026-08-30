@@ -2,6 +2,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ProviderError } from '../provider';
 import { ElevenLabsScribeProvider } from './elevenlabs';
 
 describe('ElevenLabsScribeProvider', () => {
@@ -70,5 +71,74 @@ describe('ElevenLabsScribeProvider', () => {
         { text: 'world', startMs: 500, endMs: 875, speaker: 'speaker_0' },
       ],
     });
+  });
+
+  it('captures only allowlisted error metadata when diagnostics are enabled', async () => {
+    scratch = await mkdtemp(join(tmpdir(), 'clipsubtitles-elevenlabs-'));
+    const audioPath = join(scratch, 'audio.wav');
+    await writeFile(audioPath, Buffer.alloc(64));
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      new Response(
+        JSON.stringify({
+          detail: {
+            status: 'detected_unusual_activity',
+            type: 'authentication_error',
+            message: 'sensitive provider explanation mentioning transcript words',
+          },
+          api_key: 'must-not-survive',
+        }),
+        {
+          status: 401,
+          headers: {
+            'content-type': 'application/json',
+            'x-request-id': 'req_safe-123',
+            'x-trace-id': 'trace_safe-456',
+          },
+        },
+      ),
+    );
+    const provider = new ElevenLabsScribeProvider({
+      apiKey: 'test-key',
+      fetchImpl,
+      captureErrorDiagnostic: true,
+    });
+
+    await expect(provider.transcribe({ audioPath, durationMs: 1_000, sampleRate: 16_000 }))
+      .rejects.toMatchObject({
+        diagnostic: {
+          httpStatus: 401,
+          providerErrorType: 'authentication_error',
+          providerErrorCode: 'detected_unusual_activity',
+          requestId: 'req_safe-123',
+          traceId: 'trace_safe-456',
+        },
+      });
+    try {
+      await provider.transcribe({ audioPath, durationMs: 1_000, sampleRate: 16_000 });
+    } catch (error) {
+      expect(error).toBeInstanceOf(ProviderError);
+      const serialized = JSON.stringify((error as ProviderError).diagnostic);
+      expect(serialized).not.toContain('sensitive provider explanation');
+      expect(serialized).not.toContain('transcript words');
+      expect(serialized).not.toContain('must-not-survive');
+      expect(serialized).not.toContain('test-key');
+    }
+  });
+
+  it('does not capture provider metadata when diagnostics are disabled', async () => {
+    scratch = await mkdtemp(join(tmpdir(), 'clipsubtitles-elevenlabs-'));
+    const audioPath = join(scratch, 'audio.wav');
+    await writeFile(audioPath, Buffer.alloc(64));
+    const provider = new ElevenLabsScribeProvider({
+      apiKey: 'test-key',
+      fetchImpl: vi.fn<typeof fetch>(async () =>
+        new Response(JSON.stringify({ detail: { status: 'detected_unusual_activity' } }), {
+          status: 401,
+        }),
+      ),
+    });
+
+    await expect(provider.transcribe({ audioPath, durationMs: 1_000, sampleRate: 16_000 }))
+      .rejects.toMatchObject({ diagnostic: undefined });
   });
 });

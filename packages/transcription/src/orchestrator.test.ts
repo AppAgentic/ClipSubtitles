@@ -58,6 +58,34 @@ describe('transcribeWithFallback', () => {
     });
   });
 
+  it('propagates allowlisted provider diagnostics to attempts and the terminal error', async () => {
+    const diagnostic = {
+      httpStatus: 401,
+      providerErrorCode: 'detected_unusual_activity',
+      requestId: 'req_123',
+    };
+    const rejected = new ScriptedProvider('elevenlabs', [
+      {
+        kind: 'error',
+        error: new ProviderError(
+          'elevenlabs',
+          'UNAVAILABLE',
+          'Provider rejected the request (401).',
+          false,
+          diagnostic,
+        ),
+      },
+    ]);
+    const attempts: unknown[] = [];
+
+    await expect(
+      transcribeWithFallback([rejected], input, { onAttempt: (attempt) => attempts.push(attempt) }),
+    ).rejects.toMatchObject({ diagnostic });
+    expect(attempts).toEqual([
+      expect.objectContaining({ providerId: 'elevenlabs', diagnostic }),
+    ]);
+  });
+
   it('propagates cancellation immediately without trying the next provider', async () => {
     const a = new ScriptedProvider('a', [{ kind: 'error', error: new ProviderError('a', 'CANCELLED', 'c') }]);
     const b = new ScriptedProvider('b', [{ kind: 'result', result: { words, language: 'en', latencyMs: 5 } }]);

@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { ProviderError } from '../provider';
+import { ProviderError, type ProviderDiagnostic } from '../provider';
 
 export type FetchLike = typeof fetch;
 
@@ -8,6 +8,46 @@ export interface HttpOptions {
   timeoutMs?: number;
   signal?: AbortSignal;
   fetchImpl?: FetchLike;
+  /** Parse only allowlisted error codes and request IDs; never retain the response message/body. */
+  captureErrorDiagnostic?: boolean;
+}
+
+const SAFE_DIAGNOSTIC_VALUE = /^[A-Za-z0-9._:/-]{1,160}$/;
+
+function safeDiagnosticValue(value: unknown): string | undefined {
+  return typeof value === 'string' && SAFE_DIAGNOSTIC_VALUE.test(value) ? value : undefined;
+}
+
+async function readErrorDiagnostic(res: Response): Promise<ProviderDiagnostic> {
+  const diagnostic: ProviderDiagnostic = { httpStatus: res.status };
+  const requestId =
+    res.headers.get('x-request-id') ??
+    res.headers.get('request-id') ??
+    res.headers.get('x-elevenlabs-request-id');
+  const traceId = res.headers.get('x-trace-id') ?? res.headers.get('trace-id');
+  const safeRequestId = safeDiagnosticValue(requestId);
+  const safeTraceId = safeDiagnosticValue(traceId);
+  if (safeRequestId) diagnostic.requestId = safeRequestId;
+  if (safeTraceId) diagnostic.traceId = safeTraceId;
+
+  try {
+    // Error payloads are expected to be tiny. Bound parsing so a provider can
+    // never make diagnostics retain an unbounded body.
+    const raw = (await res.text()).slice(0, 16_384);
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const detail =
+      parsed.detail && typeof parsed.detail === 'object' && !Array.isArray(parsed.detail)
+        ? (parsed.detail as Record<string, unknown>)
+        : undefined;
+    const errorType = safeDiagnosticValue(detail?.type ?? parsed.type);
+    // ElevenLabs uses `status` for some account-policy errors and `code` for others.
+    const errorCode = safeDiagnosticValue(detail?.code ?? detail?.status ?? parsed.code);
+    if (errorType) diagnostic.providerErrorType = errorType;
+    if (errorCode) diagnostic.providerErrorCode = errorCode;
+  } catch {
+    // A missing/non-JSON error body is not itself diagnostic.
+  }
+  return diagnostic;
 }
 
 /**
@@ -29,9 +69,13 @@ export async function providerFetchJson<T>(url: string, init: RequestInit, opts:
       if (opts.signal?.aborted) throw new ProviderError(opts.providerId, 'CANCELLED', 'Cancelled.');
       throw new ProviderError(opts.providerId, controller.signal.aborted ? 'TIMEOUT' : 'UNAVAILABLE', 'Provider request failed.', true);
     }
-    if (res.status === 429) throw new ProviderError(opts.providerId, 'RATE_LIMITED', 'Provider rate limited.', true);
-    if (res.status >= 500) throw new ProviderError(opts.providerId, 'UNAVAILABLE', `Provider returned ${res.status}.`, true);
-    if (res.status >= 400) throw new ProviderError(opts.providerId, 'UNAVAILABLE', `Provider rejected the request (${res.status}).`, false);
+    const diagnostic =
+      res.status >= 400 && opts.captureErrorDiagnostic
+        ? await readErrorDiagnostic(res)
+        : undefined;
+    if (res.status === 429) throw new ProviderError(opts.providerId, 'RATE_LIMITED', 'Provider rate limited.', true, diagnostic);
+    if (res.status >= 500) throw new ProviderError(opts.providerId, 'UNAVAILABLE', `Provider returned ${res.status}.`, true, diagnostic);
+    if (res.status >= 400) throw new ProviderError(opts.providerId, 'UNAVAILABLE', `Provider rejected the request (${res.status}).`, false, diagnostic);
     try {
       return (await res.json()) as T;
     } catch {
