@@ -6,28 +6,29 @@ import { HeroConnect } from './HeroConnect';
 
 afterEach(() => {
   cleanup();
+  sessionStorage.clear();
   vi.restoreAllMocks();
 });
 
 describe('HeroConnect', () => {
   it('keeps the primary client commands and one-click links above the fold', () => {
     render(<HeroConnect />);
-    expect(screen.getByRole('tab', { name: 'Claude Code' }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('radio', { name: 'Claude Code' }).getAttribute('aria-checked')).toBe('true');
     expect(screen.getByText(/claude mcp add --transport http/)).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Cursor' })).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'VS Code' })).toBeTruthy();
-    expect(screen.getByRole('link', { name: /Full setup guide/ }).getAttribute('href')).toBe('#connect');
-    fireEvent.keyDown(screen.getByRole('tab', { name: 'Claude Code' }), { key: 'ArrowRight' });
-    expect(screen.getByRole('tab', { name: 'Codex' }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('link', { name: /Full guide/ }).getAttribute('href')).toBe('#connect');
+    fireEvent.keyDown(screen.getByRole('radio', { name: 'Claude Code' }), { key: 'ArrowRight' });
+    expect(screen.getByRole('radio', { name: 'Codex' }).getAttribute('aria-checked')).toBe('true');
+    fireEvent.click(screen.getByRole('radio', { name: 'Cursor' }));
+    expect(screen.getByRole('link', { name: /Add to Cursor/ })).toBeTruthy();
   });
 });
 
 describe('ConnectAgent', () => {
-  it('exposes an accessible tabbed installer and changes commands', () => {
+  it('exposes an accessible client board and changes commands', () => {
     render(<ConnectAgent />);
-    expect(screen.getByRole('tab', { name: 'Claude Code' }).getAttribute('aria-selected')).toBe('true');
-    fireEvent.click(screen.getByRole('tab', { name: 'Codex' }));
-    expect(screen.getByRole('tab', { name: 'Codex' }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('radio', { name: 'Claude Code' }).getAttribute('aria-checked')).toBe('true');
+    fireEvent.click(screen.getByRole('radio', { name: 'Codex' }));
+    expect(screen.getByRole('radio', { name: 'Codex' }).getAttribute('aria-checked')).toBe('true');
     expect(screen.getByText(/codex mcp login clipsubtitles/)).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Copy' })).toBeTruthy();
   });
@@ -43,7 +44,16 @@ describe('ConnectAgent', () => {
 
   it('offers verified one-click install links for compatible editors', () => {
     render(<ConnectAgent />);
+    fireEvent.click(screen.getByRole('radio', { name: 'Cursor' }));
     expect(screen.getByRole('link', { name: /Add to Cursor/ }).getAttribute('href')).toContain('cursor.com/link/mcp/install');
+    fireEvent.click(screen.getByRole('radio', { name: 'VS Code' }));
     expect(screen.getByRole('link', { name: /Add to VS Code/ }).getAttribute('href')).toContain('vscode:mcp/install');
+  });
+
+  it('synchronizes the hero and guide client choice', () => {
+    render(<><HeroConnect /><ConnectAgent /></>);
+    const codexChoices = screen.getAllByRole('radio', { name: 'Codex' });
+    fireEvent.click(codexChoices[0]!);
+    expect(codexChoices.every((choice) => choice.getAttribute('aria-checked') === 'true')).toBe(true);
   });
 });

@@ -154,6 +154,9 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
           <GatesStory />
         </section>
 
+        {/* Agent setup: selected Client Board direction. */}
+        <ConnectAgent standalone />
+
         {/* 3 · Styles: real controls */}
         <section className="tg-section tg-styles lo-wrap" aria-labelledby="tg-styles-title">
           <div className="tg-section-copy">
@@ -192,7 +195,6 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
                 </li>
               ))}
             </ul>
-            <ConnectAgent />
           </div>
         </section>
 

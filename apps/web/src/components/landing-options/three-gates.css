@@ -1216,6 +1216,185 @@
   overflow-wrap: anywhere;
 }
 
+/* Selected MCP install direction · Client Board */
+[data-lo='three-gates'] .tg-hero-connect {
+  gap: 8px;
+  padding: 12px;
+  border-radius: 16px;
+}
+
+[data-lo='three-gates'] .tg-client-tiles {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+  min-width: 0;
+}
+
+[data-lo='three-gates'] .tg-client-tiles button {
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 7px;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--dim);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+[data-lo='three-gates'] .tg-client-tiles button:hover {
+  border-color: rgb(255 255 255 / 0.35);
+  color: var(--text);
+}
+
+[data-lo='three-gates'] .tg-client-tiles button[aria-checked='true'] {
+  border-color: var(--warm);
+  color: var(--warm);
+}
+
+[data-lo='three-gates'] .tg-install-slot {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 10px 10px 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--ink);
+}
+
+[data-lo='three-gates'] .tg-install-slot code {
+  min-width: 0;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+[data-lo='three-gates'] .tg-install-slot button,
+[data-lo='three-gates'] .tg-install-link a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid rgb(255 255 255 / 0.22);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 650;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+[data-lo='three-gates'] .tg-install-slot button:hover,
+[data-lo='three-gates'] .tg-install-link a:hover {
+  border-color: var(--warm);
+  color: var(--warm);
+}
+
+[data-lo='three-gates'] .tg-install-link > span {
+  color: var(--dim);
+  font-size: 12px;
+}
+
+[data-lo='three-gates'] .tg-install-link a {
+  border-color: rgb(230 162 107 / 0.55);
+  color: var(--warm);
+}
+
+[data-lo='three-gates'] .tg-connect-first-use {
+  margin: 0 2px;
+  color: var(--mute);
+  font-size: 12px;
+}
+
+[data-lo='three-gates'] .tg-connect-first-use a {
+  color: var(--text);
+  text-underline-offset: 3px;
+}
+
+[data-lo='three-gates'] .tg-connect-standalone {
+  grid-template-columns: minmax(240px, 0.55fr) minmax(0, 1.45fr);
+  align-items: start;
+}
+
+[data-lo='three-gates'] .tg-connect-board {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: 28px;
+  min-width: 0;
+}
+
+[data-lo='three-gates'] .tg-client-rail {
+  position: sticky;
+  top: 88px;
+  grid-template-columns: minmax(0, 1fr);
+  align-self: start;
+}
+
+[data-lo='three-gates'] .tg-client-rail button {
+  min-height: 48px;
+  padding-inline: 15px;
+  text-align: left;
+}
+
+[data-lo='three-gates'] .tg-connect-page {
+  display: grid;
+  align-content: start;
+  gap: 18px;
+  min-width: 0;
+  min-height: 390px;
+  padding: clamp(24px, 3vw, 38px);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--ink-2);
+}
+
+[data-lo='three-gates'] .tg-connect-page > h3 {
+  margin: 0;
+  font-size: clamp(28px, 3vw, 40px);
+  line-height: 1;
+  letter-spacing: -0.035em;
+  font-weight: 500;
+}
+
+[data-lo='three-gates'] .tg-install-slot.is-large {
+  min-height: 68px;
+}
+
+[data-lo='three-gates'] .tg-connect-checks {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+[data-lo='three-gates'] .tg-connect-checks > div {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  gap: 18px;
+  padding: 18px 0;
+  border-top: 1px solid var(--line);
+}
+
+[data-lo='three-gates'] .tg-connect-checks dt {
+  color: var(--mute);
+  font-size: 12px;
+}
+
+[data-lo='three-gates'] .tg-connect-checks dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 550;
+  overflow-wrap: anywhere;
+}
+
 /* FAQ */
 [data-lo='three-gates'] .tg-faq-list {
   border-top: 1px solid var(--line);
@@ -1403,17 +1582,35 @@
     grid-template-columns: minmax(0, 1fr);
     gap: 36px;
   }
+  [data-lo='three-gates'] .tg-connect-board {
+    grid-template-columns: 180px minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 560px) {
   [data-lo='three-gates'] .tg-hero-connect {
     padding: 14px;
   }
-  [data-lo='three-gates'] .tg-hero-connect-command {
+  [data-lo='three-gates'] .tg-client-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  [data-lo='three-gates'] .tg-install-slot {
     grid-template-columns: minmax(0, 1fr) auto;
   }
-  [data-lo='three-gates'] .tg-hero-connect-head {
-    align-items: flex-start;
+  [data-lo='three-gates'] .tg-connect-board {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  [data-lo='three-gates'] .tg-client-rail {
+    position: static;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  [data-lo='three-gates'] .tg-client-rail button {
+    min-height: 44px;
+    text-align: center;
+  }
+  [data-lo='three-gates'] .tg-connect-page {
+    min-height: 0;
+    padding: 22px;
   }
   [data-lo='three-gates'] .tg-board {
     padding: 16px;
