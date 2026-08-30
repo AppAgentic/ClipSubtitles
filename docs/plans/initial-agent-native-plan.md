@@ -105,7 +105,9 @@ behind adapters.
 
 Benchmark before selecting the production default:
 
-1. Gemini 3.5 Transcribe in verbatim mode with word timestamps and vocabulary.
+1. Gemini 3.5 Transcribe in verbatim mode with word timestamps and diarization.
+   Custom vocabulary is capability-gated because the 2026-08-30 public preview
+   rejects it when timestamps are enabled.
 2. ElevenLabs Scribe v2.
 3. GPT Transcribe plus NeMo/WhisperX alignment.
 4. Existing Whisper path as baseline.
@@ -173,4 +175,3 @@ submission remains a separate explicit approval gate.
 Consider translation, batch captioning, brand kits, reusable templates,
 webhooks/API customers, teams, and extra export formats after the first workflow
 is reliable and paid usage validates demand.
-

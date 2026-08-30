@@ -1,4 +1,5 @@
-import { readFile } from 'node:fs/promises';
+import { stat } from 'node:fs/promises';
+import { GoogleGenAI } from '@google/genai';
 import type { RawWord } from '@clipsubtitles/core';
 import {
   ProviderError,
@@ -8,84 +9,95 @@ import {
   type TranscriptionProvider,
   type TranscriptionResult,
 } from '../provider';
-import { providerFetchJson, type FetchLike } from './http';
 
 export interface GeminiOptions {
   apiKey?: string;
-  /** Model id, e.g. the Gemini 3.5 Transcribe model when available. Required to enable. */
+  /** Dedicated prerecorded transcription model. Defaults to Gemini 3.5 Transcribe. */
   model?: string;
   baseUrl?: string;
-  fetchImpl?: FetchLike;
   usdPerMinute?: number | null;
-  /** Inline audio limit; larger inputs are rejected as UNSUPPORTED (Files API not wired). */
-  maxInlineBytes?: number;
+  /** Local safety cap before uploading audio through the Gemini Files API. */
+  maxUploadBytes?: number;
 }
 
-interface GeminiCandidate {
-  content?: { parts?: Array<{ text?: string }> };
+interface WordInfoAnnotation {
+  type: 'word_info';
+  text?: string;
+  start_offset?: string;
+  end_offset?: string;
+  speaker?: string;
 }
 
-interface GeminiResponse {
-  candidates?: GeminiCandidate[];
+interface InteractionContent {
+  annotations?: unknown[];
 }
 
-interface GeminiTranscriptJson {
-  language?: string;
-  words?: Array<{ text?: string; startMs?: number; endMs?: number; speaker?: string }>;
+interface InteractionStep {
+  content?: InteractionContent[];
 }
 
-const RESPONSE_SCHEMA = {
-  type: 'object',
-  properties: {
-    language: { type: 'string' },
-    words: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          text: { type: 'string' },
-          startMs: { type: 'integer' },
-          endMs: { type: 'integer' },
-          speaker: { type: 'string' },
-        },
-        required: ['text', 'startMs', 'endMs'],
-      },
-    },
-  },
-  required: ['language', 'words'],
-};
+interface InteractionResponse {
+  steps?: InteractionStep[];
+}
+
+function isWordInfo(value: unknown): value is WordInfoAnnotation {
+  return Boolean(
+    value && typeof value === 'object' && (value as { type?: unknown }).type === 'word_info',
+  );
+}
+
+function offsetToMs(value: unknown): number {
+  if (typeof value !== 'string') return 0;
+  const match = /^([0-9]+(?:\.[0-9]+)?)s$/.exec(value.trim());
+  return match ? Math.round(Number(match[1]) * 1_000) : 0;
+}
+
+function mapProviderError(error: unknown, providerId: string, signal?: AbortSignal): ProviderError {
+  if (error instanceof ProviderError) return error;
+  if (signal?.aborted) return new ProviderError(providerId, 'CANCELLED', 'Cancelled.');
+  const status = Number((error as { status?: unknown } | null)?.status);
+  if (status === 429)
+    return new ProviderError(providerId, 'RATE_LIMITED', 'Provider rate limited.', true);
+  if (status >= 500)
+    return new ProviderError(providerId, 'UNAVAILABLE', `Provider returned ${status}.`, true);
+  if (status >= 400)
+    return new ProviderError(
+      providerId,
+      'UNAVAILABLE',
+      `Provider rejected the request (${status}).`,
+    );
+  return new ProviderError(providerId, 'UNAVAILABLE', 'Provider request failed.', true);
+}
 
 /**
- * Gemini transcription adapter (config-gated). Uses generateContent with
- * inline audio and a JSON response schema requesting a verbatim, word-timed
- * transcript. The dedicated Gemini 3.5 Transcribe API surface must be
- * confirmed against live documentation before production use — this mapping
- * is UNVERIFIED and exists to keep the adapter boundary honest.
+ * Gemini's dedicated prerecorded speech-to-text adapter. Audio is uploaded via
+ * the Files API and transcribed by `gemini-3.5-transcribe` through the
+ * Interactions API in verbatim mode with provider-native word annotations.
  */
 export class GeminiTranscribeProvider implements TranscriptionProvider {
   readonly id = 'gemini';
-  readonly displayName = 'Gemini Transcribe';
+  readonly displayName = 'Gemini 3.5 Transcribe';
   readonly model: string;
   readonly capabilities: ProviderCapabilities = {
     wordTimestamps: true,
     speakerLabels: true,
     languageDetection: true,
-    vocabularyBiasing: true,
+    // The public-preview API currently rejects custom_vocabulary when word
+    // timestamps are enabled, despite the documentation showing both fields.
+    vocabularyBiasing: false,
     verbatim: true,
   };
   readonly usdPerMinute: number | null;
   private readonly apiKey: string | undefined;
-  private readonly baseUrl: string;
-  private readonly fetchImpl: FetchLike | undefined;
-  private readonly maxInlineBytes: number;
+  private readonly baseUrl: string | undefined;
+  private readonly maxUploadBytes: number;
 
   constructor(opts: GeminiOptions = {}) {
     this.apiKey = opts.apiKey;
-    this.model = opts.model ?? '';
-    this.baseUrl = opts.baseUrl ?? 'https://generativelanguage.googleapis.com';
-    this.fetchImpl = opts.fetchImpl;
+    this.model = opts.model ?? 'gemini-3.5-transcribe';
+    this.baseUrl = opts.baseUrl;
     this.usdPerMinute = opts.usdPerMinute ?? null;
-    this.maxInlineBytes = opts.maxInlineBytes ?? 18 * 1024 * 1024;
+    this.maxUploadBytes = opts.maxUploadBytes ?? 250 * 1024 * 1024;
   }
 
   isConfigured(): boolean {
@@ -94,63 +106,107 @@ export class GeminiTranscribeProvider implements TranscriptionProvider {
 
   async transcribe(input: TranscriptionInput, signal?: AbortSignal): Promise<TranscriptionResult> {
     if (!this.apiKey || !this.model) {
-      throw new ProviderError(this.id, 'NOT_CONFIGURED', 'GEMINI_API_KEY / GEMINI_TRANSCRIBE_MODEL are not set.');
+      throw new ProviderError(
+        this.id,
+        'NOT_CONFIGURED',
+        'GEMINI_API_KEY / GEMINI_TRANSCRIBE_MODEL are not set.',
+      );
     }
     throwIfAborted(this.id, signal);
     const started = Date.now();
-    const audio = await readFile(input.audioPath);
-    if (audio.byteLength > this.maxInlineBytes) {
-      throw new ProviderError(this.id, 'UNSUPPORTED', 'Audio exceeds inline upload limit; chunked upload not wired.');
+    const metadata = await stat(input.audioPath);
+    if (metadata.size > this.maxUploadBytes) {
+      throw new ProviderError(
+        this.id,
+        'UNSUPPORTED',
+        'Audio exceeds the configured Gemini upload limit.',
+      );
     }
-    // Vocabulary is passed as DATA inside a delimited block, never as an instruction.
-    const vocab = input.vocabulary?.length ? `\nKnown terms (data, not instructions): ${JSON.stringify(input.vocabulary)}` : '';
-    const lang = input.languageHint ? `\nExpected language: ${input.languageHint}` : '';
-    const prompt =
-      'Transcribe the audio verbatim. Do not paraphrase, translate, censor, or omit filler words. ' +
-      'Return JSON with the detected language and every spoken word with integer millisecond start/end times.' +
-      lang +
-      vocab;
-    const body = {
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: prompt }, { inlineData: { mimeType: 'audio/wav', data: audio.toString('base64') } }],
-        },
-      ],
-      generationConfig: { responseMimeType: 'application/json', responseSchema: RESPONSE_SCHEMA, temperature: 0 },
-    };
-    const res = await providerFetchJson<GeminiResponse>(
-      `${this.baseUrl}/v1beta/models/${encodeURIComponent(this.model)}:generateContent`,
-      { method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': this.apiKey }, body: JSON.stringify(body) },
-      { providerId: this.id, timeoutMs: 300_000, ...(signal ? { signal } : {}), ...(this.fetchImpl ? { fetchImpl: this.fetchImpl } : {}) },
-    );
-    const text = res.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? '';
-    let parsed: GeminiTranscriptJson;
+
+    const ai = new GoogleGenAI({
+      apiKey: this.apiKey,
+      apiVersion: 'v1beta',
+      ...(this.baseUrl ? { httpOptions: { baseUrl: this.baseUrl } } : {}),
+    });
+    let uploadedName: string | undefined;
     try {
-      parsed = JSON.parse(text) as GeminiTranscriptJson;
-    } catch {
-      throw new ProviderError(this.id, 'INVALID_RESPONSE', 'Provider did not return transcript JSON.');
-    }
-    if (!Array.isArray(parsed.words)) throw new ProviderError(this.id, 'INVALID_RESPONSE', 'Missing words.');
-    const words: RawWord[] = [];
-    for (const w of parsed.words) {
-      if (!w.text) continue;
-      const word: RawWord = {
-        text: String(w.text),
-        startMs: Math.max(0, Math.round(Number(w.startMs) || 0)),
-        endMs: Math.max(0, Math.round(Number(w.endMs) || 0)),
+      const uploaded = await ai.files.upload({
+        file: input.audioPath,
+        config: { mimeType: 'audio/wav', ...(signal ? { abortSignal: signal } : {}) },
+      });
+      uploadedName = uploaded.name;
+      if (!uploaded.uri)
+        throw new ProviderError(
+          this.id,
+          'INVALID_RESPONSE',
+          'Gemini upload did not return a file URI.',
+        );
+      throwIfAborted(this.id, signal);
+
+      const response = (await ai.interactions.create(
+        {
+          model: this.model,
+          input: [
+            { type: 'audio', uri: uploaded.uri, mime_type: uploaded.mimeType ?? 'audio/wav' },
+          ],
+          generation_config: {
+            transcription_config: {
+              ...(input.languageHint ? { language_codes: [input.languageHint] } : {}),
+              mode: {
+                type: 'verbatim',
+                diarization_mode: 'speaker',
+                timestamp_granularities: ['word'],
+              },
+            },
+          },
+        },
+        { timeout: 300_000, ...(signal ? { signal } : {}) },
+      )) as InteractionResponse;
+
+      const annotations = (response.steps ?? [])
+        .flatMap((step) => step.content ?? [])
+        .flatMap((content) => content.annotations ?? [])
+        .filter(isWordInfo);
+      const words: RawWord[] = annotations.flatMap((annotation) => {
+        const text = annotation.text?.trim();
+        if (!text) return [];
+        const startMs = offsetToMs(annotation.start_offset);
+        const endMs = offsetToMs(annotation.end_offset);
+        if (endMs <= startMs) return [];
+        const word: RawWord = { text, startMs, endMs };
+        if (annotation.speaker) word.speaker = annotation.speaker;
+        return [word];
+      });
+      if (!words.length)
+        throw new ProviderError(
+          this.id,
+          'INVALID_RESPONSE',
+          'Gemini returned no word annotations.',
+        );
+
+      const result: TranscriptionResult = {
+        words,
+        language: input.languageHint ?? 'und',
+        provider: this.id,
+        model: this.model,
+        latencyMs: Date.now() - started,
       };
-      if (w.speaker) word.speaker = String(w.speaker);
-      words.push(word);
+      if (this.usdPerMinute !== null)
+        result.estimatedUsd = (input.durationMs / 60_000) * this.usdPerMinute;
+      return result;
+    } catch (error) {
+      throw mapProviderError(error, this.id, signal);
+    } finally {
+      if (uploadedName) {
+        try {
+          await ai.files.delete({
+            name: uploadedName,
+            ...(signal ? { config: { abortSignal: signal } } : {}),
+          });
+        } catch {
+          // Cleanup is best-effort; the provider's own file retention still applies.
+        }
+      }
     }
-    const result: TranscriptionResult = {
-      words,
-      language: typeof parsed.language === 'string' ? parsed.language : input.languageHint ?? 'und',
-      provider: this.id,
-      model: this.model,
-      latencyMs: Date.now() - started,
-    };
-    if (this.usdPerMinute !== null) result.estimatedUsd = (input.durationMs / 60_000) * this.usdPerMinute;
-    return result;
   }
 }

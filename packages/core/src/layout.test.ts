@@ -1,8 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { HORIZONTAL_MARGIN_PCT, MIN_FIT_SCALE, createApproxMeasurer, hexToRgba, layoutCaption } from './layout';
+import {
+  HORIZONTAL_MARGIN_PCT,
+  MIN_FIT_SCALE,
+  createApproxMeasurer,
+  hexToRgba,
+  layoutCaption,
+} from './layout';
 import { DEFAULT_SEGMENTATION, segmentationForStyle, stylePreset } from './presets';
 import { segmentWords } from './segmentation';
-import { activeWordIndexAt, activeWordIndexInPage, pageAtMs, visualStates } from './state';
+import {
+  CAPTION_VISUAL_LEAD_MS,
+  MIN_ACTIVE_WORD_DWELL_MS,
+  activeWordIndexAt,
+  activeWordIndexInPage,
+  pageAtMs,
+  visualPageAtMs,
+  visualStates,
+  visualWordStartMs,
+} from './state';
 import { wordsFromText } from './test-utils';
 
 const measure = createApproxMeasurer();
@@ -15,13 +30,28 @@ describe('layoutCaption', () => {
 
   it('positions blocks explicitly for each caption position', () => {
     const bottom = layoutCaption({ page, words, style: stylePreset('clean'), frame, measure });
-    const top = layoutCaption({ page, words, style: { ...stylePreset('clean'), position: 'top' }, frame, measure });
-    const center = layoutCaption({ page, words, style: { ...stylePreset('clean'), position: 'center' }, frame, measure });
+    const top = layoutCaption({
+      page,
+      words,
+      style: { ...stylePreset('clean'), position: 'top' },
+      frame,
+      measure,
+    });
+    const center = layoutCaption({
+      page,
+      words,
+      style: { ...stylePreset('clean'), position: 'center' },
+      frame,
+      measure,
+    });
     const lower = layoutCaption({ page, words, style: stylePreset('lower-third'), frame, measure });
     expect(top.block.y).toBe(Math.round(0.08 * frame.height));
     expect(bottom.block.y + bottom.block.height).toBeCloseTo(frame.height - 0.08 * frame.height, 0);
     expect(Math.abs(center.block.y + center.block.height / 2 - frame.height / 2)).toBeLessThan(2);
-    expect(lower.block.y + lower.block.height).toBeCloseTo(frame.height - 0.22 * frame.height, 0);
+    expect(lower.block.y + lower.block.height).toBeCloseTo(
+      frame.height - stylePreset('lower-third').lowerThirdOffsetPct * frame.height,
+      0,
+    );
     expect(lower.background).not.toBeNull();
     expect(bottom.background).toBeNull();
   });
@@ -40,18 +70,59 @@ describe('layoutCaption', () => {
   it('marks the active word and applies uppercase transform', () => {
     const style = stylePreset('bold-pop');
     const boldPages = segmentWords(words, segmentationForStyle(style));
-    const layout = layoutCaption({ page: boldPages[0]!, words, style, frame, measure, activeWordIndex: 1 });
+    const layout = layoutCaption({
+      page: boldPages[0]!,
+      words,
+      style,
+      frame,
+      measure,
+      activeWordIndex: 1,
+    });
     const active = layout.lines.flatMap((l) => l.words).filter((w) => w.active);
     expect(active).toHaveLength(1);
     expect(active[0]?.text).toBe('THAT');
     // Sizes scale with the shorter side; the preset line length fits the safe width without shrinking.
-    expect(layout.font.sizePx).toBe(Math.round(style.fontSizePct * Math.min(frame.width, frame.height)));
+    expect(layout.font.sizePx).toBe(
+      Math.round(style.fontSizePct * Math.min(frame.width, frame.height)),
+    );
+  });
+
+  it('reserves enough horizontal room for a scaled active word', () => {
+    const style = stylePreset('viral-beast');
+    const styledPages = segmentWords(words, segmentationForStyle(style));
+    const activePage = styledPages.find(
+      (candidate) => candidate.endWordIndex > candidate.startWordIndex,
+    )!;
+    const activeWordIndex = activePage.startWordIndex + 1;
+    const layout = layoutCaption({
+      page: activePage,
+      words,
+      style,
+      frame,
+      measure,
+      activeWordIndex,
+    });
+    const line = layout.lines.find((candidate) => candidate.words.some((word) => word.active))!;
+    const activeIndex = line.words.findIndex((word) => word.active);
+    const active = line.words[activeIndex]!;
+    const extra = active.width * (style.highlight.scale - 1);
+    const scaledLeft = active.x - extra / 2;
+    const scaledRight = active.x + active.width + extra / 2;
+    const previous = line.words[activeIndex - 1];
+    const next = line.words[activeIndex + 1];
+    if (previous) expect(scaledLeft).toBeGreaterThan(previous.x + previous.width);
+    if (next) expect(scaledRight).toBeLessThan(next.x);
   });
 
   it('shrinks text to fit the horizontal safe area when a line would overflow', () => {
     const narrow = { width: 240, height: 426 };
     const style = { ...stylePreset('clean'), maxCharsPerLine: 60 };
-    const oneLine = segmentWords(words, { ...DEFAULT_SEGMENTATION, maxCharsPerLine: 60, maxCharsPerPage: 120, maxWordsPerPage: 30 });
+    const oneLine = segmentWords(words, {
+      ...DEFAULT_SEGMENTATION,
+      maxCharsPerLine: 60,
+      maxCharsPerPage: 120,
+      maxWordsPerPage: 30,
+    });
     expect(oneLine).toHaveLength(1);
     const layout = layoutCaption({ page: oneLine[0]!, words, style, frame: narrow, measure });
     const styled = Math.round(style.fontSizePct * Math.min(narrow.width, narrow.height));
@@ -59,18 +130,26 @@ describe('layoutCaption', () => {
     expect(layout.font.sizePx).toBeGreaterThanOrEqual(Math.floor(styled * MIN_FIT_SCALE));
     for (const line of layout.lines) {
       expect(line.x).toBeGreaterThanOrEqual(narrow.width * HORIZONTAL_MARGIN_PCT - 1);
-      expect(line.x + line.width).toBeLessThanOrEqual(narrow.width * (1 - HORIZONTAL_MARGIN_PCT) + 1);
+      expect(line.x + line.width).toBeLessThanOrEqual(
+        narrow.width * (1 - HORIZONTAL_MARGIN_PCT) + 1,
+      );
     }
   });
 
   it('every preset keeps its longest allowed line inside the safe width at 1080p', () => {
     for (const id of ['clean', 'bold-pop', 'lower-third', 'karaoke', 'minimal'] as const) {
       const style = stylePreset(id);
-      const text = Array.from({ length: style.maxCharsPerLine }, (_, i) => (i % 5 === 4 ? ' ' : 'M')).join('').trim();
+      const text = Array.from({ length: style.maxCharsPerLine }, (_, i) =>
+        i % 5 === 4 ? ' ' : 'M',
+      )
+        .join('')
+        .trim();
       const w = wordsFromText(text.replace(/\s+/g, ' '));
       const p = segmentWords(w, { ...segmentationForStyle(style), maxWordsPerPage: 30 });
       const layout = layoutCaption({ page: p[0]!, words: w, style, frame, measure });
-      expect(layout.font.sizePx).toBeGreaterThanOrEqual(Math.floor(style.fontSizePct * 1080 * 0.85));
+      expect(layout.font.sizePx).toBeGreaterThanOrEqual(
+        Math.floor(style.fontSizePct * 1080 * 0.85),
+      );
     }
   });
 
@@ -99,6 +178,14 @@ describe('state time lookups', () => {
     expect(activeWordIndexAt(words, gapMs)).toBeNull();
     expect(activeWordIndexInPage(page, words, gapMs)).toBe(1);
     expect(activeWordIndexInPage(page, words, page.endMs)).toBeNull();
+  });
+
+  it('leads visual pages and prevents collapsed word flashes', () => {
+    const page = pages[0]!;
+    expect(visualPageAtMs(pages, Math.max(0, page.startMs - CAPTION_VISUAL_LEAD_MS))).toBe(page);
+    const firstStart = visualWordStartMs(page, words, page.startWordIndex);
+    const secondStart = visualWordStartMs(page, words, page.startWordIndex + 1);
+    expect(secondStart - firstStart).toBeGreaterThanOrEqual(MIN_ACTIVE_WORD_DWELL_MS);
   });
 
   it('visual states tile each page contiguously', () => {

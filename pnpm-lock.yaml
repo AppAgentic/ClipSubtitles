@@ -41,8 +41,20 @@ importers:
       '@clipsubtitles/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@expo-google-fonts/bebas-neue':
+        specifier: 0.4.1
+        version: 0.4.1
       '@expo-google-fonts/inter':
         specifier: ^0.4.2
+        version: 0.4.2
+      '@expo-google-fonts/nunito':
+        specifier: 0.4.2
+        version: 0.4.2
+      '@expo-google-fonts/playfair-display':
+        specifier: 0.4.2
+        version: 0.4.2
+      '@expo-google-fonts/space-mono':
+        specifier: 0.4.2
         version: 0.4.2
       '@fontsource-variable/bricolage-grotesque':
         specifier: ^5.3.0
@@ -115,8 +127,20 @@ importers:
       '@clipsubtitles/core':
         specifier: workspace:*
         version: link:../core
+      '@expo-google-fonts/bebas-neue':
+        specifier: 0.4.1
+        version: 0.4.1
       '@expo-google-fonts/inter':
         specifier: ^0.4.2
+        version: 0.4.2
+      '@expo-google-fonts/nunito':
+        specifier: 0.4.2
+        version: 0.4.2
+      '@expo-google-fonts/playfair-display':
+        specifier: 0.4.2
+        version: 0.4.2
+      '@expo-google-fonts/space-mono':
+        specifier: 0.4.2
         version: 0.4.2
       '@napi-rs/canvas':
         specifier: ^1.0.8
@@ -140,8 +164,20 @@ importers:
       '@clipsubtitles/render':
         specifier: workspace:*
         version: link:../render
+      '@expo-google-fonts/bebas-neue':
+        specifier: 0.4.1
+        version: 0.4.1
       '@expo-google-fonts/inter':
         specifier: ^0.4.2
+        version: 0.4.2
+      '@expo-google-fonts/nunito':
+        specifier: 0.4.2
+        version: 0.4.2
+      '@expo-google-fonts/playfair-display':
+        specifier: 0.4.2
+        version: 0.4.2
+      '@expo-google-fonts/space-mono':
+        specifier: 0.4.2
         version: 0.4.2
       '@remotion/bundler':
         specifier: 4.0.518
@@ -287,6 +323,9 @@ importers:
       '@clipsubtitles/core':
         specifier: workspace:*
         version: link:../core
+      '@google/genai':
+        specifier: ^2.19.0
+        version: 2.19.0(@modelcontextprotocol/sdk@1.30.0(zod@4.5.2))
       zod:
         specifier: ^4.5.2
         version: 4.5.2
@@ -885,8 +924,20 @@ packages:
       '@noble/hashes':
         optional: true
 
+  '@expo-google-fonts/bebas-neue@0.4.1':
+    resolution: {integrity: sha512-Ibnf0EQgMUj01tT/ws64RlsMQmOvDP+UDFW93bld0C/WwaOaCGWKgNnqxNkKxmL73y2kpT8EB4dkSNUOyAOEJA==}
+
   '@expo-google-fonts/inter@0.4.2':
     resolution: {integrity: sha512-syfiImMaDmq7cFi0of+waE2M4uSCyd16zgyWxdPOY7fN2VBmSLKEzkfbZgeOjJq61kSqPBNNtXjggiQiSD6gMQ==}
+
+  '@expo-google-fonts/nunito@0.4.2':
+    resolution: {integrity: sha512-1KCWphw/I2ugqfs9iRHUCkPTnomNgGPtF4AvqVquoEKxr0EL+mcLNLgeixsslbaSFevRR6/KJAE3sc8g0VaY0Q==}
+
+  '@expo-google-fonts/playfair-display@0.4.2':
+    resolution: {integrity: sha512-mWhBV59RUjSS3aYpytUb7UyHHTnXcHh7epAn7gq+M4XAEh5PuMKUrP8eiUfkJLb6UwHZCi7EhQpUzxHu5OL96w==}
+
+  '@expo-google-fonts/space-mono@0.4.2':
+    resolution: {integrity: sha512-soYY/qcKcnY7xjIhuMAVzJYxSdJ3Z8TjrtFHOB5SK7/4MEMGpoaw+CAVyvXnA3fsO7J7waIW+/5Z0Y0i/CfSeg==}
 
   '@fontsource-variable/bricolage-grotesque@5.3.0':
     resolution: {integrity: sha512-TLi9Q4hJjS2UvoTMRSS2nHu6c4R56lAw60NR9QYtVRCHn0XtsFpiEhNffZ8Glsoxu6wEEwLKBP8lb94J52PNBA==}
@@ -913,6 +964,15 @@ packages:
   '@google-cloud/tasks@6.3.0':
     resolution: {integrity: sha512-80I5otVKL+cWY2fzMVs7vj5qOQ+JDCxO7Kem90P33JsR6EZDg0dRquHkSqsNH5NbAEOW9g1WAq9O5S8jPiE14g==}
     engines: {node: '>=18'}
+
+  '@google/genai@2.19.0':
+    resolution: {integrity: sha512-IM3u1FjpOLyOPsPh0smGA6Ntj2olUWCPbTs/WQj7cA/2AKCGw/652W7IaySx0XtwuscFnMYBoraebQusSZ0zSQ==}
+    engines: {node: '>=20.0.0'}
+    peerDependencies:
+      '@modelcontextprotocol/sdk': ^1.25.2
+    peerDependenciesMeta:
+      '@modelcontextprotocol/sdk':
+        optional: true
 
   '@grpc/grpc-js@1.14.4':
     resolution: {integrity: sha512-k9Dj3DV/itK9D06Y8f190Qgop7/Ui+D0njFV3LHMPwPT75DpXLQohE9Wmz0QElrJnzsjB7KPWiKJbOl7IPDArQ==}
@@ -1942,6 +2002,9 @@ packages:
 
   '@types/request@2.48.13':
     resolution: {integrity: sha512-FGJ6udDNUCjd19pp0Q3iTiDkwhYup7J8hpMW9c4k53NrccQFFWKRho6hvtPPEhnXWKvukfwAlB6DbDz4yhH5Gg==}
+
+  '@types/retry@0.12.0':
+    resolution: {integrity: sha512-wWKOClTTiizcZhXnPY4wikVAwmdYHp8q6DmC+EJUzAMsycb7HB32Kh9RN4+0gExjmPmZSAQjgURXIGATPegAvA==}
 
   '@types/tough-cookie@4.0.5':
     resolution: {integrity: sha512-/Ad8+nIOV7Rl++6f1BdKxFSMgmoqEoYbHRpPcx3JEfv8VRsQe9Z4mCXeJBzxs7mbHY/XOZZuXlRNfhpVPbs6ZA==}
@@ -3383,6 +3446,10 @@ packages:
   p-locate@5.0.0:
     resolution: {integrity: sha512-LaNjtRWUBY++zB5nE/NwcaoMylSPk+S+ZHNB1TzdbMJMny6dynpAGt7X/tl/QYq3TIeE6nxHppbo2LGymrG5Pw==}
     engines: {node: '>=10'}
+
+  p-retry@4.6.2:
+    resolution: {integrity: sha512-312Id396EbJdvRONlngUx0NydfrIQ5lsYu0znKVUzVvArzEIt08V1qhtyESbGVd1FGX7UKtiFp5uwKZdM8wIuQ==}
+    engines: {node: '>=8'}
 
   package-json-from-dist@1.0.1:
     resolution: {integrity: sha512-UEZIS3/by4OC8vL3P2dTXRETpebLI2NiI5vIrjaD/5UtrkFX/tNbwjTSRAGC/+7CAo2pIcBaRgWmcBBHcsaCIw==}
@@ -4831,7 +4898,15 @@ snapshots:
 
   '@exodus/bytes@1.15.1': {}
 
+  '@expo-google-fonts/bebas-neue@0.4.1': {}
+
   '@expo-google-fonts/inter@0.4.2': {}
+
+  '@expo-google-fonts/nunito@0.4.2': {}
+
+  '@expo-google-fonts/playfair-display@0.4.2': {}
+
+  '@expo-google-fonts/space-mono@0.4.2': {}
 
   '@fontsource-variable/bricolage-grotesque@5.3.0': {}
 
@@ -4871,6 +4946,19 @@ snapshots:
       google-gax: 5.0.8
     transitivePeerDependencies:
       - supports-color
+
+  '@google/genai@2.19.0(@modelcontextprotocol/sdk@1.30.0(zod@4.5.2))':
+    dependencies:
+      google-auth-library: 10.5.0
+      p-retry: 4.6.2
+      protobufjs: 7.6.6
+      ws: 8.21.0
+    optionalDependencies:
+      '@modelcontextprotocol/sdk': 1.30.0(zod@4.5.2)
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
 
   '@grpc/grpc-js@1.14.4':
     dependencies:
@@ -5874,6 +5962,8 @@ snapshots:
       '@types/node': 24.13.3
       '@types/tough-cookie': 4.0.5
       form-data: 2.5.6
+
+  '@types/retry@0.12.0': {}
 
   '@types/tough-cookie@4.0.5': {}
 
@@ -7402,6 +7492,11 @@ snapshots:
   p-locate@5.0.0:
     dependencies:
       p-limit: 3.1.0
+
+  p-retry@4.6.2:
+    dependencies:
+      '@types/retry': 0.12.0
+      retry: 0.13.1
 
   package-json-from-dist@1.0.1: {}
 

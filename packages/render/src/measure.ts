@@ -1,9 +1,9 @@
 import { createCanvas, type SKRSContext2D } from '@napi-rs/canvas';
 import type { FontSpec, TextMeasurer } from '@clipsubtitles/core';
-import { FONT_FAMILY, ensureFontsRegistered } from './fonts';
+import { ensureFontsRegistered } from './fonts';
 
 export function cssFont(font: FontSpec): string {
-  return `${font.weight} ${font.sizePx}px ${font.family === 'Inter' ? FONT_FAMILY : font.family}`;
+  return `${font.weight} ${font.sizePx}px "${font.family}"`;
 }
 
 let shared: SKRSContext2D | null = null;

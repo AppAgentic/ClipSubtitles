@@ -1,4 +1,9 @@
-import type { CaptionPage, SegmentationParams, StyleConfig, TranscriptWord } from '@clipsubtitles/contracts';
+import type {
+  CaptionPage,
+  SegmentationParams,
+  StyleConfig,
+  TranscriptWord,
+} from '@clipsubtitles/contracts';
 import { computeContentHash } from './hash';
 import { DEFAULT_SEGMENTATION, defaultStyle, segmentationForStyle } from './presets';
 import { segmentWords } from './segmentation';
@@ -76,7 +81,11 @@ export function stateContentHash(state: CaptionState): string {
 }
 
 /** Index of the word active at `ms` (last word whose start <= ms, while ms < end + grace). */
-export function activeWordIndexAt(words: readonly TranscriptWord[], ms: number, graceMs = 0): number | null {
+export function activeWordIndexAt(
+  words: readonly TranscriptWord[],
+  ms: number,
+  graceMs = 0,
+): number | null {
   if (words.length === 0) return null;
   let lo = 0;
   let hi = words.length - 1;
@@ -98,6 +107,49 @@ export function activeWordIndexAt(words: readonly TranscriptWord[], ms: number, 
   return ms < w.endMs + graceMs ? found : null;
 }
 
+/** Visual timing leads acoustic timestamps slightly so captions land on perceived syllable onset. */
+export const CAPTION_VISUAL_LEAD_MS = 65;
+/** Avoid one-frame flashes when an ASR provider returns a collapsed word span. */
+export const MIN_ACTIVE_WORD_DWELL_MS = 160;
+
+/**
+ * Page selected for an animated visual surface. The next page takes precedence
+ * shortly before its raw first-word timestamp; subtitle-file timings remain raw.
+ */
+export function visualPageAtMs(
+  pages: readonly CaptionPage[],
+  ms: number,
+  leadMs = CAPTION_VISUAL_LEAD_MS,
+): CaptionPage | null {
+  let selected: CaptionPage | null = null;
+  for (const page of pages) {
+    if (ms < Math.max(0, page.startMs - leadMs)) break;
+    selected = page;
+  }
+  return selected && ms < selected.endMs ? selected : null;
+}
+
+/** Deterministic visual onset for a page word after anticipation and dwell clamping. */
+export function visualWordStartMs(
+  page: CaptionPage,
+  words: readonly TranscriptWord[],
+  wordIndex: number,
+): number {
+  let visualStart = Math.max(
+    0,
+    (words[page.startWordIndex]?.startMs ?? page.startMs) - CAPTION_VISUAL_LEAD_MS,
+  );
+  for (let i = page.startWordIndex + 1; i <= Math.min(wordIndex, page.endWordIndex); i += 1) {
+    const word = words[i];
+    if (!word) break;
+    visualStart = Math.max(
+      word.startMs - CAPTION_VISUAL_LEAD_MS,
+      visualStart + MIN_ACTIVE_WORD_DWELL_MS,
+    );
+  }
+  return visualStart;
+}
+
 /**
  * Active word for a visible caption page. Unlike raw speech activity, the most
  * recently started word stays highlighted through natural gaps and page tail
@@ -108,11 +160,13 @@ export function activeWordIndexInPage(
   words: readonly TranscriptWord[],
   ms: number,
 ): number | null {
-  if (ms < page.startMs || ms >= page.endMs) return null;
+  if (ms < Math.max(0, page.startMs - CAPTION_VISUAL_LEAD_MS) || ms >= page.endMs) return null;
   let active = page.startWordIndex;
   for (let i = page.startWordIndex; i <= page.endWordIndex; i += 1) {
     const word = words[i];
-    if (!word || word.startMs > ms) break;
+    if (!word) break;
+    const visualStart = visualWordStartMs(page, words, i);
+    if (visualStart > ms) break;
     active = i;
   }
   return words[active] ? active : null;
@@ -166,7 +220,8 @@ export function visualStates(
       const w = words[i];
       if (!w) continue;
       const next = words[i + 1];
-      const wordEnd = i === page.endWordIndex ? page.endMs : Math.min(page.endMs, next ? next.startMs : w.endMs);
+      const wordEnd =
+        i === page.endWordIndex ? page.endMs : Math.min(page.endMs, next ? next.startMs : w.endMs);
       if (wordEnd <= cursor) continue;
       states.push({ startMs: cursor, endMs: wordEnd, page, activeWordIndex: i });
       cursor = wordEnd;

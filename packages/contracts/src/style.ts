@@ -11,7 +11,13 @@ export const HexColorSchema = z
   .string()
   .regex(/^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/, 'must be #RRGGBB or #RRGGBBAA');
 
-export const FontFamilySchema = z.enum(['Inter']);
+export const FontFamilySchema = z.enum([
+  'Inter',
+  'Bebas Neue',
+  'Nunito',
+  'Playfair Display',
+  'Space Mono',
+]);
 export const FontWeightSchema = z.union([
   z.literal(400),
   z.literal(500),
@@ -38,6 +44,14 @@ export const StylePresetIdSchema = z.enum([
   'lower-third',
   'karaoke',
   'minimal',
+  'viral-beast',
+  'submagic-pop',
+  'smooth-pill',
+  'editorial-serif',
+  'neon-box',
+  'kinetic-flow',
+  'retro-arcade',
+  'documentary',
 ]);
 export type StylePresetId = z.infer<typeof StylePresetIdSchema>;
 

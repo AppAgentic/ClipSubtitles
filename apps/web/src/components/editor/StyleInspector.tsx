@@ -16,6 +16,14 @@ const PRESET_BLURBS: Record<StylePresetId, string> = {
   'lower-third': 'Left-aligned on a plate',
   karaoke: 'Word-by-word highlight',
   minimal: 'Small, single line, plate',
+  'viral-beast': 'Condensed, fast, high-energy',
+  'submagic-pop': 'Rounded pop with lime focus',
+  'smooth-pill': 'Fluid purple active pill',
+  'editorial-serif': 'Warm premium serif',
+  'neon-box': 'Cyan monospace glow',
+  'kinetic-flow': 'Top-led flowing highlight',
+  'retro-arcade': 'Pixel-like green terminal',
+  documentary: 'Quiet cinematic lower third',
 };
 
 function rgb(hex: string): string {
@@ -68,7 +76,7 @@ export function StyleInspector({
                 <div
                   className="truncate"
                   style={{
-                    fontFamily: 'Inter, sans-serif',
+                    fontFamily: `"${p.fontFamily}", sans-serif`,
                     fontWeight: p.fontWeight,
                     fontSize: 13,
                     textTransform: p.textTransform === 'uppercase' ? 'uppercase' : 'none',
@@ -78,7 +86,7 @@ export function StyleInspector({
                     paintOrder: 'stroke fill',
                   }}
                 >
-                  {id.replace('-', ' ')}
+                  {id.replaceAll('-', ' ')}
                 </div>
                 <div className="mt-0.5 text-[10px] text-ink-mute">{PRESET_BLURBS[id]}</div>
               </button>

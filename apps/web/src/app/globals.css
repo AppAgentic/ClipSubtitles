@@ -1,12 +1,104 @@
 @import 'tailwindcss';
 
 /* Caption typeface — identical files to the renderer (synced from @expo-google-fonts/inter). */
-@font-face { font-family: 'Inter'; font-weight: 400; font-style: normal; font-display: swap; src: url('/fonts/Inter_400Regular.ttf') format('truetype'); }
-@font-face { font-family: 'Inter'; font-weight: 500; font-style: normal; font-display: swap; src: url('/fonts/Inter_500Medium.ttf') format('truetype'); }
-@font-face { font-family: 'Inter'; font-weight: 600; font-style: normal; font-display: swap; src: url('/fonts/Inter_600SemiBold.ttf') format('truetype'); }
-@font-face { font-family: 'Inter'; font-weight: 700; font-style: normal; font-display: swap; src: url('/fonts/Inter_700Bold.ttf') format('truetype'); }
-@font-face { font-family: 'Inter'; font-weight: 800; font-style: normal; font-display: swap; src: url('/fonts/Inter_800ExtraBold.ttf') format('truetype'); }
-@font-face { font-family: 'Inter'; font-weight: 900; font-style: normal; font-display: swap; src: url('/fonts/Inter_900Black.ttf') format('truetype'); }
+@font-face {
+  font-family: 'Inter';
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/Inter_400Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/Inter_500Medium.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/Inter_600SemiBold.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/Inter_700Bold.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/Inter_800ExtraBold.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/Inter_900Black.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Bebas Neue';
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/BebasNeue_400Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Nunito';
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/Nunito_700Bold.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Nunito';
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/Nunito_800ExtraBold.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Nunito';
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/Nunito_900Black.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Playfair Display';
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/PlayfairDisplay_600SemiBold.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Playfair Display';
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/PlayfairDisplay_700Bold.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Space Mono';
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/SpaceMono_400Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Space Mono';
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  src: url('/fonts/SpaceMono_700Bold.ttf') format('truetype');
+}
 
 @theme {
   --color-bg: #0b0a09;
@@ -25,7 +117,8 @@
   --color-warn: #ffd166;
   --color-danger: #ff5f5f;
   --color-info: #7cc4ff;
-  --font-display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+  --font-display:
+    'Bricolage Grotesque Variable', 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
   --font-caption: 'Inter', ui-sans-serif, sans-serif;
   --radius-panel: 14px;
@@ -61,7 +154,7 @@ body::before {
   pointer-events: none;
   z-index: 0;
   background:
-    radial-gradient(1200px 700px at 12% -10%, rgb(255 122 26 / 0.10), transparent 60%),
+    radial-gradient(1200px 700px at 12% -10%, rgb(255 122 26 / 0.1), transparent 60%),
     radial-gradient(900px 600px at 110% 110%, rgb(124 196 255 / 0.06), transparent 60%);
 }
 
@@ -78,12 +171,24 @@ body::after {
 }
 
 @keyframes grain {
-  0% { transform: translate(0, 0); }
-  20% { transform: translate(-2%, 1%); }
-  40% { transform: translate(1%, -2%); }
-  60% { transform: translate(-1%, 2%); }
-  80% { transform: translate(2%, -1%); }
-  100% { transform: translate(0, 0); }
+  0% {
+    transform: translate(0, 0);
+  }
+  20% {
+    transform: translate(-2%, 1%);
+  }
+  40% {
+    transform: translate(1%, -2%);
+  }
+  60% {
+    transform: translate(-1%, 2%);
+  }
+  80% {
+    transform: translate(2%, -1%);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
 }
 
 #app {
@@ -121,22 +226,41 @@ body::after {
 
 /* Page load: staggered reveal for top-level regions. */
 @keyframes rise {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .rise {
   animation: rise 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
-.rise-1 { animation-delay: 0.05s; }
-.rise-2 { animation-delay: 0.12s; }
-.rise-3 { animation-delay: 0.2s; }
-.rise-4 { animation-delay: 0.28s; }
+.rise-1 {
+  animation-delay: 0.05s;
+}
+.rise-2 {
+  animation-delay: 0.12s;
+}
+.rise-3 {
+  animation-delay: 0.2s;
+}
+.rise-4 {
+  animation-delay: 0.28s;
+}
 
 @keyframes pulse-signal {
-  0%, 100% { box-shadow: 0 0 0 0 rgb(255 122 26 / 0.55); }
-  50% { box-shadow: 0 0 0 6px rgb(255 122 26 / 0); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(255 122 26 / 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgb(255 122 26 / 0);
+  }
 }
 
 .record-dot {
@@ -155,7 +279,11 @@ input[type='range'] {
 
 input[type='range']::-webkit-slider-runnable-track {
   height: 2px;
-  background: linear-gradient(to right, var(--color-signal) var(--fill, 0%), var(--color-line-strong) var(--fill, 0%));
+  background: linear-gradient(
+    to right,
+    var(--color-signal) var(--fill, 0%),
+    var(--color-line-strong) var(--fill, 0%)
+  );
   border-radius: 1px;
 }
 
@@ -216,7 +344,9 @@ input[type='color']::-webkit-color-swatch {
 
 /* Drop zone dashed frame drawn with a moving dash (marching ants) on hover. */
 @keyframes ants {
-  to { stroke-dashoffset: -24; }
+  to {
+    stroke-dashoffset: -24;
+  }
 }
 
 .ants rect {

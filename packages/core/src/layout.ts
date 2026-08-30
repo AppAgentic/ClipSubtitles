@@ -40,7 +40,14 @@ export interface CaptionLayout {
   textColor: string;
   textTransform: StyleConfig['textTransform'];
   block: { x: number; y: number; width: number; height: number };
-  background: { x: number; y: number; width: number; height: number; radius: number; color: string } | null;
+  background: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    radius: number;
+    color: string;
+  } | null;
   shadow: { color: string; blurPx: number; offsetYPx: number } | null;
   highlight: StyleConfig['highlight'];
   activeWordIndex: number | null;
@@ -103,14 +110,30 @@ export function layoutCaption(input: LayoutInput): CaptionLayout {
   const measureLines = (font: FontSpec) => {
     const spaceWidth = measure(' ', font);
     const lines = page.lines.map((line) => {
-      const boxes: Array<{ wordIndex: number; text: string; width: number }> = [];
+      const boxes: Array<{
+        wordIndex: number;
+        text: string;
+        width: number;
+        allocatedWidth: number;
+      }> = [];
       for (let i = line.startWordIndex; i <= line.endWordIndex; i += 1) {
         const word = words[i];
         if (!word) continue;
         const text = displayText(word.text, style.textTransform);
-        boxes.push({ wordIndex: i, text, width: measure(text, font) });
+        const width = measure(text, font);
+        // Reserve the active word's maximum scaled footprint in geometry. The
+        // rasterizer scales around the glyph centre; without this allocation a
+        // pop animation visually collides with both neighbours.
+        const allocatedWidth =
+          activeWordIndex === i && style.highlight.mode === 'word'
+            ? width * style.highlight.scale
+            : width;
+        boxes.push({ wordIndex: i, text, width, allocatedWidth });
       }
-      const width = boxes.reduce((sum, b, idx) => sum + b.width + (idx > 0 ? spaceWidth : 0), 0);
+      const width = boxes.reduce(
+        (sum, b, idx) => sum + b.allocatedWidth + (idx > 0 ? spaceWidth : 0),
+        0,
+      );
       return { boxes, width };
     });
     return { lines, spaceWidth, contentWidth: Math.max(0, ...lines.map((l) => l.width)) };
@@ -164,11 +187,11 @@ export function layoutCaption(input: LayoutInput): CaptionLayout {
       const box: LayoutWordBox = {
         wordIndex: b.wordIndex,
         text: b.text,
-        x: cursor,
+        x: cursor + (b.allocatedWidth - b.width) / 2,
         width: b.width,
         active: activeWordIndex === b.wordIndex,
       };
-      cursor += b.width;
+      cursor += b.allocatedWidth;
       return box;
     });
     return {
@@ -201,7 +224,11 @@ export function layoutCaption(input: LayoutInput): CaptionLayout {
         }
       : null,
     shadow: style.shadow.enabled
-      ? { color: style.shadow.color, blurPx: style.shadow.blurPct * S, offsetYPx: style.shadow.offsetYPct * S }
+      ? {
+          color: style.shadow.color,
+          blurPx: style.shadow.blurPct * S,
+          offsetYPx: style.shadow.offsetYPct * S,
+        }
       : null,
     highlight: style.highlight,
     activeWordIndex,

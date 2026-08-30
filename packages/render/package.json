@@ -19,7 +19,11 @@
   "dependencies": {
     "@clipsubtitles/contracts": "workspace:*",
     "@clipsubtitles/core": "workspace:*",
+    "@expo-google-fonts/bebas-neue": "0.4.1",
     "@expo-google-fonts/inter": "^0.4.2",
+    "@expo-google-fonts/nunito": "0.4.2",
+    "@expo-google-fonts/playfair-display": "0.4.2",
+    "@expo-google-fonts/space-mono": "0.4.2",
     "@napi-rs/canvas": "^1.0.8"
   },
   "devDependencies": {

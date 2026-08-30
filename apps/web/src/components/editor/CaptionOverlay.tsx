@@ -7,7 +7,7 @@ import {
   captionMotionState,
   hexToRgba,
   layoutCaption,
-  pageAtMs,
+  visualPageAtMs,
   type FrameSize,
 } from '@clipsubtitles/core';
 import { createDomMeasurer, ensureCaptionFonts } from '@/lib/measure';
@@ -38,7 +38,7 @@ export function CaptionOverlay({
     };
   }, []);
   const measure = useMemo(() => createDomMeasurer(), [fontsReady]);
-  const page = pageAtMs(pages, timeMs);
+  const page = visualPageAtMs(pages, timeMs);
   if (!page || frame.width < 8) return null;
   const activeWordIndex =
     style.highlight.mode === 'word' ? activeWordIndexInPage(page, words, timeMs) : null;
@@ -125,6 +125,7 @@ export function CaptionOverlay({
                   top: line.y,
                   height: line.height,
                   lineHeight: `${line.height}px`,
+                  fontFamily: `"${layout.font.family}", sans-serif`,
                   fontSize: layout.font.sizePx,
                   fontWeight: layout.font.weight,
                   color: hexToRgba(active ? layout.highlight.color : layout.textColor),

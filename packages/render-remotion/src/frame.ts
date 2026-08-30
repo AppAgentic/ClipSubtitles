@@ -1,5 +1,5 @@
 import type { CaptionPage, StyleConfig, TranscriptWord } from '@clipsubtitles/contracts';
-import { activeWordIndexInPage, pageAtMs } from '@clipsubtitles/core';
+import { activeWordIndexInPage, visualPageAtMs } from '@clipsubtitles/core';
 
 /** Media time for a composition frame, given the composition starts at `startMs`. */
 export function frameTimeMs(frame: number, fps: number, startMs = 0): number {
@@ -16,8 +16,13 @@ export interface FrameState {
 }
 
 /** Pure per-frame resolution shared with the ffmpeg planner's semantics. */
-export function frameState(words: readonly TranscriptWord[], pages: readonly CaptionPage[], style: StyleConfig, timeMs: number): FrameState {
-  const page = pageAtMs(pages, timeMs);
+export function frameState(
+  words: readonly TranscriptWord[],
+  pages: readonly CaptionPage[],
+  style: StyleConfig,
+  timeMs: number,
+): FrameState {
+  const page = visualPageAtMs(pages, timeMs);
   if (!page) return { page: null, activeWordIndex: null };
   return {
     page,

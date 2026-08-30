@@ -4,6 +4,7 @@ import { captionMotionState, easeInOutCubic, easeOutCubic, springProgress } from
 import { DEFAULT_SEGMENTATION } from './presets';
 import { segmentWords } from './segmentation';
 import { wordsFromText } from './test-utils';
+import { visualWordStartMs } from './state';
 
 describe('caption motion', () => {
   it('keeps easing endpoints exact and the spring bounded', () => {
@@ -26,14 +27,14 @@ describe('caption motion', () => {
     const page = segmentWords(words, DEFAULT_SEGMENTATION)[0]!;
     const style = stylePreset('karaoke');
     const activeWordIndex = page.startWordIndex + 1;
-    const word = words[activeWordIndex]!;
-    const start = captionMotionState({ page, words, style, activeWordIndex, timeMs: word.startMs });
+    const visualStart = visualWordStartMs(page, words, activeWordIndex);
+    const start = captionMotionState({ page, words, style, activeWordIndex, timeMs: visualStart });
     const settled = captionMotionState({
       page,
       words,
       style,
       activeWordIndex,
-      timeMs: word.startMs + style.motion.wordTransitionMs,
+      timeMs: visualStart + style.motion.wordTransitionMs,
     });
     expect(start.highlightFromWordIndex).toBe(activeWordIndex - 1);
     expect(start.highlightProgress).toBe(0);

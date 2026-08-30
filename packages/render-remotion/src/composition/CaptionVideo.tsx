@@ -22,19 +22,27 @@ import type { CaptionVideoProps } from './props';
 
 export type { CaptionVideoProps } from './props';
 
-const FACES: Array<{ weight: number; file: string }> = [
-  { weight: 400, file: 'Inter_400Regular.ttf' },
-  { weight: 500, file: 'Inter_500Medium.ttf' },
-  { weight: 600, file: 'Inter_600SemiBold.ttf' },
-  { weight: 700, file: 'Inter_700Bold.ttf' },
-  { weight: 800, file: 'Inter_800ExtraBold.ttf' },
-  { weight: 900, file: 'Inter_900Black.ttf' },
+const FACES: Array<{ family: string; weight: number; file: string }> = [
+  { family: 'Inter', weight: 400, file: 'Inter_400Regular.ttf' },
+  { family: 'Inter', weight: 500, file: 'Inter_500Medium.ttf' },
+  { family: 'Inter', weight: 600, file: 'Inter_600SemiBold.ttf' },
+  { family: 'Inter', weight: 700, file: 'Inter_700Bold.ttf' },
+  { family: 'Inter', weight: 800, file: 'Inter_800ExtraBold.ttf' },
+  { family: 'Inter', weight: 900, file: 'Inter_900Black.ttf' },
+  { family: 'Bebas Neue', weight: 400, file: 'BebasNeue_400Regular.ttf' },
+  { family: 'Nunito', weight: 700, file: 'Nunito_700Bold.ttf' },
+  { family: 'Nunito', weight: 800, file: 'Nunito_800ExtraBold.ttf' },
+  { family: 'Nunito', weight: 900, file: 'Nunito_900Black.ttf' },
+  { family: 'Playfair Display', weight: 600, file: 'PlayfairDisplay_600SemiBold.ttf' },
+  { family: 'Playfair Display', weight: 700, file: 'PlayfairDisplay_700Bold.ttf' },
+  { family: 'Space Mono', weight: 400, file: 'SpaceMono_400Regular.ttf' },
+  { family: 'Space Mono', weight: 700, file: 'SpaceMono_700Bold.ttf' },
 ];
 
 function fontFaceCss(): string {
   return FACES.map(
     (f) =>
-      `@font-face{font-family:'Inter';font-weight:${f.weight};font-style:normal;src:url('${staticFile(`fonts/${f.file}`)}') format('truetype');}`,
+      `@font-face{font-family:'${f.family}';font-weight:${f.weight};font-style:normal;src:url('${staticFile(`fonts/${f.file}`)}') format('truetype');}`,
   ).join('\n');
 }
 
@@ -45,10 +53,10 @@ function browserMeasurer(): TextMeasurer {
   const cache = new Map<string, number>();
   return (text: string, font: FontSpec) => {
     if (!sharedCtx) return text.length * font.sizePx * 0.55;
-    const key = `${font.weight}|${font.sizePx}|${text}`;
+    const key = `${font.family}|${font.weight}|${font.sizePx}|${text}`;
     const hit = cache.get(key);
     if (hit !== undefined) return hit;
-    sharedCtx.font = `${font.weight} ${font.sizePx}px Inter`;
+    sharedCtx.font = `${font.weight} ${font.sizePx}px "${font.family}"`;
     const w = sharedCtx.measureText(text).width;
     cache.set(key, w);
     return w;
@@ -144,7 +152,7 @@ export function CaptionLayer({
                 height: line.height,
                 lineHeight: `${line.height}px`,
                 whiteSpace: 'pre',
-                fontFamily: 'Inter, sans-serif',
+                fontFamily: `"${layout.font.family}", sans-serif`,
                 fontSize: layout.font.sizePx,
                 fontWeight: layout.font.weight,
                 color: hexToRgba(active ? layout.highlight.color : layout.textColor),
@@ -180,7 +188,7 @@ export const CaptionVideo: React.FC<CaptionVideoProps> = (props) => {
     const style = document.createElement('style');
     style.textContent = fontFaceCss();
     document.head.appendChild(style);
-    Promise.all(FACES.map((f) => document.fonts.load(`${f.weight} 24px Inter`)))
+    Promise.all(FACES.map((f) => document.fonts.load(`${f.weight} 24px "${f.family}"`)))
       .catch(() => undefined)
       .finally(() => {
         setFontsReady(true);

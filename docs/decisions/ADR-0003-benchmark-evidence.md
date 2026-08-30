@@ -6,6 +6,13 @@
 
 Gemini 3.5 Transcribe is the leading candidate but must be benchmarked against
 ElevenLabs Scribe v2, GPT Transcribe + alignment, and the Whisper baseline.
+
+The prerecorded Gemini adapter uses the dedicated `gemini-3.5-transcribe`
+Interactions API in verbatim mode with native word timestamps and diarization.
+It was live-verified on one 12-second source on 2026-08-30. That proves the API
+mapping, not provider superiority. The public-preview service currently rejects
+`custom_vocabulary` together with word timestamps, so the word-timed adapter
+does not claim vocabulary biasing until that live behavior changes.
 No provider credentials exist in this environment.
 
 ## Decision

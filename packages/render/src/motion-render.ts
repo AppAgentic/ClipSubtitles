@@ -5,7 +5,7 @@ import {
   activeWordIndexInPage,
   captionMotionState,
   layoutCaption,
-  pageAtMs,
+  visualPageAtMs,
   type CaptionLayout,
   type FrameSize,
 } from '@clipsubtitles/core';
@@ -110,7 +110,7 @@ export async function* renderMotionFrames(
     const started = performance.now();
     const timeMs = input.startMs + Math.round((frameIndex / input.fps) * 1000);
     ctx.clearRect(0, 0, plan.band.width, plan.band.height);
-    const page = pageAtMs(input.pages, timeMs);
+    const page = visualPageAtMs(input.pages, timeMs);
     if (page) {
       const activeWordIndex =
         input.style.highlight.mode === 'word'

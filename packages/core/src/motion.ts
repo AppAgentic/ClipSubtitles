@@ -4,6 +4,7 @@ import type {
   StyleConfig,
   TranscriptWord,
 } from '@clipsubtitles/contracts';
+import { visualWordStartMs } from './state';
 
 export interface CaptionMotionState {
   opacity: number;
@@ -90,7 +91,10 @@ export function captionMotionState(input: {
 
   const active = activeWordIndex === null ? undefined : words[activeWordIndex];
   const wordT = active
-    ? clamp01((timeMs - active.startMs) / Math.max(1, style.motion.wordTransitionMs))
+    ? clamp01(
+        (timeMs - visualWordStartMs(page, words, activeWordIndex ?? page.startWordIndex)) /
+          Math.max(1, style.motion.wordTransitionMs),
+      )
     : 1;
   const wordEase = preset === 'spring-pop' ? springProgress(wordT) : easeInOutCubic(wordT);
   const activeWordScale = 1 + (style.highlight.scale - 1) * wordEase;
