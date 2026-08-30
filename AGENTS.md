@@ -13,9 +13,9 @@ other MCP clients, or the web editor.
   recovery surface.
 - The public machine surface is a small, goal-oriented MCP toolset backed by a
   typed REST API.
-- Gemini 3.5 Transcribe is the leading transcription candidate and must be
-  benchmarked against ElevenLabs Scribe v2, GPT Transcribe plus alignment, and
-  the existing Whisper baseline before it is made the production default.
+- Gemini 3.5 Transcribe is the production transcription model. ElevenLabs
+  Scribe v2 is the only supported live fallback and remains benchmarked against
+  Gemini on the same corpus before production fallback ordering changes.
 - Transcripts use a provider-neutral word-level schema.
 - Caption grouping uses semantic and prosody-aware segmentation without
   rewriting spoken words.

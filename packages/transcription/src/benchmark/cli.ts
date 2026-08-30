@@ -21,20 +21,28 @@ function parseArgs(argv: string[]): CliArgs {
     out: path.join(resolveRepoRoot(), 'fixtures', 'benchmark', 'reports'),
     fixtures: defaultFixturesDir(),
     cases: null,
-    baseline: 'whisper',
+    baseline: 'gemini',
   };
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
     const next = () => argv[(i += 1)] ?? '';
-    if (a === '--providers') args.providers = next().split(',').map((s) => s.trim()).filter(Boolean);
+    if (a === '--providers')
+      args.providers = next()
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
     else if (a === '--repeats') args.repeats = Math.max(1, Number(next()) || 1);
     else if (a === '--out') args.out = path.resolve(next());
     else if (a === '--fixtures') args.fixtures = path.resolve(next());
-    else if (a === '--cases') args.cases = next().split(',').map((s) => s.trim()).filter(Boolean);
+    else if (a === '--cases')
+      args.cases = next()
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
     else if (a === '--baseline') args.baseline = next();
     else if (a === '--help' || a === '-h') {
       console.log(
-        'Usage: pnpm benchmark [--providers mock,mock-noisy,gemini,elevenlabs,gpt-transcribe,whisper] [--repeats N] [--cases id,id] [--baseline whisper] [--out DIR] [--fixtures DIR]',
+        'Usage: pnpm benchmark [--providers mock,mock-noisy,gemini,elevenlabs] [--repeats N] [--cases id,id] [--baseline gemini] [--out DIR] [--fixtures DIR]',
       );
       process.exit(0);
     }
@@ -46,7 +54,9 @@ async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   await buildFixtures({ outDir: args.fixtures, skipVideo: true });
   const registry = createProviderRegistry(process.env);
-  const cases = args.cases ? BENCHMARK_CASES.filter((c) => args.cases?.includes(c.id)) : BENCHMARK_CASES;
+  const cases = args.cases
+    ? BENCHMARK_CASES.filter((c) => args.cases?.includes(c.id))
+    : BENCHMARK_CASES;
   const run = await runBenchmark({
     registry,
     providerIds: args.providers,

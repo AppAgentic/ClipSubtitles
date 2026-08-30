@@ -84,12 +84,16 @@ export interface TimedToken {
 }
 
 /**
- * Give timings to `text` tokens using a timed reference (e.g. whisper words).
+ * Give timings to `text` tokens using any provider-neutral timed reference.
  * Matched tokens inherit timings; unmatched runs are interpolated between the
  * nearest anchors so every output token has monotonic, non-overlapping timing.
  * The text is never changed — only timing is attached.
  */
-export function alignTextToTimedWords(text: string, timed: readonly TimedToken[], durationMs: number): TimedToken[] {
+export function alignTextToTimedWords(
+  text: string,
+  timed: readonly TimedToken[],
+  durationMs: number,
+): TimedToken[] {
   const tokens = text.split(/\s+/).filter(Boolean);
   if (tokens.length === 0) return [];
   const steps = alignTokens(
@@ -98,7 +102,11 @@ export function alignTextToTimedWords(text: string, timed: readonly TimedToken[]
   );
   const anchors = new Array<TimedToken | null>(tokens.length).fill(null);
   for (const step of steps) {
-    if ((step.op === 'match' || step.op === 'sub') && step.hyp !== undefined && step.ref !== undefined) {
+    if (
+      (step.op === 'match' || step.op === 'sub') &&
+      step.hyp !== undefined &&
+      step.ref !== undefined
+    ) {
       const src = timed[step.ref];
       const token = tokens[step.hyp];
       if (src && token) anchors[step.hyp] = { text: token, startMs: src.startMs, endMs: src.endMs };

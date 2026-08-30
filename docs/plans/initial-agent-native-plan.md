@@ -109,8 +109,7 @@ Benchmark before selecting the production default:
    Custom vocabulary is capability-gated because the 2026-08-30 public preview
    rejects it when timestamps are enabled.
 2. ElevenLabs Scribe v2.
-3. GPT Transcribe plus NeMo/WhisperX alignment.
-4. Existing Whisper path as baseline.
+3. Provider-neutral benchmark and fallback evaluation against the Gemini baseline.
 
 The evaluation set must cover clean speech, music, accents, code-switching,
 poor microphones, and multiple languages. Score word/entity accuracy,
@@ -129,7 +128,7 @@ timestamp drift, caption-break quality, latency, failure rate, and cost.
 
 ## Acceptance Gates
 
-- Better transcript/entity accuracy than the existing Whisper baseline or
+- Better transcript/entity accuracy than the production Gemini baseline or
   equivalent quality with materially simpler timing support.
 - No cumulative timestamp drift on the benchmark set.
 - Reading-speed, line-length, transcript-fidelity, and A/V-sync QA passes.

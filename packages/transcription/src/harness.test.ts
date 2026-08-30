@@ -7,7 +7,7 @@ import { BENCHMARK_CASES, tokenizeScript, truthFromCase } from './benchmark/corp
 import { buildFixtures } from './benchmark/fixtures';
 import { renderMarkdown, writeReport } from './benchmark/report';
 import { runBenchmark } from './benchmark/runner';
-import { createProviderRegistry } from './registry';
+import { createProviderRegistry, KNOWN_PROVIDER_IDS } from './registry';
 import { detectSpeech } from './vad';
 
 let dir: string;
@@ -23,7 +23,14 @@ afterAll(async () => {
 describe('corpus', () => {
   it('covers every required category with original scripts', () => {
     const categories = new Set(BENCHMARK_CASES.map((c) => c.category));
-    for (const required of ['clean', 'music', 'accent', 'code_switching', 'poor_mic', 'multilingual']) {
+    for (const required of [
+      'clean',
+      'music',
+      'accent',
+      'code_switching',
+      'poor_mic',
+      'multilingual',
+    ]) {
       expect(categories.has(required as never)).toBe(true);
     }
     expect(new Set(BENCHMARK_CASES.map((c) => c.id)).size).toBe(BENCHMARK_CASES.length);
@@ -47,6 +54,28 @@ describe('corpus', () => {
 });
 
 describe('audio + fixtures + benchmark end to end', () => {
+  it('exposes only Gemini and ElevenLabs as live transcription providers', () => {
+    const registry = createProviderRegistry({
+      TRANSCRIPTION_PROVIDERS: 'gemini,elevenlabs,unknown-provider',
+      GEMINI_API_KEY: 'configured-for-registry-test',
+      ELEVENLABS_API_KEY: 'configured-for-registry-test',
+    });
+    expect(KNOWN_PROVIDER_IDS).toEqual([
+      'mock',
+      'mock-noisy',
+      'mock-drifty',
+      'mock-flaky',
+      'gemini',
+      'elevenlabs',
+    ]);
+    expect(registry.chain.map((provider) => provider.id)).toEqual(['gemini', 'elevenlabs']);
+    expect(
+      registry.all
+        .filter((provider) => !provider.id.startsWith('mock'))
+        .map((provider) => provider.id),
+    ).toEqual(['gemini', 'elevenlabs']);
+  });
+
   it('WAV encode/parse round trips', () => {
     const samples = new Int16Array([0, 1000, -1000, 32767, -32768]);
     const parsed = parseWav(encodeWav(samples, 16_000));
@@ -55,7 +84,9 @@ describe('audio + fixtures + benchmark end to end', () => {
   });
 
   it('builds fixtures, probes them with ffprobe, extracts audio, detects speech, and ranks mock profiles', async () => {
-    const cases = BENCHMARK_CASES.filter((c) => ['clean-en-product-demo', 'poor-mic-en-podcast'].includes(c.id));
+    const cases = BENCHMARK_CASES.filter((c) =>
+      ['clean-en-product-demo', 'poor-mic-en-podcast'].includes(c.id),
+    );
     const built = await buildFixtures({ outDir: dir, cases, skipVideo: true });
     expect(built).toHaveLength(2);
     const wav = built[0]!.wavPath;
@@ -68,7 +99,9 @@ describe('audio + fixtures + benchmark end to end', () => {
     const pcm = await readWav(extracted);
     expect(pcm.sampleRate).toBe(16_000);
     const regions = detectSpeech(pcm.samples, pcm.sampleRate);
-    const truth = JSON.parse(await readFile(built[0]!.truthPath, 'utf8')) as { words: Array<{ startMs: number }> };
+    const truth = JSON.parse(await readFile(built[0]!.truthPath, 'utf8')) as {
+      words: Array<{ startMs: number }>;
+    };
     expect(regions.length).toBeGreaterThan(3);
     expect(Math.abs(regions[0]!.startMs - truth.words[0]!.startMs)).toBeLessThan(120);
 
@@ -97,6 +130,8 @@ describe('audio + fixtures + benchmark end to end', () => {
     expect(md).toContain('No provider winner is claimed');
     const { jsonPath, mdPath } = await writeReport(run, path.join(dir, 'reports'), 'test');
     expect((await readFile(jsonPath, 'utf8')).length).toBeGreaterThan(100);
-    expect((await readFile(mdPath, 'utf8')).startsWith('# Transcription benchmark report')).toBe(true);
+    expect((await readFile(mdPath, 'utf8')).startsWith('# Transcription benchmark report')).toBe(
+      true,
+    );
   });
 });

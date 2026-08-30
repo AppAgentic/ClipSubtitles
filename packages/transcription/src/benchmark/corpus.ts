@@ -1,6 +1,7 @@
 import type { TruthTranscript, TruthWord } from '../truth';
 
-export type BenchmarkCategory = 'clean' | 'music' | 'accent' | 'code_switching' | 'poor_mic' | 'multilingual';
+export type BenchmarkCategory =
+  'clean' | 'music' | 'accent' | 'code_switching' | 'poor_mic' | 'multilingual';
 
 export interface BenchmarkCase {
   id: string;
@@ -182,7 +183,7 @@ export const BENCHMARK_CASES: BenchmarkCase[] = [
     category: 'clean',
     language: 'en',
     script:
-      'We benchmarked [[Gemini]], [[ElevenLabs Scribe]], [[GPT Transcribe]], and [[Whisper]] on 48 clips. The average clip was 37 seconds at 1080 by 1920. [[Kubernetes]] and [[PostgreSQL]] tripped up two of the models, and [[Zürich]] became Zurich every single time.',
+      'We benchmarked [[Gemini]] and [[ElevenLabs Scribe]] on 48 clips. The average clip was 37 seconds at 1080 by 1920. [[Kubernetes]] and [[PostgreSQL]] tripped up both models, and [[Zürich]] became Zurich every single time.',
     wordsPerMinute: 150,
     wordGapMs: 50,
     sentencePauseMs: 520,

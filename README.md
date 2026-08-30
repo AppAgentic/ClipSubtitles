@@ -64,13 +64,13 @@ docs/                  architecture, decisions, benchmark notes, directory-readi
 
 Copy `.env.example` to `.env` for **non-secret defaults only** (ports, limits,
 mode switches). Provider and identity secrets (`GEMINI_API_KEY`,
-`ELEVENLABS_API_KEY`, `OPENAI_API_KEY`, `WORKOS_*`, `AUTH_LOCAL_SECRET` in
+`ELEVENLABS_API_KEY`, `WORKOS_*`, `AUTH_LOCAL_SECRET` in
 production) must come from the vault (`mc-vault`) or a securely injected
 process environment — never paste them into `.env`, commit them, or print them.
 Everything runs with the defaults; every integration is config-gated:
 
 - `AUTH_MODE=mock|workos` — WorkOS/AuthKit is the only production identity and OAuth authority.
-- `TRANSCRIPTION_PROVIDERS=mock` — ordered fallback chain (`gemini`, `elevenlabs`, `gpt-transcribe`, `whisper` need keys).
+- `TRANSCRIPTION_PROVIDERS=mock` — local deterministic mode; production uses `gemini,elevenlabs` as the ordered live chain.
 - `RENDERER=ffmpeg|remotion` — deterministic canvas+ffmpeg compositor by default.
 - `TRUSTED_PROXIES=` — comma-separated proxy IPs/CIDRs whose `X-Forwarded-For`/`X-Real-IP` are honoured for client-IP rate limiting. Empty (default) never trusts forwarding headers.
 - Limits/retention: upload size, source duration, private-URL policy, retention days, signed-URL/quote TTLs, rate limits, initial credit grant.

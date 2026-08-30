@@ -9,7 +9,6 @@ export * from './align';
 export * from './registry';
 export * from './prng';
 export * from './adapters/elevenlabs';
-export * from './adapters/openai';
 export * from './adapters/gemini';
 export * from './benchmark/corpus';
 export * from './benchmark/synth';

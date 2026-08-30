@@ -8,7 +8,7 @@
 > **No provider winner is claimed.** Only mock providers ran, so this report only demonstrates that the harness, fixtures, and scorer behave as designed. Run with live credentials to produce evidence.
 
 - Only mock providers ran. These numbers validate the harness and scorer; they are NOT evidence about any real provider.
-- Baseline provider "whisper" did not run; "better than baseline" gates are unevaluated.
+- Baseline provider "gemini" did not run; "better than baseline" gates are unevaluated.
 
 ## Provider summary
 
@@ -21,14 +21,14 @@
 
 ## Acceptance gates
 
-Baseline for accuracy comparison: `whisper`.
+Baseline for accuracy comparison: `gemini`.
 
 | Provider | Live evidence | No cumulative drift | Drift within tolerance | Failure rate ok | Better than baseline | Entity accuracy ok | Passes | Notes |
 |---|---|---|---|---|---|---|---|---|
-| mock | NO | yes | yes | yes | n/a | yes | no | mock provider: no live evidence; baseline "whisper" did not run |
-| mock-drifty | NO | NO | NO | yes | n/a | yes | no | mock provider: no live evidence; baseline "whisper" did not run; cumulative timestamp drift; mean timestamp offset too large |
-| mock-noisy | NO | NO | yes | yes | n/a | NO | no | mock provider: no live evidence; baseline "whisper" did not run; cumulative timestamp drift; entity accuracy below threshold |
-| mock-flaky | NO | yes | yes | NO | n/a | yes | no | mock provider: no live evidence; baseline "whisper" did not run; failure rate too high |
+| mock | NO | yes | yes | yes | n/a | yes | no | mock provider: no live evidence; baseline "gemini" did not run |
+| mock-drifty | NO | NO | NO | yes | n/a | yes | no | mock provider: no live evidence; baseline "gemini" did not run; cumulative timestamp drift; mean timestamp offset too large |
+| mock-noisy | NO | NO | yes | yes | n/a | NO | no | mock provider: no live evidence; baseline "gemini" did not run; cumulative timestamp drift; entity accuracy below threshold |
+| mock-flaky | NO | yes | yes | NO | n/a | yes | no | mock provider: no live evidence; baseline "gemini" did not run; failure rate too high |
 
 ## Mean WER by category
 

@@ -26,15 +26,15 @@ providers.
 
 ## Acceptance gates
 
-A provider passes only when it is a live provider, the `whisper` baseline ran
-in the same report, WER ≤ baseline, max drift slope ≤ 20 ms/min, mean |offset|
+A fallback provider passes only when it is live, the `gemini` baseline ran in
+the same report, WER ≤ baseline, max drift slope ≤ 20 ms/min, mean |offset|
 ≤ 80 ms, failure rate ≤ 5 %, and entity accuracy ≥ 90 %.
 
 ## Running live (parked)
 
 ```bash
 # keys injected from the vault into this shell only — never written to .env or the repo
-pnpm benchmark --providers gemini,elevenlabs,gpt-transcribe,whisper --repeats 2
+pnpm benchmark --providers gemini,elevenlabs --baseline gemini --repeats 2
 ```
 
 Reports: `fixtures/benchmark/reports/latest.{md,json}` (gitignored).

@@ -13,7 +13,13 @@ const truth: TruthTranscript = {
   ],
 };
 
-const meta = { caseId: 'c', category: 'clean' as const, providerId: 'p', latencyMs: 500, durationMs: 3000 };
+const meta = {
+  caseId: 'c',
+  category: 'clean' as const,
+  providerId: 'p',
+  latencyMs: 500,
+  durationMs: 3000,
+};
 
 describe('scoreTranscript', () => {
   it('scores a perfect hypothesis with zero WER and drift', () => {
@@ -41,7 +47,11 @@ describe('scoreTranscript', () => {
   });
 
   it('detects cumulative drift as a positive slope', () => {
-    const hyp = truth.words.map((w) => ({ text: w.text, startMs: w.startMs + Math.round(w.startMs * 0.05), endMs: w.endMs + Math.round(w.endMs * 0.05) }));
+    const hyp = truth.words.map((w) => ({
+      text: w.text,
+      startMs: w.startMs + Math.round(w.startMs * 0.05),
+      endMs: w.endMs + Math.round(w.endMs * 0.05),
+    }));
     const s = scoreTranscript(truth, hyp, meta);
     // 5% drift = 3000 ms per minute.
     expect(s.driftSlopeMsPerMin).toBeGreaterThan(2500);
@@ -52,7 +62,11 @@ describe('scoreTranscript', () => {
     const good = scoreTranscript(truth, truth.words, { ...meta, providerId: 'good' });
     const drifty = scoreTranscript(
       truth,
-      truth.words.map((w) => ({ text: w.text, startMs: w.startMs + Math.round(w.startMs * 0.05), endMs: w.endMs + Math.round(w.endMs * 0.05) })),
+      truth.words.map((w) => ({
+        text: w.text,
+        startMs: w.startMs + Math.round(w.startMs * 0.05),
+        endMs: w.endMs + Math.round(w.endMs * 0.05),
+      })),
       { ...meta, providerId: 'drifty' },
     );
     const failed = failedScore({ ...meta, providerId: 'flaky' }, 'UNAVAILABLE', truth.words.length);
@@ -73,16 +87,21 @@ describe('scoreTranscript', () => {
 
   it('never passes a provider without live evidence or without a baseline', () => {
     const perfect = scoreTranscript(truth, truth.words, { ...meta, providerId: 'mock' });
-    const noBaseline = evaluateGates(aggregateScores([perfect]), 'whisper');
+    const noBaseline = evaluateGates(aggregateScores([perfect]), 'gemini');
     expect(noBaseline[0]?.passes).toBe(false);
     expect(noBaseline[0]?.liveEvidence).toBe(false);
-    expect(noBaseline[0]?.reasons).toEqual(expect.arrayContaining(['mock provider: no live evidence', 'baseline "whisper" did not run']));
+    expect(noBaseline[0]?.reasons).toEqual(
+      expect.arrayContaining(['mock provider: no live evidence', 'baseline "gemini" did not run']),
+    );
 
-    const live = scoreTranscript(truth, truth.words, { ...meta, providerId: 'gemini' });
-    const baseline = scoreTranscript(truth, truth.words.slice(1), { ...meta, providerId: 'whisper' });
-    const withBaseline = evaluateGates(aggregateScores([live, baseline]), 'whisper');
-    expect(withBaseline.find((g) => g.providerId === 'gemini')?.passes).toBe(true);
-    const liveNoBaseline = evaluateGates(aggregateScores([live]), 'whisper');
+    const live = scoreTranscript(truth, truth.words, { ...meta, providerId: 'elevenlabs' });
+    const baseline = scoreTranscript(truth, truth.words.slice(1), {
+      ...meta,
+      providerId: 'gemini',
+    });
+    const withBaseline = evaluateGates(aggregateScores([live, baseline]), 'gemini');
+    expect(withBaseline.find((g) => g.providerId === 'elevenlabs')?.passes).toBe(true);
+    const liveNoBaseline = evaluateGates(aggregateScores([live]), 'gemini');
     expect(liveNoBaseline[0]?.passes).toBe(false);
   });
 });
