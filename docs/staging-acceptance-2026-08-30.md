@@ -112,6 +112,13 @@ run.
   timings. ElevenLabs' own request log records the matching Cloud Run POST at
   23:46:05 UTC+1 as HTTP 401, so rotation did not repair the deployed-origin
   authorization failure. Terraform returned `No changes` after the rollout.
+- A staging-only allowlisted diagnostic then resolved the remaining ambiguity:
+  an isolated Cloud Run request using the same v4 key and worker service account
+  returned HTTP 401 with provider code `detected_unusual_activity` and trace
+  `8e11eb5dce359fefbe13e6e440bf18b6`. The probe retained no response message or
+  body, credential, audio, or transcript, and its temporary Cloud Run job was
+  deleted after readback. This confirms ElevenLabs' Free-tier shared/datacenter
+  IP abuse detector is the deployed-origin blocker.
 
 ## Transcription provider boundary
 
