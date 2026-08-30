@@ -5,6 +5,7 @@ import { OptionSwitcher } from './OptionSwitcher';
 import { CaptionFrame, PAGE_ONE, StyleBoard } from './StyleBoard';
 import { SITE_URL } from '@/components/marketing/seo-pages';
 import { FootageReel } from '@/components/marketing/FootageReel';
+import { ConnectAgent } from './ConnectAgent';
 import './landing-options.css';
 import './three-gates.css';
 
@@ -112,7 +113,7 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
             </div>
             <p className="tg-tertiary">
               Building something?{' '}
-              <Link href="/docs">Every step is available to agents through MCP and an API.</Link>
+              <a href="#connect">Add ClipSubtitles to your agent.</a>
             </p>
           </div>
 
@@ -193,13 +194,7 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
                 </li>
               ))}
             </ul>
-            <div className="tg-agent-note">
-              <p>
-                <strong>For builders:</strong> import, caption, edit, preview and export through MCP
-                or the API. Paid renders still wait for a person&rsquo;s approval.
-              </p>
-              <Link href="/docs">Read the docs →</Link>
-            </div>
+            <ConnectAgent />
           </div>
         </section>
 

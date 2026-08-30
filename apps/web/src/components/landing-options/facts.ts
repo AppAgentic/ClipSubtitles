@@ -27,6 +27,54 @@ export const OUTPUTS = [
   { kind: 'vtt', label: 'VTT', container: 'vtt', detail: 'WebVTT sidecar, same timings' },
 ] as const;
 
+export const MCP_ENDPOINT = 'https://api.clipsubtitles.com/api/mcp';
+
+export const MCP_INSTALL = [
+  {
+    id: 'claude',
+    label: 'Claude Code',
+    instruction: 'Paste into your terminal',
+    command: `claude mcp add --transport http clipsubtitles ${MCP_ENDPOINT}`,
+  },
+  {
+    id: 'codex',
+    label: 'Codex',
+    instruction: 'Add the server, then sign in',
+    command: `codex mcp add clipsubtitles --url ${MCP_ENDPOINT}\ncodex mcp login clipsubtitles`,
+  },
+  {
+    id: 'gemini',
+    label: 'Gemini CLI',
+    instruction: 'Paste into your terminal',
+    command: `gemini mcp add clipsubtitles ${MCP_ENDPOINT} --transport http`,
+  },
+  {
+    id: 'other',
+    label: 'Other clients',
+    instruction: "Add this to your client's MCP config",
+    command: `{
+  "mcpServers": {
+    "clipsubtitles": {
+      "url": "${MCP_ENDPOINT}"
+    }
+  }
+}`,
+  },
+] as const;
+
+export const MCP_ONE_CLICK = [
+  {
+    label: 'Add to Cursor',
+    href:
+      'https://cursor.com/link/mcp/install?name=clipsubtitles&config=eyJ1cmwiOiJodHRwczovL2FwaS5jbGlwc3VidGl0bGVzLmNvbS9hcGkvbWNwIn0%3D',
+  },
+  {
+    label: 'Add to VS Code',
+    href:
+      'vscode:mcp/install?%7B%22name%22%3A%22clipsubtitles%22%2C%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fapi.clipsubtitles.com%2Fapi%2Fmcp%22%7D',
+  },
+] as const;
+
 export const TASK_STATUSES = ['queued', 'running', 'succeeded', 'failed', 'cancelled'] as const;
 
 export interface SampleWord {

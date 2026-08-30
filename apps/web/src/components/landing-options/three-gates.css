@@ -921,30 +921,186 @@
   padding-top: 26px;
 }
 
-[data-lo='three-gates'] .tg-agent-note {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 24px;
-  padding: 22px 26px;
-  border: 1px solid var(--line);
-  border-radius: 18px;
+/* Connect an agent */
+[data-lo='three-gates'] .tg-connect {
+  display: grid;
+  gap: 28px;
+  scroll-margin-top: 32px;
+}
+
+[data-lo='three-gates'] .tg-connect-standalone {
+  grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+  gap: clamp(40px, 8vw, 120px);
+  padding-block: clamp(72px, 10vw, 136px);
+  border-top: 1px solid var(--line);
+}
+
+[data-lo='three-gates'] .tg-connect-copy {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+}
+
+[data-lo='three-gates'] .tg-connect-copy h2,
+[data-lo='three-gates'] .tg-connect-copy h3 {
+  max-width: 13ch;
+  font-size: clamp(28px, 3.8vw, 52px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-weight: 500;
+}
+
+[data-lo='three-gates'] .tg-connect:not(.tg-connect-standalone) .tg-connect-copy h3 {
+  max-width: 18ch;
+  font-size: clamp(25px, 2.6vw, 36px);
+}
+
+[data-lo='three-gates'] .tg-connect-copy > p:last-of-type {
+  max-width: 46ch;
   color: var(--dim);
-  font-size: 15px;
+  font-size: 16px;
 }
 
-[data-lo='three-gates'] .tg-agent-note strong {
-  color: var(--text);
-}
-
-[data-lo='three-gates'] .tg-agent-note a {
-  flex: none;
+[data-lo='three-gates'] .tg-connect-copy > a {
+  width: fit-content;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
   color: var(--warm);
   font-weight: 600;
   text-decoration: none;
+}
+
+[data-lo='three-gates'] .tg-connect-panel {
+  min-width: 0;
+  padding: clamp(18px, 3vw, 30px);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--ink-2);
+}
+
+[data-lo='three-gates'] .tg-connect-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 22px;
+}
+
+[data-lo='three-gates'] .tg-connect-tabs button {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--dim);
+  font-size: 13px;
+  font-weight: 550;
+  cursor: pointer;
+}
+
+[data-lo='three-gates'] .tg-connect-tabs button:hover {
+  border-color: rgb(255 255 255 / 0.4);
+  color: var(--text);
+}
+
+[data-lo='three-gates'] .tg-connect-tabs button[aria-selected='true'] {
+  border-color: var(--warm);
+  background: var(--warm);
+  color: var(--warm-ink);
+}
+
+[data-lo='three-gates'] .tg-connect-instruction {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 8px;
+  color: var(--dim);
+  font-size: 13px;
+}
+
+[data-lo='three-gates'] .tg-connect-instruction button {
+  flex: none;
+  min-width: 76px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid rgb(255 255 255 / 0.2);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+[data-lo='three-gates'] .tg-connect-instruction button:hover {
+  border-color: var(--warm);
+  color: var(--warm);
+}
+
+[data-lo='three-gates'] .tg-connect-code {
+  max-width: 100%;
+  min-height: 76px;
+  margin: 0;
+  padding: 16px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--ink);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre;
+  text-transform: none;
+}
+
+[data-lo='three-gates'] .tg-connect-helper,
+[data-lo='three-gates'] .tg-connect-endpoint {
+  margin-top: 12px;
+  color: var(--mute);
+  font-size: 12px;
+}
+
+[data-lo='three-gates'] .tg-connect-oneclick {
+  display: grid;
+  gap: 10px;
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  color: var(--dim);
+  font-size: 13px;
+}
+
+[data-lo='three-gates'] .tg-connect-oneclick > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+[data-lo='three-gates'] .tg-connect-oneclick a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 15px;
+  border: 1px solid rgb(230 162 107 / 0.55);
+  border-radius: 999px;
+  color: var(--warm);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+[data-lo='three-gates'] .tg-connect-oneclick a:hover {
+  background: var(--warm);
+  color: var(--warm-ink);
+}
+
+[data-lo='three-gates'] .tg-connect-oneclick small {
+  max-width: 58ch;
+  color: var(--mute);
+  font-size: 12px;
+}
+
+[data-lo='three-gates'] .tg-connect-endpoint {
+  overflow-wrap: anywhere;
 }
 
 /* FAQ */
@@ -1130,10 +1286,9 @@
     grid-template-columns: minmax(0, 1fr);
     gap: 36px;
   }
-  [data-lo='three-gates'] .tg-agent-note {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
+  [data-lo='three-gates'] .tg-connect-standalone {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 36px;
   }
 }
 
