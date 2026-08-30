@@ -1,0 +1,169 @@
+@import '@fontsource-variable/bricolage-grotesque';
+@import '@fontsource/ibm-plex-mono/400.css';
+
+[data-lo='mcp-install'] {
+  --bg: #08090c;
+  --panel: #101218;
+  --panel-2: #151821;
+  --line: rgb(255 255 255 / 0.12);
+  --text: #f0eee8;
+  --dim: #a7a69f;
+  --warm: #e7a36c;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Bricolage Grotesque Variable', sans-serif;
+}
+
+[data-lo='mcp-install'] *, [data-lo='mcp-install'] *::before, [data-lo='mcp-install'] *::after { box-sizing: border-box; }
+[data-lo='mcp-install'] button, [data-lo='mcp-install'] select { font: inherit; }
+[data-lo='mcp-install'] button, [data-lo='mcp-install'] a { -webkit-tap-highlight-color: transparent; }
+[data-lo='mcp-install'] a { color: inherit; }
+[data-lo='mcp-install'] button:focus-visible, [data-lo='mcp-install'] a:focus-visible, [data-lo='mcp-install'] select:focus-visible, [data-lo='mcp-install'] summary:focus-visible { outline: 2px solid var(--warm); outline-offset: 3px; }
+.mio-wrap { width: min(100% - 40px, 1240px); margin-inline: auto; }
+.mio-top { height: 70px; display: flex; align-items: center; justify-content: space-between; color: var(--dim); font-size: 13px; }
+.mio-top a { color: var(--text); font-size: 16px; font-weight: 650; text-decoration: none; }
+.mio-hero { min-height: calc(100svh - 70px); display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(320px, .75fr); gap: clamp(48px, 7vw, 110px); align-items: center; padding-block: 34px 86px; }
+.mio-hero-copy { display: grid; gap: 22px; min-width: 0; }
+.mio-kicker { margin: 0; color: var(--warm); font: 400 11px/1.2 'IBM Plex Mono', monospace; letter-spacing: .12em; text-transform: uppercase; }
+.mio h1 { max-width: 12ch; margin: 0; font-size: clamp(48px, 6.2vw, 88px); font-weight: 520; line-height: .94; letter-spacing: -.05em; }
+.mio h1 em { color: var(--warm); font-style: normal; }
+.mio-lede { max-width: 51ch; margin: 0; color: var(--dim); font-size: 18px; line-height: 1.55; }
+.mio-ctas { display: flex; flex-wrap: wrap; gap: 10px; }
+.mio-ctas a { display: inline-flex; min-height: 44px; align-items: center; padding: 0 18px; border: 1px solid var(--line); border-radius: 999px; text-decoration: none; font-size: 14px; font-weight: 650; }
+.mio-ctas a:first-child { border-color: var(--warm); background: var(--warm); color: #1b1007; }
+.mio-proof { display: grid; justify-items: center; gap: 0; min-width: 0; }
+.mio-phone { position: relative; width: min(100%, 304px); aspect-ratio: 9/16; overflow: hidden; border: 1px solid rgb(255 255 255 / .17); border-radius: 24px; background: radial-gradient(circle at 52% 28%, #a86a46 0 3%, transparent 3.5%), linear-gradient(145deg, transparent 0 40%, rgb(255 255 255 / .08) 40.5% 41%, transparent 41.5%), radial-gradient(ellipse at 50% 35%, #293742 0 19%, transparent 19.5%), linear-gradient(155deg, #1d2731, #584333 48%, #0c0e12); box-shadow: 0 70px 120px -65px rgb(231 163 108 / .55); }
+.mio-phone::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 45%, rgb(0 0 0 / .48)); }
+.mio-time { position: absolute; z-index: 1; top: 20px; left: 20px; color: rgb(255 255 255 / .7); font: 400 10px 'IBM Plex Mono', monospace; }
+.mio-caption { position: absolute; z-index: 2; left: 7%; right: 7%; top: 49%; transform: translateY(-50%); color: white; text-align: center; font-size: clamp(18px, 2vw, 26px); font-weight: 850; line-height: 1.12; letter-spacing: -.02em; text-shadow: 0 2px 0 #000, 2px 0 0 #000, -2px 0 0 #000, 0 -2px 0 #000; }
+.mio-caption mark { padding: 0; background: transparent; color: #ffd84d; }
+.mio-scrub { position: absolute; z-index: 2; left: 20px; right: 20px; bottom: 22px; height: 2px; background: rgb(255 255 255 / .28); }
+.mio-scrub i { display: block; width: 62%; height: 100%; background: var(--warm); }
+
+.mio-prompt-wrap, .mio-board, .mio-line, .mio-wizard { width: min(100%, 660px); margin-top: 4px; }
+.mio-prompt { display: grid; grid-template-columns: 150px minmax(0, 1fr); min-height: 54px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); overflow: hidden; }
+.mio-prompt label { display: grid; border-right: 1px solid var(--line); }
+.mio-prompt select { width: 100%; padding: 0 36px 0 16px; border: 0; appearance: none; background: linear-gradient(45deg, transparent 50%, var(--warm) 50%) calc(100% - 16px) 48%/6px 6px no-repeat; color: var(--warm); font: 400 12px 'IBM Plex Mono', monospace; }
+.mio-prompt-wrap > p, .mio-board > p { margin: 8px 2px 0; color: var(--dim); font-size: 12px; }
+.mio-prompt-wrap > p a, .mio-board > p a { color: var(--text); text-underline-offset: 3px; }
+.mio-action { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 10px 10px 10px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); }
+.mio-action.is-compact { border: 0; border-radius: 0; background: transparent; }
+.mio-action code, .mio-endpoint { min-width: 0; color: var(--text); font: 400 12px/1.45 'IBM Plex Mono', monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+.mio-action button, .mio-action-link a { min-height: 36px; display: inline-flex; align-items: center; justify-content: center; padding: 0 13px; border: 1px solid rgb(255 255 255 / .2); border-radius: 999px; background: transparent; color: var(--text); font-size: 12px; font-weight: 650; text-decoration: none; cursor: pointer; }
+.mio-action-link { grid-template-columns: minmax(0, 1fr) auto; }
+.mio-action-link > span { color: var(--dim); font-size: 12px; }
+.mio-action-link a { border-color: var(--warm); color: var(--warm); }
+.mio-clients { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.mio-clients button { min-height: 40px; padding: 0 10px; border: 1px solid var(--line); border-radius: 9px; background: transparent; color: var(--dim); font-size: 11px; font-weight: 600; cursor: pointer; }
+.mio-clients button[aria-checked='true'] { border-color: var(--warm); color: var(--warm); }
+.mio-board { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); }
+.mio-board .mio-clients { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.mio-board .mio-clients button { padding-inline: 5px; }
+.mio-line { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.mio-inline-label { color: var(--warm); font: 400 10px 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: .1em; }
+.mio-line .mio-action { padding-block: 4px; }
+.mio-menu-trigger { min-height: 38px; border: 0; background: transparent; color: var(--dim); font-size: 12px; cursor: pointer; }
+.mio-menu { position: absolute; z-index: 30; top: calc(100% + 8px); right: 0; width: min(100%, 420px); padding: 10px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel-2); box-shadow: 0 26px 60px rgb(0 0 0 / .45); }
+.mio-menu .mio-clients { grid-template-columns: 1fr 1fr; }
+.mio-dock { width: min(100%, 304px); min-width: 0; padding: 12px; border: 1px solid var(--line); border-top: 0; border-radius: 0 0 18px 18px; background: var(--panel); }
+.mio-dock-head { display: flex; justify-content: space-between; margin-bottom: 9px; color: var(--dim); font-size: 11px; }
+.mio-dock-head a { color: var(--warm); }
+.mio-dock .mio-clients { display: flex; overflow-x: auto; padding-bottom: 7px; scrollbar-width: none; }
+.mio-dock .mio-clients button { flex: 0 0 auto; }
+.mio-dock .mio-action { padding: 8px; }
+.mio-dock .mio-action code { max-height: 55px; overflow: auto; font-size: 10px; }
+.mio-wizard { border: 1px solid var(--line); border-radius: 16px; background: var(--panel); overflow: hidden; }
+.mio-step-tabs { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--line); }
+.mio-step-tabs button { min-height: 40px; border: 0; border-right: 1px solid var(--line); background: transparent; color: var(--dim); font: 400 11px 'IBM Plex Mono', monospace; cursor: pointer; }
+.mio-step-tabs button:last-child { border-right: 0; }
+.mio-step-tabs button[aria-selected='true'] { color: var(--warm); background: rgb(231 163 108 / .06); }
+.mio-step-panel { min-height: 68px; display: grid; align-items: center; padding: 8px; }
+.mio-step-panel > p { margin: 0 8px; color: var(--dim); font-size: 13px; }
+
+.mio-guide { padding-block: clamp(90px, 12vw, 170px) 160px; scroll-margin-top: 70px; }
+.mio-guide-head { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(260px, .7fr); gap: 60px; align-items: end; padding-bottom: 48px; border-bottom: 1px solid var(--line); }
+.mio-guide-head > div { display: grid; gap: 16px; }
+.mio-guide h2 { max-width: 12ch; margin: 0; font-size: clamp(44px, 6vw, 78px); font-weight: 520; line-height: .96; letter-spacing: -.05em; }
+.mio-guide-head > p { max-width: 44ch; margin: 0; color: var(--dim); font-size: 16px; line-height: 1.6; }
+.mio-guide h3 { margin: 0 0 16px; font-size: 24px; font-weight: 550; letter-spacing: -.025em; }
+.mio-docs { display: inline-flex; min-height: 44px; align-items: center; margin-top: 36px; color: var(--warm); text-underline-offset: 4px; }
+.mio-transcript { display: grid; margin: 0; padding: 0; list-style: none; }
+.mio-transcript > li { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 24px; padding: 34px 0; border-bottom: 1px solid var(--line); }
+.mio-transcript > li > span { color: var(--warm); font: 400 12px 'IBM Plex Mono', monospace; }
+.mio-transcript p { color: var(--dim); }
+.mio-transcript .mio-prompt-wrap { margin: 0; }
+.mio-rail-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 48px; padding-top: 48px; }
+.mio-rail { position: sticky; top: 86px; grid-template-columns: 1fr; align-self: start; }
+.mio-rail button { min-height: 48px; text-align: left; padding-inline: 16px; }
+.mio-client-page { min-height: 410px; display: grid; align-content: start; gap: 18px; padding: 38px; border: 1px solid var(--line); border-radius: 18px; background: var(--panel); }
+.mio-client-page h3 { font-size: 36px; }
+.mio-verify { display: grid; grid-template-columns: 100px minmax(0, 1fr); gap: 20px; padding-top: 18px; border-top: 1px solid var(--line); }
+.mio-verify span { color: var(--dim); font-size: 12px; }
+.mio-verify strong, .mio-verify code { min-width: 0; color: var(--text); font-size: 13px; overflow-wrap: anywhere; }
+.mio-accordion { margin-top: 32px; border-top: 1px solid var(--line); }
+.mio-accordion details { border-bottom: 1px solid var(--line); }
+.mio-accordion summary { min-height: 74px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-size: 20px; list-style: none; }
+.mio-accordion summary::-webkit-details-marker { display: none; }
+.mio-accordion summary span { color: var(--warm); }
+.mio-accordion details > div { display: grid; gap: 14px; padding: 0 0 28px 72px; }
+.mio-accordion details p { margin: 0; color: var(--dim); }
+.mio-panes { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; margin-top: 48px; border: 1px solid var(--line); border-radius: 18px; background: var(--line); overflow: hidden; }
+.mio-panes > div { min-width: 0; display: grid; align-content: start; gap: 18px; padding: 36px; background: var(--panel); }
+.mio-wide-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin-top: 48px; border: 1px solid var(--line); border-radius: 18px; background: var(--line); overflow: hidden; }
+.mio-wide-steps > div { min-width: 0; display: grid; align-content: start; gap: 18px; min-height: 390px; padding: 32px; background: var(--panel); }
+.mio-wide-steps > div > span { color: var(--warm); font: 400 12px 'IBM Plex Mono', monospace; }
+.mio-wide-steps p { color: var(--dim); }
+.mio-wide-steps .mio-clients { grid-template-columns: 1fr; }
+
+.mio-switcher { position: fixed; z-index: 20; left: 50%; bottom: 18px; transform: translateX(-50%); display: flex; align-items: center; gap: 4px; max-width: calc(100% - 24px); padding: 6px; border: 1px solid rgb(255 255 255 / .14); border-radius: 999px; background: rgb(15 17 23 / .92); box-shadow: 0 18px 50px rgb(0 0 0 / .4); backdrop-filter: blur(16px); }
+.mio-switcher > span { padding: 0 10px; color: var(--dim); font-size: 11px; white-space: nowrap; }
+.mio-switcher a { min-height: 36px; display: inline-flex; align-items: center; gap: 5px; padding: 0 12px; border-radius: 999px; color: var(--dim); font-size: 11px; text-decoration: none; white-space: nowrap; }
+.mio-switcher a > span { font-family: 'IBM Plex Mono', monospace; }
+.mio-switcher a[aria-current='page'] { background: var(--warm); color: #1b1007; }
+
+@media (max-width: 900px) {
+  .mio-hero { grid-template-columns: 1fr; padding-top: 42px; }
+  .mio-hero-copy { justify-items: start; }
+  .mio-proof { width: 100%; }
+  .mio-guide-head { grid-template-columns: 1fr; gap: 24px; }
+  .mio-board .mio-clients { grid-template-columns: repeat(3, 1fr); }
+  .mio-rail-layout, .mio-panes, .mio-wide-steps { grid-template-columns: 1fr; }
+  .mio-rail { position: static; grid-template-columns: repeat(3, 1fr); }
+  .mio-wide-steps > div { min-height: 0; }
+}
+
+@media (max-width: 620px) {
+  .mio-wrap { width: min(100% - 28px, 1240px); }
+  .mio-top { height: 58px; }
+  .mio-top span { display: none; }
+  .mio-hero { min-height: auto; gap: 46px; padding-block: 44px 76px; }
+  .mio h1 { font-size: clamp(42px, 13vw, 58px); }
+  .mio-lede { font-size: 16px; }
+  .mio-phone { width: 220px; }
+  [data-variant='proof-dock'] .mio-hero-copy { order: 1; }
+  [data-variant='proof-dock'] .mio-proof { display: contents; }
+  [data-variant='proof-dock'] .mio-dock { order: 2; width: 100%; max-width: 100%; justify-self: stretch; overflow: hidden; border-top: 1px solid var(--line); border-radius: 18px; }
+  [data-variant='proof-dock'] .mio-phone { order: 3; justify-self: center; }
+  .mio-prompt { grid-template-columns: 1fr; }
+  .mio-prompt label { min-height: 44px; border-right: 0; border-bottom: 1px solid var(--line); }
+  .mio-action, .mio-action-link { grid-template-columns: 1fr auto; }
+  .mio-board .mio-clients, .mio-clients { grid-template-columns: repeat(2, 1fr); }
+  .mio-line { grid-template-columns: 1fr auto; }
+  .mio-inline-label { grid-column: 1 / -1; }
+  .mio-line .mio-action { grid-column: 1 / -1; }
+  .mio-menu { left: 0; right: auto; }
+  .mio-guide { padding-block: 100px 140px; }
+  .mio-guide h2 { font-size: 46px; }
+  .mio-transcript > li { grid-template-columns: 42px minmax(0, 1fr); gap: 10px; }
+  .mio-client-page, .mio-panes > div, .mio-wide-steps > div { padding: 22px; }
+  .mio-rail { grid-template-columns: repeat(2, 1fr); }
+  .mio-accordion details > div { padding-left: 0; }
+  .mio-switcher { left: 12px; right: 12px; bottom: 10px; transform: none; overflow-x: auto; justify-content: flex-start; border-radius: 14px; }
+  .mio-switcher > span { display: none; }
+  .mio-switcher a { flex: 0 0 auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-lo='mcp-install'] * { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
