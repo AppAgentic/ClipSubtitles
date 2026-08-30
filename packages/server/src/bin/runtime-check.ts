@@ -1,9 +1,25 @@
 import { access, mkdir, writeFile, rm } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { spawn } from 'node:child_process';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { createCanvas } from '@napi-rs/canvas';
 import { ensureFontsRegistered, fontFiles } from '@clipsubtitles/render';
+
+// The production server bundles workspace source while keeping npm packages
+// external. Resolve every provider family here so Docker fails during build,
+// rather than letting Cloud Run discover an omitted deployment dependency.
+const runtimeRequire = createRequire(import.meta.url);
+for (const runtimePackage of [
+  '@aws-sdk/client-s3',
+  '@google-cloud/storage',
+  '@google-cloud/tasks',
+  '@google/genai',
+  '@workos-inc/node',
+  'pg',
+]) {
+  runtimeRequire.resolve(runtimePackage);
+}
 
 function command(bin: string, args: string[]): Promise<string> {
   return new Promise((resolve, reject) => {
