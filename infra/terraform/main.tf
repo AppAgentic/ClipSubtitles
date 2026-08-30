@@ -470,6 +470,10 @@ resource "google_cloud_run_v2_service" "api" {
     }
   }
   lifecycle {
+    # Cloud Run reports automatic zero-scale defaults as both
+    # manual_instance_count=0 and min_instance_count=0. The provider then
+    # proposes removing those server-owned defaults on every refresh.
+    ignore_changes = [scaling]
     precondition {
       condition     = can(regex("^https://", var.worker_public_url))
       error_message = "worker_public_url must be the real HTTPS worker URL before deploy_services=true."
@@ -511,6 +515,11 @@ resource "google_cloud_run_v2_service" "web" {
         failure_threshold     = 12
       }
     }
+  }
+  lifecycle {
+    # See the API service note: these zero values are Cloud Run defaults, not
+    # operator-controlled scaling changes.
+    ignore_changes = [scaling]
   }
   depends_on = [google_artifact_registry_repository.images]
 }
@@ -743,6 +752,9 @@ resource "google_cloud_run_v2_service" "worker" {
     }
   }
   lifecycle {
+    # See the API service note: these zero values are Cloud Run defaults, not
+    # operator-controlled scaling changes.
+    ignore_changes = [scaling]
     precondition {
       condition     = can(regex("^https://", var.worker_public_url))
       error_message = "worker_public_url must be the real HTTPS worker service URL before deploy_services=true."
