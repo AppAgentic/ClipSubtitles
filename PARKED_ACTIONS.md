@@ -6,7 +6,7 @@ directory submissions, and billing remain untouched.
 
 | # | Gate | Why it is blocked locally | Safe next action |
 |---|------|---------------------------|------------------|
-| 1 | **Resolve deployed Scribe authorization or approve provider reordering** | The pinned ElevenLabs key and adapter return 35 timed words locally, but the same explicit secret version receives HTTP 401 from Cloud Run. Gemini fallback works end to end, but silently relying on fallback would contradict the benchmark-selected primary order. | Ask ElevenLabs to confirm whether the API key/account restricts Google Cloud/datacenter requests, rotate or scope a production-capable server key, and rerun a forced Cloud Run canary. If that cannot be resolved, make an explicit product decision to use Gemini primary or the previously benchmarked partner route and rerun cost/quality acceptance. |
+| 1 | **Resolve deployed Scribe authorization or approve provider reordering** | Both the original and a newly created Speech-to-Text-only ElevenLabs key succeed locally but receive HTTP 401 from Cloud Run when pinned by explicit Secret Manager version. The replacement-key canary therefore rules out stale key material or key rotation as the repair. Gemini fallback works end to end, but silently relying on fallback would contradict the benchmark-selected primary order. | Give ElevenLabs support the request-log timestamp and ask whether the Free workspace blocks Google Cloud/datacenter requests, upgrade only if ElevenLabs confirms that is required, or explicitly choose Gemini primary / the previously benchmarked partner route and rerun cost/quality acceptance. |
 | 2 | **Production WorkOS/AuthKit + OAuth clients** | Staging browser sign-in, logout, valid/invalid/stale webhooks and session revocation are proven. Production must use a separate WorkOS environment and production-only secrets. Agent clients also require their exact redirect URIs. | Create the production WorkOS environment, add the production callback/logout/webhook URLs, store new secrets non-printingly, register one predefined client per approved beta surface, and rerun the auth acceptance matrix before public cutover. Keep CIMD/DCR disabled until directory approval. |
 | 3 | **Production infrastructure, R2, DNS, and TLS** | Staging is live and its exact-origin R2 CORS plus abandoned-upload lifecycle are verified. Production resources, production R2 credentials/policies, public DNS, alerting/budgets, provider quotas, and the 500-job soak are intentionally absent. | Create an isolated production project/environment; promote immutable image digests; provision production-only secrets and R2 policy; add monitoring/budgets; run the codec/provider quota soak; inspect a zero-destroy plan; then point `clipsubtitles.com` and `api.clipsubtitles.com` at the verified services. |
 | 6 | **ChatGPT / directory submission** (Phase 4) | Submission is an explicit approval gate. Readiness artifacts live in `docs/directory/` (capability manifest, listing copy, reviewer fixture, starter prompts, submission checklist). CIMD/DCR is a WorkOS setting, not code. | After the WorkOS, predefined-client, and private-staging gates pass: enable DCR/CIMD on the WorkOS client, publish `https://clipsubtitles.com/llms.txt`, run the reviewer fixture end to end, then submit through the directory console. |
@@ -23,6 +23,13 @@ directory submissions, and billing remain untouched.
   private staging canary. Direct local Scribe v2 requests return timed words;
   the deployed worker's forced-Scribe smoke is now isolated to an HTTP 401 and
   is tracked as gate 1 while Gemini 3.5 Transcribe fallback is proven end to end.
+  A second least-privilege key was created and deployed as Secret Manager v4;
+  forced task `task_01m1adkv8jh9f9hgc8saatphhc` failed once with the same 401,
+  while a local v4 adapter smoke returned valid Scribe v2 word timings. The
+  ElevenLabs request log independently records the Cloud Run request at
+  2026-08-30 23:46:05 UTC+1 as POST `/v1/speech-to-text`, HTTP 401. The exposed
+  intermediate key/version are disabled; the original key remains enabled only
+  as rollback while this provider gate is unresolved.
 - Private staging is operational: API, web, and worker revisions are Ready;
   API/web use the Cloud Run invoker-IAM-check disable supported under the
   organisation's domain-restricted-sharing policy; the worker accepts only the

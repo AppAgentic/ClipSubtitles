@@ -104,14 +104,23 @@ run.
   terminated after exactly one 401 attempt with `retryable: false`; normal-chain
   task `task_01m1a89kzpz25k9nenkce8s6nt` then succeeded in one attempt through
   Gemini fallback with 34 words and stored `fallbackFrom: elevenlabs`.
+- A newly created Speech-to-Text-only replacement key was then bound as Secret
+  Manager version 4 to worker revision `clipsubtitles-staging-worker-00010-mdl`.
+  Forced task `task_01m1adkv8jh9f9hgc8saatphhc` still terminated after one
+  401 attempt (`retryable: false`; worker-observed latency 270 ms). The same v4
+  secret succeeded through the direct local adapter with valid Scribe v2 word
+  timings. ElevenLabs' own request log records the matching Cloud Run POST at
+  23:46:05 UTC+1 as HTTP 401, so rotation did not repair the deployed-origin
+  authorization failure. Terraform returned `No changes` after the rollout.
 
 ## Transcription provider boundary
 
-- The exact ElevenLabs secret version and adapter succeed from the operator
-  environment in 1.4 seconds with 35 provider-native timed words.
-- The same explicitly pinned secret version on Cloud Run returns a sanitized
-  HTTP 401 in roughly 0.25 seconds. Secret trimming, fingerprint comparison,
-  revision readback, and explicit version pinning rule out stale secret bytes.
+- Both the original and replacement ElevenLabs secret versions succeed from
+  the operator environment with provider-native timed words.
+- Both explicitly pinned secret versions on Cloud Run return a sanitized HTTP
+  401 in roughly 0.25 seconds. Secret trimming, fingerprint comparison,
+  revision readback, explicit version pinning, and a clean key rotation rule
+  out stale secret bytes or a defective individual key.
 - Gemini 3.5 Transcribe fallback is proven through the full deployed browser
   flow and produced the accepted render.
 - Therefore Scribe remains the intended primary based on the audio benchmark,
