@@ -791,11 +791,11 @@ resource "google_cloud_scheduler_job" "maintenance" {
   }
 
   http_target {
-    uri         = "${google_cloud_run_v2_service.worker[0].uri}/internal/maintenance"
+    uri         = "${var.worker_public_url}/internal/maintenance"
     http_method = "POST"
     oidc_token {
       service_account_email = google_service_account.scheduler_invoker.email
-      audience              = google_cloud_run_v2_service.worker[0].uri
+      audience              = var.worker_public_url
     }
   }
 
