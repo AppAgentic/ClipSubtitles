@@ -29,6 +29,12 @@ variable "deploy_services" {
   default     = false
 }
 
+variable "allow_unauthenticated" {
+  description = "Expose API and web to unauthenticated internet traffic. Keep false for private staging until an explicit preview/cutover approval."
+  type        = bool
+  default     = false
+}
+
 variable "image_tag" {
   type    = string
   default = "unset"

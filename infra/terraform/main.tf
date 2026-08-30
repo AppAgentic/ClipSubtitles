@@ -516,7 +516,7 @@ resource "google_cloud_run_v2_service" "web" {
 }
 
 resource "google_cloud_run_v2_service_iam_member" "api_public" {
-  count    = var.deploy_services ? 1 : 0
+  count    = var.deploy_services && var.allow_unauthenticated ? 1 : 0
   project  = var.project_id
   location = var.region
   name     = google_cloud_run_v2_service.api[0].name
@@ -525,7 +525,7 @@ resource "google_cloud_run_v2_service_iam_member" "api_public" {
 }
 
 resource "google_cloud_run_v2_service_iam_member" "web_public" {
-  count    = var.deploy_services ? 1 : 0
+  count    = var.deploy_services && var.allow_unauthenticated ? 1 : 0
   project  = var.project_id
   location = var.region
   name     = google_cloud_run_v2_service.web[0].name
