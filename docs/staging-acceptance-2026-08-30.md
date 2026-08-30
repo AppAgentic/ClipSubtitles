@@ -27,6 +27,8 @@ run.
   `eb7d445` for sanitized provider diagnostics; `152d403` pins provider secret
   versions and fixes exhausted-chain retry semantics; `8e12e0d` hardens
   production auth, MCP audience binding, lease recovery, and cancellation ownership.
+- Final gated image tag: `292054a`; staging revisions API `00008-p7h`, web
+  `00007-hvf`, worker `00009-tlr`.
 
 ## Customer journey (1–5)
 
@@ -98,6 +100,10 @@ run.
   discovered bug that requeued permanent 401 responses is fixed and regression
   tested so permanent failures terminate once while transient failures remain
   retryable. The successful final render charged once and left no reserved credits.
+- On the final image, forced task `task_01m1a8937br7c85qsmakp988mq`
+  terminated after exactly one 401 attempt with `retryable: false`; normal-chain
+  task `task_01m1a89kzpz25k9nenkce8s6nt` then succeeded in one attempt through
+  Gemini fallback with 34 words and stored `fallbackFrom: elevenlabs`.
 
 ## Transcription provider boundary
 
@@ -115,8 +121,10 @@ run.
 
 ## Automated and infrastructure gates
 
-- `pnpm check`: lint, TypeScript, all unit/integration tests, and every production
-  build pass. Cloud Build now runs this gate before it can build or publish images.
+- `pnpm check`: 44 test files passed and one skipped; 262 tests passed and 15
+  were explicitly skipped. Lint, TypeScript, and every production build pass.
+  Cloud Build now runs this same FFmpeg-capable Linux gate before it can build
+  or publish images.
   TypeScript, lint, and the production Next/server builds passed.
 - Terraform formatting and validation passed.
 - Every applied Terraform plan was saved and inspected before apply; the public
