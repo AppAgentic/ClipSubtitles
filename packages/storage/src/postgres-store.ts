@@ -51,9 +51,10 @@ import type { DataStore } from './store';
  * Every one of ours is a byte count or a monotonic sequence well inside the safe
  * range, so they are narrowed here and the shared row mappers stay driver-agnostic.
  */
-const BIGINT_COLUMNS = new Set(['bytes', 'max_bytes', 'seq']);
+const BIGINT_COLUMNS = new Set(['bytes', 'max_bytes', 'expected_bytes', 'seq']);
 
-function pgRow(row: Record<string, unknown>): Row {
+/** Normalize node-postgres `int8` strings before shared row mapping. */
+export function normalizePostgresRow(row: Record<string, unknown>): Row {
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(row)) {
     out[key] =
@@ -66,12 +67,14 @@ function pgRow(row: Record<string, unknown>): Row {
   return out as Row;
 }
 
+const pgRow = normalizePostgresRow;
+
 function pgRows(rows: Array<Record<string, unknown>>): Row[] {
-  return rows.map(pgRow);
+  return rows.map(normalizePostgresRow);
 }
 
 function maybe<T>(row: Record<string, unknown> | undefined, map: (r: Row) => T): T | null {
-  return row ? map(pgRow(row)) : null;
+  return row ? map(normalizePostgresRow(row)) : null;
 }
 
 type Sql = Record<string, unknown>;
