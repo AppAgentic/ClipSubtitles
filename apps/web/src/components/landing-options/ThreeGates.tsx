@@ -4,6 +4,7 @@ import { GatesStory } from './GatesStory';
 import { OptionSwitcher } from './OptionSwitcher';
 import { CaptionFrame, PAGE_ONE, StyleBoard } from './StyleBoard';
 import { SITE_URL } from '@/components/marketing/seo-pages';
+import { FootageReel } from '@/components/marketing/FootageReel';
 import './landing-options.css';
 import './three-gates.css';
 
@@ -123,6 +124,7 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
                 words={PAGE_ONE}
                 readout={`00:00 · ${SAMPLE.title}`}
                 className="tg-frame-hero"
+                priority
               />
             </div>
             <dl className="tg-hero-meta">
@@ -165,6 +167,8 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
           </div>
           <StyleBoard />
         </section>
+
+        <FootageReel />
 
         {/* Mid-page CTA */}
         <section className="tg-mid lo-wrap" aria-labelledby="tg-mid-title">

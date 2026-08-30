@@ -244,9 +244,23 @@
 [data-lo='three-gates'] .tg-frame-video {
   position: absolute;
   inset: 0;
+  background: #111217;
+}
+
+[data-lo='three-gates'] .tg-frame-video img {
+  object-fit: cover;
+  filter: saturate(0.82) contrast(1.04) brightness(0.74);
+  transform: scale(1.015);
+}
+
+[data-lo='three-gates'] .tg-frame-video::after {
+  content: '';
+  position: absolute;
+  inset: 0;
   background:
-    radial-gradient(70% 40% at 45% 30%, rgb(230 162 107 / 0.22), transparent 70%),
-    linear-gradient(180deg, #1a1c24, #07080b);
+    linear-gradient(180deg, rgb(7 8 11 / 0.04) 0%, transparent 34%, rgb(7 8 11 / 0.22) 74%, rgb(7 8 11 / 0.52) 100%),
+    radial-gradient(70% 52% at 50% 50%, transparent 40%, rgb(7 8 11 / 0.24) 100%);
+  pointer-events: none;
 }
 
 [data-lo='three-gates'] .tg-frame-readout {
@@ -738,6 +752,121 @@
   color: var(--dim);
 }
 
+/* Editorial footage reel: generated source frames, captioned with real HTML. */
+[data-lo='three-gates'] .tg-reel {
+  display: grid;
+  gap: clamp(30px, 5vw, 64px);
+  padding-block: clamp(72px, 10vw, 136px);
+  border-top: 1px solid var(--line);
+}
+
+[data-lo='three-gates'] .tg-reel-head {
+  display: grid;
+  gap: 18px;
+}
+
+[data-lo='three-gates'] .tg-reel-head h2 {
+  max-width: 14ch;
+  font-size: clamp(36px, 5.2vw, 68px);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+  font-weight: 500;
+}
+
+[data-lo='three-gates'] .tg-reel-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(14px, 2.4vw, 30px);
+}
+
+[data-lo='three-gates'] .tg-reel-shot {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.13);
+  border-radius: 22px;
+  background: var(--ink-2);
+  box-shadow: 0 32px 80px -52px rgb(230 162 107 / 0.42);
+}
+
+[data-lo='three-gates'] .tg-reel-shot:nth-child(2) {
+  translate: 0 clamp(12px, 2vw, 28px);
+}
+
+[data-lo='three-gates'] .tg-reel-shot > img {
+  object-fit: cover;
+  filter: saturate(0.8) contrast(1.05) brightness(0.76);
+  transition: transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1), filter 700ms ease;
+}
+
+[data-lo='three-gates'] .tg-reel-shot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgb(7 8 11 / 0.16), transparent 36%, rgb(7 8 11 / 0.72));
+  pointer-events: none;
+}
+
+[data-lo='three-gates'] .tg-reel-shot:hover > img {
+  transform: scale(1.035);
+  filter: saturate(0.92) contrast(1.03) brightness(0.82);
+}
+
+[data-lo='three-gates'] .tg-reel-code,
+[data-lo='three-gates'] .tg-reel-caption,
+[data-lo='three-gates'] .tg-reel-shot figcaption {
+  position: absolute;
+  z-index: 1;
+}
+
+[data-lo='three-gates'] .tg-reel-code {
+  top: 18px;
+  left: 18px;
+  color: rgb(255 255 255 / 0.68);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+[data-lo='three-gates'] .tg-reel-caption {
+  left: 8%;
+  right: 8%;
+  bottom: 20%;
+  color: white;
+  font-size: clamp(17px, 2vw, 28px);
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  text-transform: uppercase;
+  text-shadow: 0 2px 12px rgb(0 0 0 / 0.86);
+  -webkit-text-stroke: 1px rgb(0 0 0 / 0.82);
+}
+
+[data-lo='three-gates'] .tg-reel-shot:nth-child(2) .tg-reel-caption {
+  color: #ffd84d;
+}
+
+[data-lo='three-gates'] .tg-reel-shot:nth-child(3) .tg-reel-caption {
+  display: block;
+  left: 9%;
+  right: auto;
+  bottom: 23%;
+  padding: 7px 11px;
+  border-radius: 6px;
+  background: rgb(0 0 0 / 0.72);
+  font-size: clamp(14px, 1.6vw, 22px);
+  font-weight: 650;
+  text-align: left;
+  text-transform: none;
+  -webkit-text-stroke: 0;
+}
+
+[data-lo='three-gates'] .tg-reel-shot figcaption {
+  left: 18px;
+  bottom: 16px;
+  color: rgb(255 255 255 / 0.76);
+  font-size: 13px;
+}
+
 /* Mid-page CTA */
 [data-lo='three-gates'] .tg-mid {
   display: flex;
@@ -1023,6 +1152,29 @@
   [data-lo='three-gates'] .tg-related li:nth-child(even) {
     padding-inline: 0;
     border-left: 0;
+  }
+  [data-lo='three-gates'] .tg-reel {
+    overflow: hidden;
+  }
+  [data-lo='three-gates'] .tg-reel-grid {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(220px, 72vw);
+    gap: 14px;
+    overflow-x: auto;
+    margin-inline: -20px;
+    padding: 0 20px 28px;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+  [data-lo='three-gates'] .tg-reel-grid::-webkit-scrollbar {
+    display: none;
+  }
+  [data-lo='three-gates'] .tg-reel-shot {
+    scroll-snap-align: center;
+  }
+  [data-lo='three-gates'] .tg-reel-shot:nth-child(2) {
+    translate: 0;
   }
 }
 

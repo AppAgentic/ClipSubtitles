@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, type ReactNode } from 'react';
 import { MOTION_PRESETS, SAMPLE, STYLE_PRESETS, wordsForPage } from './facts';
 
@@ -57,6 +58,8 @@ export function CaptionFrame({
   readout,
   runKey = 0,
   className = '',
+  image = '/marketing/creator-studio.webp',
+  priority = false,
   children,
 }: {
   style: StyleId;
@@ -65,11 +68,15 @@ export function CaptionFrame({
   readout?: string;
   runKey?: number;
   className?: string;
+  image?: string;
+  priority?: boolean;
   children?: ReactNode;
 }) {
   return (
     <div className={`tg-frame ${className}`.trim()} data-style={style} data-motion={motion}>
-      <div className="tg-frame-video" />
+      <div className="tg-frame-video">
+        <Image src={image} alt="" fill sizes="(max-width: 860px) 220px, 300px" priority={priority} />
+      </div>
       {readout ? <span className="tg-frame-readout lo-mono">{readout}</span> : null}
       <p key={runKey} className="tg-cap lo-cap">
         {words.map((w, i) => (

@@ -10,6 +10,7 @@ export type SeoPage = {
   headline: string;
   lede: string;
   proof: string;
+  visual: string;
   howTitle: string;
   howBody: string;
   steps: ReadonlyArray<{ title: string; body: string }>;
@@ -32,6 +33,7 @@ export const SEO_PAGES = {
     lede:
       'Turn speech into timed on-screen captions, correct the words, choose a visual style and preview the result before you export.',
     proof: 'From spoken video to readable captions, without rebuilding the clip on a timeline.',
+    visual: '/marketing/founder-workshop.webp',
     howTitle: 'How to add captions to a video',
     howBody: 'A direct workflow from upload to a publish-ready result.',
     steps: [
@@ -64,6 +66,7 @@ export const SEO_PAGES = {
     lede:
       'Generate a word-timed transcript from a short video, make precise corrections and carry the approved words into every preview and export.',
     proof: 'Automation handles the first pass. You keep control of the words viewers see.',
+    visual: '/marketing/creator-studio.webp',
     howTitle: 'Generate automatic video captions',
     howBody: 'Move quickly without giving up the final review.',
     steps: [
@@ -96,6 +99,7 @@ export const SEO_PAGES = {
     lede:
       'Choose a readable caption style, add a restrained motion preset and preview how the words move before rendering the finished clip.',
     proof: 'The animation follows the approved caption timing instead of a hand-built text timeline.',
+    visual: '/marketing/founder-workshop.webp',
     howTitle: 'How animated captions work',
     howBody: 'Words, style and motion remain separate choices, so each is easy to review.',
     steps: [
@@ -128,6 +132,7 @@ export const SEO_PAGES = {
     lede:
       'Import a clip, generate word-timed captions, apply explicit corrections, choose a style, request a preview and prepare a publish-ready export through MCP or a typed REST API.',
     proof: 'The machine workflow covers the whole caption job while keeping paid renders behind human approval.',
+    visual: '/marketing/filmmaker-workflow.webp',
     howTitle: 'Build a complete video caption workflow',
     howBody: 'Use goal-oriented operations instead of stitching transcription, timing and rendering together yourself.',
     steps: [
@@ -160,6 +165,7 @@ export const SEO_PAGES = {
     lede:
       'Export styled captions as a transparent video layer, then place that layer over your original footage inside your own editing workflow.',
     proof: 'The overlay uses the same reviewed transcript, timing, style and motion as the other outputs from the project.',
+    visual: '/marketing/filmmaker-workflow.webp',
     howTitle: 'Create a transparent caption overlay',
     howBody: 'Finish the caption work in ClipSubtitles, then keep compositing control in your editor.',
     steps: [

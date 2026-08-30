@@ -3,6 +3,7 @@ import { CaptionFrame, PAGE_ONE } from '@/components/landing-options/StyleBoard'
 import { SAMPLE } from '@/components/landing-options/facts';
 import type { SeoPage } from './seo-pages';
 import { SEO_PAGES, SITE_URL } from './seo-pages';
+import { FootageReel } from './FootageReel';
 import '@/components/landing-options/landing-options.css';
 import '@/components/landing-options/three-gates.css';
 import './seo-intent.css';
@@ -61,6 +62,8 @@ export function SeoIntentPage({ page }: { page: SeoPage }) {
               words={PAGE_ONE}
               readout={`00:00 · ${SAMPLE.title}`}
               className="tg-frame-hero"
+              image={page.visual}
+              priority
             />
             <figcaption>{page.proof}</figcaption>
           </figure>
@@ -93,6 +96,8 @@ export function SeoIntentPage({ page }: { page: SeoPage }) {
             ))}
           </ul>
         </section>
+
+        <FootageReel />
 
         <section className="si-section lo-wrap" aria-labelledby="si-faq-title">
           <div className="si-section-copy">
@@ -134,4 +139,3 @@ export function SeoIntentPage({ page }: { page: SeoPage }) {
     </div>
   );
 }
-
