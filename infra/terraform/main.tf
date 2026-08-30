@@ -270,11 +270,12 @@ resource "google_secret_manager_secret_iam_member" "worker" {
 }
 
 resource "google_cloud_run_v2_service" "api" {
-  count               = var.deploy_services ? 1 : 0
-  name                = "${local.name}-api"
-  location            = var.region
-  ingress             = "INGRESS_TRAFFIC_ALL"
-  deletion_protection = true
+  count                = var.deploy_services ? 1 : 0
+  name                 = "${local.name}-api"
+  location             = var.region
+  ingress              = "INGRESS_TRAFFIC_ALL"
+  invoker_iam_disabled = var.allow_unauthenticated
+  deletion_protection  = true
   template {
     service_account                  = google_service_account.api.email
     timeout                          = "300s"
@@ -303,6 +304,12 @@ resource "google_cloud_run_v2_service" "api" {
       env {
         name  = "NODE_ENV"
         value = "production"
+      }
+      env {
+        # A new immutable image tag also rolls the service so environment
+        # secrets referenced as `latest` are re-resolved by fresh instances.
+        name  = "DEPLOYMENT_REVISION"
+        value = var.image_tag
       }
       env {
         name  = "AUTH_MODE"
@@ -487,11 +494,12 @@ resource "google_cloud_run_v2_service" "api" {
 }
 
 resource "google_cloud_run_v2_service" "web" {
-  count               = var.deploy_services ? 1 : 0
-  name                = "${local.name}-web"
-  location            = var.region
-  ingress             = "INGRESS_TRAFFIC_ALL"
-  deletion_protection = true
+  count                = var.deploy_services ? 1 : 0
+  name                 = "${local.name}-web"
+  location             = var.region
+  ingress              = "INGRESS_TRAFFIC_ALL"
+  invoker_iam_disabled = var.allow_unauthenticated
+  deletion_protection  = true
   template {
     service_account                  = google_service_account.web.email
     timeout                          = "60s"
@@ -522,24 +530,6 @@ resource "google_cloud_run_v2_service" "web" {
     ignore_changes = [scaling]
   }
   depends_on = [google_artifact_registry_repository.images]
-}
-
-resource "google_cloud_run_v2_service_iam_member" "api_public" {
-  count    = var.deploy_services && var.allow_unauthenticated ? 1 : 0
-  project  = var.project_id
-  location = var.region
-  name     = google_cloud_run_v2_service.api[0].name
-  role     = "roles/run.invoker"
-  member   = "allUsers"
-}
-
-resource "google_cloud_run_v2_service_iam_member" "web_public" {
-  count    = var.deploy_services && var.allow_unauthenticated ? 1 : 0
-  project  = var.project_id
-  location = var.region
-  name     = google_cloud_run_v2_service.web[0].name
-  role     = "roles/run.invoker"
-  member   = "allUsers"
 }
 
 resource "google_cloud_run_v2_service" "worker" {

@@ -30,7 +30,7 @@ variable "deploy_services" {
 }
 
 variable "allow_unauthenticated" {
-  description = "Expose API and web to unauthenticated internet traffic. Keep false for private staging until an explicit preview/cutover approval."
+  description = "Expose API and web by disabling the Cloud Run invoker IAM check. This is compatible with domain-restricted sharing; keep false until an explicit preview/cutover approval."
   type        = bool
   default     = false
 }
