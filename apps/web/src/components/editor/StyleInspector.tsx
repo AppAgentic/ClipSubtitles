@@ -12,7 +12,7 @@ import { Field, Segmented, Slider, Toggle } from '@/components/ui/primitives';
 
 const PRESET_BLURBS: Record<StylePresetId, string> = {
   clean: 'Bold, centred, soft shadow',
-  'bold-pop': 'Uppercase, word highlight',
+  'bold-pop': 'Punchy highlight, lower third',
   'lower-third': 'Left-aligned on a plate',
   karaoke: 'Word-by-word highlight',
   minimal: 'Small, single line, plate',

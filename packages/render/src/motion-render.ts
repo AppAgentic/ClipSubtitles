@@ -2,7 +2,7 @@ import { performance } from 'node:perf_hooks';
 import { createCanvas } from '@napi-rs/canvas';
 import type { CaptionPage, StyleConfig, TranscriptWord } from '@clipsubtitles/contracts';
 import {
-  activeWordIndexAt,
+  activeWordIndexInPage,
   captionMotionState,
   layoutCaption,
   pageAtMs,
@@ -113,7 +113,9 @@ export async function* renderMotionFrames(
     const page = pageAtMs(input.pages, timeMs);
     if (page) {
       const activeWordIndex =
-        input.style.highlight.mode === 'word' ? activeWordIndexAt(input.words, timeMs, 0) : null;
+        input.style.highlight.mode === 'word'
+          ? activeWordIndexInPage(page, input.words, timeMs)
+          : null;
       const layout = plan.layouts.get(layoutKey(page, activeWordIndex));
       if (layout) {
         const motion = captionMotionState({

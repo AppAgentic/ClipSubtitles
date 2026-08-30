@@ -1,5 +1,5 @@
 import type { CaptionPage, StyleConfig, TranscriptWord } from '@clipsubtitles/contracts';
-import { activeWordIndexAt, pageAtMs } from '@clipsubtitles/core';
+import { activeWordIndexInPage, pageAtMs } from '@clipsubtitles/core';
 
 /** Media time for a composition frame, given the composition starts at `startMs`. */
 export function frameTimeMs(frame: number, fps: number, startMs = 0): number {
@@ -19,5 +19,9 @@ export interface FrameState {
 export function frameState(words: readonly TranscriptWord[], pages: readonly CaptionPage[], style: StyleConfig, timeMs: number): FrameState {
   const page = pageAtMs(pages, timeMs);
   if (!page) return { page: null, activeWordIndex: null };
-  return { page, activeWordIndex: style.highlight.mode === 'word' ? activeWordIndexAt(words, timeMs, 0) : null };
+  return {
+    page,
+    activeWordIndex:
+      style.highlight.mode === 'word' ? activeWordIndexInPage(page, words, timeMs) : null,
+  };
 }

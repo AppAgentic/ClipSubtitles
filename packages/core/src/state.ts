@@ -98,6 +98,26 @@ export function activeWordIndexAt(words: readonly TranscriptWord[], ms: number, 
   return ms < w.endMs + graceMs ? found : null;
 }
 
+/**
+ * Active word for a visible caption page. Unlike raw speech activity, the most
+ * recently started word stays highlighted through natural gaps and page tail
+ * padding so animated and sparse render lanes show the same visual state.
+ */
+export function activeWordIndexInPage(
+  page: CaptionPage,
+  words: readonly TranscriptWord[],
+  ms: number,
+): number | null {
+  if (ms < page.startMs || ms >= page.endMs) return null;
+  let active = page.startWordIndex;
+  for (let i = page.startWordIndex; i <= page.endWordIndex; i += 1) {
+    const word = words[i];
+    if (!word || word.startMs > ms) break;
+    active = i;
+  }
+  return words[active] ? active : null;
+}
+
 /** Page visible at `ms`, if any. */
 export function pageAtMs(pages: readonly CaptionPage[], ms: number): CaptionPage | null {
   let lo = 0;

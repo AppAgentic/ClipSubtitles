@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { CaptionPage, StyleConfig, TranscriptWord } from '@clipsubtitles/contracts';
 import {
-  activeWordIndexAt,
+  activeWordIndexInPage,
   captionMotionState,
   hexToRgba,
   layoutCaption,
@@ -41,7 +41,7 @@ export function CaptionOverlay({
   const page = pageAtMs(pages, timeMs);
   if (!page || frame.width < 8) return null;
   const activeWordIndex =
-    style.highlight.mode === 'word' ? activeWordIndexAt(words, timeMs, 0) : null;
+    style.highlight.mode === 'word' ? activeWordIndexInPage(page, words, timeMs) : null;
   const layout = layoutCaption({ page, words, style, frame, activeWordIndex, measure });
   const motion = captionMotionState({ page, words, style, timeMs, activeWordIndex });
   const shadow = layout.shadow
@@ -132,6 +132,7 @@ export function CaptionOverlay({
                     layout.strokePx > 0
                       ? `${layout.strokePx * 2}px ${hexToRgba(layout.strokeColor)}`
                       : undefined,
+                  paintOrder: 'stroke fill',
                   textShadow: shadow,
                   transform:
                     active && motion.activeWordScale !== 1

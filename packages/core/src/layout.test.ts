@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { HORIZONTAL_MARGIN_PCT, MIN_FIT_SCALE, createApproxMeasurer, hexToRgba, layoutCaption } from './layout';
 import { DEFAULT_SEGMENTATION, segmentationForStyle, stylePreset } from './presets';
 import { segmentWords } from './segmentation';
-import { activeWordIndexAt, pageAtMs, visualStates } from './state';
+import { activeWordIndexAt, activeWordIndexInPage, pageAtMs, visualStates } from './state';
 import { wordsFromText } from './test-utils';
 
 const measure = createApproxMeasurer();
@@ -91,6 +91,14 @@ describe('state time lookups', () => {
     expect(activeWordIndexAt(words, -1)).toBeNull();
     expect(pageAtMs(pages, pages[0]!.startMs)?.id).toBe(pages[0]!.id);
     expect(pageAtMs(pages, pages[0]!.endMs + 1)).toBeNull();
+  });
+
+  it('holds the most recent page word through speech gaps and tail padding', () => {
+    const page = pages[0]!;
+    const gapMs = Math.min(page.endMs - 1, words[1]!.endMs + 5);
+    expect(activeWordIndexAt(words, gapMs)).toBeNull();
+    expect(activeWordIndexInPage(page, words, gapMs)).toBe(1);
+    expect(activeWordIndexInPage(page, words, page.endMs)).toBeNull();
   });
 
   it('visual states tile each page contiguously', () => {
