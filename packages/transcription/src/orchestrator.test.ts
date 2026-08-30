@@ -24,7 +24,12 @@ describe('transcribeWithFallback', () => {
     expect(out.providerId).toBe('b');
     expect(out.fallbackFrom).toBe('a');
     expect(out.result.words).toEqual(words);
-    expect(out.attempts[0]).toMatchObject({ providerId: 'a', outcome: 'failed', errorCode: 'UNAVAILABLE' });
+    expect(out.attempts[0]).toMatchObject({
+      providerId: 'a',
+      outcome: 'failed',
+      errorCode: 'UNAVAILABLE',
+      errorMessage: 'down',
+    });
   });
 
   it('does not fall back after a success (a later provider is never consulted)', async () => {

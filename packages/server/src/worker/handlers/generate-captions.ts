@@ -93,6 +93,7 @@ export async function generateCaptionsHandler(
             providerId: a.providerId,
             outcome: a.outcome,
             errorCode: a.errorCode,
+            errorMessage: a.errorMessage,
             latencyMs: a.latencyMs,
           }),
       },

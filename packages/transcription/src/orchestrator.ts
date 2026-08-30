@@ -4,6 +4,8 @@ export interface FallbackAttempt {
   providerId: string;
   outcome: 'succeeded' | 'skipped_unconfigured' | 'failed';
   errorCode?: string;
+  /** Sanitized adapter message (status class only; never response bodies or credentials). */
+  errorMessage?: string;
   latencyMs: number;
 }
 
@@ -56,6 +58,7 @@ export async function transcribeWithFallback(
         providerId: provider.id,
         outcome: 'failed',
         errorCode: pe.code,
+        errorMessage: pe.message,
         latencyMs: now() - started,
       };
       attempts.push(attempt);
