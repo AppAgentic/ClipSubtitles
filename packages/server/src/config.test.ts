@@ -18,9 +18,9 @@ describe('object store configuration', () => {
       ...base,
       OBJECT_STORE: 'r2',
       R2_BUCKET: 'clipsubtitles-media',
-      R2_ENDPOINT: 'https://example.r2.cloudflarestorage.com',
-      R2_ACCESS_KEY_ID: 'access-id',
-      R2_SECRET_ACCESS_KEY: 'secret-value',
+      R2_ENDPOINT: 'https://example.r2.cloudflarestorage.com\n',
+      R2_ACCESS_KEY_ID: 'access-id\n',
+      R2_SECRET_ACCESS_KEY: 'secret-value\n',
       R2_PREFIX: 'production',
     });
     expect(config.objectStore).toEqual({
@@ -69,7 +69,22 @@ describe('production transcription configuration', () => {
   const productionBase = {
     NODE_ENV: 'production',
     AUTH_LOCAL_SECRET: 'production-secret-that-is-at-least-32-characters',
+    AUTH_MODE: 'workos',
+    WORKOS_API_KEY: 'sk_test_example',
+    WORKOS_CLIENT_ID: 'client_example',
+    WORKOS_AUTHKIT_ISSUER: 'https://example.authkit.app',
   };
+
+  it('fails closed when production authentication is left in mock mode', () => {
+    expect(() =>
+      loadConfig({
+        NODE_ENV: 'production',
+        AUTH_LOCAL_SECRET: 'production-secret-that-is-at-least-32-characters',
+        AUTH_MODE: 'mock',
+        TRANSCRIPTION_PROVIDERS: 'elevenlabs,gemini',
+      }),
+    ).toThrowError('Production AUTH_MODE must be workos.');
+  });
 
   it('fails closed when production would use the local mock provider', () => {
     expect(() => loadConfig(productionBase)).toThrowError(

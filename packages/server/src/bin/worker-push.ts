@@ -39,9 +39,14 @@ app.post('/internal/maintenance', async (c) => {
 });
 
 const server = serve({ fetch: app.fetch, port: config.apiPort, hostname: '0.0.0.0' });
+let shuttingDown = false;
 function shutdown(): void {
-  server.close(() => {
-    void ctx.db.close().finally(() => process.exit(0));
+  if (shuttingDown) return;
+  shuttingDown = true;
+  void worker.stop().finally(() => {
+    server.close(() => {
+      void ctx.db.close().finally(() => process.exit(0));
+    });
   });
 }
 process.on('SIGINT', shutdown);

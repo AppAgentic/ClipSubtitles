@@ -39,8 +39,7 @@ export function toTaskError(err: unknown): { error: TaskError; internal: unknown
   if (err instanceof TaskFailure) return { error: { code: err.code, message: err.message.slice(0, 300), retryable: err.retryable }, internal: err.internal ?? err };
   if (err instanceof ApiError) return { error: { code: err.code, message: err.message.slice(0, 300), retryable: false }, internal: err.internal ?? err };
   if (err instanceof ProviderError) {
-    const retryable = err.code === 'UNAVAILABLE' || err.code === 'RATE_LIMITED' || err.code === 'TIMEOUT';
-    return { error: { code: 'PROVIDER_UNAVAILABLE', message: ERROR_MESSAGES.PROVIDER_UNAVAILABLE, retryable }, internal: err };
+    return { error: { code: 'PROVIDER_UNAVAILABLE', message: ERROR_MESSAGES.PROVIDER_UNAVAILABLE, retryable: err.retryable }, internal: err };
   }
   if (err instanceof RenderFailedError) return { error: { code: 'RENDER_FAILED', message: ERROR_MESSAGES.RENDER_FAILED, retryable: false }, internal: err.detail };
   if (err instanceof MediaToolError) return { error: { code: 'UNSUPPORTED_MEDIA', message: 'The media could not be processed.', retryable: false }, internal: err.stderrTail };

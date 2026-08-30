@@ -241,13 +241,16 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       );
     }
     workos = {
-      apiKey: e.WORKOS_API_KEY,
-      clientId: e.WORKOS_CLIENT_ID,
-      issuer: e.WORKOS_AUTHKIT_ISSUER.replace(/\/$/, ''),
+      apiKey: e.WORKOS_API_KEY.trim(),
+      clientId: e.WORKOS_CLIENT_ID.trim(),
+      issuer: e.WORKOS_AUTHKIT_ISSUER.trim().replace(/\/$/, ''),
       // The callback is reached through the web origin (proxied to the API) so the session cookie lands on the web host.
       redirectUri: e.WORKOS_REDIRECT_URI ?? `${e.WEB_PUBLIC_URL.replace(/\/$/, '')}/auth/callback`,
-      ...(e.WORKOS_WEBHOOK_SECRET ? { webhookSecret: e.WORKOS_WEBHOOK_SECRET } : {}),
+      ...(e.WORKOS_WEBHOOK_SECRET ? { webhookSecret: e.WORKOS_WEBHOOK_SECRET.trim() } : {}),
     };
+  }
+  if (e.NODE_ENV === 'production' && e.AUTH_MODE !== 'workos') {
+    throw new ConfigError('Production AUTH_MODE must be workos.');
   }
   if (e.NODE_ENV === 'production' && e.AUTH_LOCAL_SECRET.startsWith('local-dev-secret')) {
     throw new ConfigError('AUTH_LOCAL_SECRET must be set to a strong secret in production.');
@@ -287,9 +290,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     objectStore = {
       driver: 'r2',
       bucket: e.R2_BUCKET,
-      endpoint: e.R2_ENDPOINT,
-      accessKeyId: e.R2_ACCESS_KEY_ID,
-      secretAccessKey: e.R2_SECRET_ACCESS_KEY,
+      endpoint: e.R2_ENDPOINT.trim(),
+      accessKeyId: e.R2_ACCESS_KEY_ID.trim(),
+      secretAccessKey: e.R2_SECRET_ACCESS_KEY.trim(),
       ...(e.R2_PREFIX ? { prefix: e.R2_PREFIX } : {}),
     };
   } else {

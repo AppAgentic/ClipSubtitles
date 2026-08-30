@@ -116,6 +116,9 @@ export class TaskWorker {
 
   /** Execute one task selected by an authenticated Cloud Tasks delivery. */
   async runTaskById(taskId: string): Promise<'succeeded' | 'terminal' | 'retry' | 'busy'> {
+    // Push workers do not run the polling loop, so opportunistically reclaim
+    // expired leases before each authenticated Cloud Tasks delivery.
+    await this.maintenance();
     const existing = await this.ctx.db.getTaskById(taskId);
     if (!existing) return 'terminal';
     if (existing.status === 'succeeded' || existing.status === 'failed' || existing.status === 'cancelled') return 'terminal';
@@ -207,10 +210,20 @@ export class TaskWorker {
         log.warn('lease lost during execution');
         return;
       }
+      if (controller.signal.reason === 'shutdown') {
+        // A platform shutdown is not a user cancellation. Leave the durable
+        // lease and reservation intact so maintenance can reclaim and retry it.
+        log.info('task interrupted by worker shutdown; lease left for retry');
+        return;
+      }
       if (controller.signal.reason === 'cancel' || (controller.signal.aborted && isCancellation(err))) {
         const cancelled = await this.ctx.db.markCancelled({ id: task.id, workerId: this.workerId, now: this.ctx.clock.iso() });
+        if (!cancelled) {
+          log.warn('task cancellation rejected (lease no longer owned); billing untouched');
+          return;
+        }
         if (task.kind === 'render_export') await releaseForTask(this.ctx, task.id, 'cancelled');
-        if (cancelled) await discardOutputsForTaskId(this.ctx, task.id);
+        await discardOutputsForTaskId(this.ctx, task.id);
         await audit(this.ctx, { workspaceId: task.workspaceId, actorType: 'worker', actorId: this.workerId, action: `task.${task.kind}.cancelled`, targetType: 'task', targetId: task.id });
         log.info('task cancelled');
         return;

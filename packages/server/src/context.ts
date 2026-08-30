@@ -135,6 +135,7 @@ export async function createAppContext(
       ? new WorkOSTokenVerifier(
           config.auth.workos.issuer,
           `https://api.workos.com/sso/jwks/${config.auth.workos.clientId}`,
+          `${config.apiPublicUrl}/api/mcp`,
         )
       : new LocalTokenVerifier(
           config.auth.localSecret,
