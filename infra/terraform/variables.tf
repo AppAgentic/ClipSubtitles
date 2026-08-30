@@ -82,6 +82,18 @@ variable "gemini_transcribe_model" {
   default = "gemini-3.5-transcribe"
 }
 
+variable "elevenlabs_api_key_secret_version" {
+  description = "Explicit Secret Manager version for the ElevenLabs API key. Pin deployed revisions instead of relying on latest propagation."
+  type        = string
+  default     = "latest"
+}
+
+variable "gemini_api_key_secret_version" {
+  description = "Explicit Secret Manager version for the Gemini API key. Pin deployed revisions instead of relying on latest propagation."
+  type        = string
+  default     = "latest"
+}
+
 variable "object_store_driver" {
   description = "Production media store. R2 is the economical default; GCS remains the same-cloud fallback."
   type        = string

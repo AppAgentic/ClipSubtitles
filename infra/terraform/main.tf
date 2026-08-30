@@ -592,7 +592,7 @@ resource "google_cloud_run_v2_service" "worker" {
         value_source {
           secret_key_ref {
             secret  = google_secret_manager_secret.runtime["elevenlabs-api-key"].secret_id
-            version = "latest"
+            version = var.elevenlabs_api_key_secret_version
           }
         }
       }
@@ -601,7 +601,7 @@ resource "google_cloud_run_v2_service" "worker" {
         value_source {
           secret_key_ref {
             secret  = google_secret_manager_secret.runtime["gemini-api-key"].secret_id
-            version = "latest"
+            version = var.gemini_api_key_secret_version
           }
         }
       }

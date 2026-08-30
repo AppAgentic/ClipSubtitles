@@ -9,6 +9,8 @@ runtime_config_revision = "initial"
 transcription_providers = "elevenlabs,gemini"
 elevenlabs_scribe_model = "scribe_v2"
 gemini_transcribe_model = "gemini-3.5-transcribe"
+elevenlabs_api_key_secret_version = "latest"
+gemini_api_key_secret_version = "latest"
 
 object_store_driver = "r2"
 r2_bucket            = "clipsubtitles-media-staging"

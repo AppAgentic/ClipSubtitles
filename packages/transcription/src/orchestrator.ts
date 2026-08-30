@@ -31,6 +31,7 @@ export async function transcribeWithFallback(
   const attempts: FallbackAttempt[] = [];
   let lastFailure: string | undefined;
   let lastError: ProviderError | undefined;
+  let hasRetryableFailure = false;
   for (const provider of providers) {
     if (opts.signal?.aborted) throw new ProviderError(provider.id, 'CANCELLED', 'Transcription cancelled.');
     const started = now();
@@ -65,6 +66,7 @@ export async function transcribeWithFallback(
       opts.onAttempt?.(attempt);
       lastFailure = provider.id;
       lastError = pe;
+      hasRetryableFailure ||= pe.retryable;
     }
   }
   const anyConfigured = attempts.some((a) => a.outcome !== 'skipped_unconfigured');
@@ -72,6 +74,6 @@ export async function transcribeWithFallback(
     lastError?.providerId ?? 'none',
     anyConfigured ? 'UNAVAILABLE' : 'NOT_CONFIGURED',
     anyConfigured ? 'All configured transcription providers failed.' : 'No transcription provider is configured.',
-    anyConfigured,
+    anyConfigured && hasRetryableFailure,
   );
 }

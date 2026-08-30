@@ -48,6 +48,16 @@ describe('transcribeWithFallback', () => {
     await expect(transcribeWithFallback([none], input)).rejects.toMatchObject({ code: 'NOT_CONFIGURED' });
   });
 
+  it('does not retry an exhausted chain when every provider rejection is permanent', async () => {
+    const rejected = new ScriptedProvider('a', [
+      { kind: 'error', error: new ProviderError('a', 'UNAVAILABLE', 'Provider rejected the request (401).', false) },
+    ]);
+    await expect(transcribeWithFallback([rejected], input)).rejects.toMatchObject({
+      code: 'UNAVAILABLE',
+      retryable: false,
+    });
+  });
+
   it('propagates cancellation immediately without trying the next provider', async () => {
     const a = new ScriptedProvider('a', [{ kind: 'error', error: new ProviderError('a', 'CANCELLED', 'c') }]);
     const b = new ScriptedProvider('b', [{ kind: 'result', result: { words, language: 'en', latencyMs: 5 } }]);
