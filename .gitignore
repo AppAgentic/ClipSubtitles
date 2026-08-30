@@ -37,6 +37,13 @@ coverage/
 # Remotion / Chromium caches
 .remotion/
 
+# Terraform local cache/state artifacts. Live state is kept in the configured
+# versioned GCS backend; only the provider lockfile is committed.
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+
 # Synced caption font files (copied from node_modules by apps/web/scripts/sync-fonts.mjs)
 apps/web/public/fonts/
 

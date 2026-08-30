@@ -10,4 +10,5 @@ elevenlabs_scribe_model = "scribe_v2"
 gemini_transcribe_model = "gemini-3.5-transcribe"
 
 object_store_driver = "r2"
+r2_bucket            = "clipsubtitles-media-staging"
 r2_endpoint          = "https://replace-with-account-id.r2.cloudflarestorage.com"
