@@ -1,4 +1,6 @@
 output "artifact_repository" { value = google_artifact_registry_repository.images.name }
+output "build_service_account" { value = google_service_account.build.email }
+output "build_source_bucket" { value = google_storage_bucket.build_source.name }
 output "media_bucket" { value = google_storage_bucket.media.name }
 output "task_queue" { value = google_cloud_tasks_queue.renders.name }
 output "cloud_sql_connection_name" { value = google_sql_database_instance.postgres.connection_name }

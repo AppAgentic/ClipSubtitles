@@ -50,6 +50,23 @@ resource "google_artifact_registry_repository" "images" {
   depends_on    = [google_project_service.required]
 }
 
+resource "google_storage_bucket" "build_source" {
+  name                        = "${var.project_id}-clipsubtitles-build-source"
+  location                    = var.region
+  uniform_bucket_level_access = true
+  public_access_prevention    = "enforced"
+  force_destroy               = false
+  labels                      = local.labels
+  soft_delete_policy {
+    retention_duration_seconds = 0
+  }
+  lifecycle_rule {
+    condition { age = 7 }
+    action { type = "Delete" }
+  }
+  depends_on = [google_project_service.required]
+}
+
 resource "google_storage_bucket" "media" {
   name                        = "${var.project_id}-clipsubtitles-media"
   location                    = var.region
@@ -134,6 +151,37 @@ resource "google_service_account" "worker" {
 resource "google_service_account" "web" {
   account_id   = "clipsubtitles-web-${var.environment}"
   display_name = "ClipSubtitles web (${var.environment})"
+}
+
+resource "google_service_account" "build" {
+  account_id   = "clipsubtitles-build-${var.environment}"
+  display_name = "ClipSubtitles image builder (${var.environment})"
+}
+
+resource "google_storage_bucket_iam_member" "build_source_reader" {
+  bucket = google_storage_bucket.build_source.name
+  role   = "roles/storage.objectViewer"
+  member = "serviceAccount:${google_service_account.build.email}"
+}
+
+resource "google_artifact_registry_repository_iam_member" "build_image_writer" {
+  project    = var.project_id
+  location   = google_artifact_registry_repository.images.location
+  repository = google_artifact_registry_repository.images.repository_id
+  role       = "roles/artifactregistry.writer"
+  member     = "serviceAccount:${google_service_account.build.email}"
+}
+
+resource "google_project_iam_member" "build_log_writer" {
+  project = var.project_id
+  role    = "roles/logging.logWriter"
+  member  = "serviceAccount:${google_service_account.build.email}"
+}
+
+resource "google_service_account_iam_member" "deployer_can_use_build" {
+  service_account_id = google_service_account.build.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${var.deployer_service_account}"
 }
 
 resource "google_service_account" "task_invoker" {

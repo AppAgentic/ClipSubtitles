@@ -8,6 +8,12 @@ variable "region" {
   default = "europe-west2"
 }
 
+variable "deployer_service_account" {
+  description = "Company automation identity allowed to submit builds as the dedicated staging builder."
+  type        = string
+  default     = "mission-control@app-agentic.iam.gserviceaccount.com"
+}
+
 variable "environment" {
   type    = string
   default = "staging"
