@@ -74,10 +74,10 @@ with a separate price.
 
 | Plan | Price | Included credits | Plain-language equivalent | Product boundary |
 | --- | ---: | ---: | --- | --- |
-| Free | $0 | 20 lifetime | about 2 minutes of standard 1080p MP4 | One real end-to-end test, free previews and editing; hard cap before provider work |
-| Creator | $12/month | 600/month | up to 60 standard MP4 minutes | Browser + connected agents, all core styles/exports, one active render |
-| Pro | $29/month | 2,000/month | up to 200 standard MP4 minutes | Creator plus API keys/webhooks, higher concurrency and priority processing |
-| Studio | $79/month | 6,000/month | up to 600 standard MP4 minutes | Pro plus team/brand controls and four active renders when those capabilities ship |
+| Free | $0 | 10 lifetime | about 1 minute of standard 1080p MP4 | One real end-to-end proof, free previews and editing; hard cap before provider work |
+| Creator | $15/month | 300/month | up to 30 standard MP4 minutes | Browser + connected agents, all core styles/exports, one active render |
+| Pro | $39/month | 1,000/month | up to 100 standard MP4 minutes | Creator plus API keys/webhooks, higher concurrency and priority processing |
+| Studio | $99/month | 3,000/month | up to 300 standard MP4 minutes | Pro plus team/brand controls and four active renders when those capabilities ship |
 
 Offer annual billing at roughly 15% off after monthly conversion is understood.
 Do not launch an unlimited plan. Cap subscription-credit rollover at 2× the
@@ -88,9 +88,9 @@ Recommended top-ups:
 
 | Pack | Price | Credits | Standard MP4 equivalent |
 | --- | ---: | ---: | ---: |
-| Small | $8 | 300 | about 30 minutes |
-| Medium | $20 | 1,000 | about 100 minutes |
-| Large | $50 | 3,000 | about 300 minutes |
+| Small | $12 | 200 | about 20 minutes |
+| Medium | $35 | 750 | about 75 minutes |
+| Large | $79 | 2,000 | about 200 minutes |
 
 There should be no automatic unbounded overage. A user either has credits,
 buys a pack, or upgrades. Enterprise/dedicated-capacity pricing comes only
@@ -103,15 +103,113 @@ usage. Net revenue uses the placeholder 2.9% + $0.30 processing fee.
 
 | Plan | Net revenue | Base COGS ($0.03/min) | Base contribution margin | Downside COGS ($0.06/min) | Downside contribution margin |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Creator | $11.35 | $1.80 | 79.6% | $3.60 | 64.6% |
-| Pro | $27.86 | $6.00 | 75.4% | $12.00 | 54.7% |
-| Studio | $76.41 | $18.00 | 73.9% | $36.00 | 51.2% |
+| Creator | $14.27 | $0.90 | 89.1% | $1.80 | 83.1% |
+| Pro | $37.57 | $3.00 | 88.6% | $6.00 | 80.9% |
+| Studio | $95.83 | $9.00 | 87.7% | $18.00 | 78.6% |
 
-The downside Studio margin is the launch warning. Keep the allowance and four
-render concurrency behind telemetry, and change either the price, allowance or
-credit weights if P90 cost approaches the downside case. Fixed infrastructure
-must be tracked separately; at low customer counts it will dominate total
-profit despite healthy variable margins.
+These allowances intentionally target very strong margins even when every
+included credit is consumed and per-minute COGS doubles. Keep four-render
+concurrency behind telemetry and change either price, allowance or credit
+weights if P90 cost exceeds the downside case. Fixed infrastructure must be
+tracked separately; at low customer counts it will dominate total profit
+despite healthy variable margins.
+
+### Every paid tier at scale
+
+This table assumes the most conservative normal case: every customer consumes
+100% of the plan's included standard-MP4 allowance every month. “Contribution”
+is revenue after the placeholder payment fee and measured/planned variable
+COGS. It is not net profit because fixed platform costs, payroll, support, tax,
+refunds and discounts are below this line.
+
+| Tier | Paid users | Gross MRR | Payment fees | Base COGS | Base contribution | Downside COGS | Downside contribution |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Creator | 100 | $1,500 | $73.50 | $90 | $1,336.50 | $180 | $1,246.50 |
+| Creator | 1,000 | $15,000 | $735 | $900 | $13,365 | $1,800 | $12,465 |
+| Creator | 10,000 | $150,000 | $7,350 | $9,000 | $133,650 | $18,000 | $124,650 |
+| Pro | 100 | $3,900 | $143.10 | $300 | $3,456.90 | $600 | $3,156.90 |
+| Pro | 1,000 | $39,000 | $1,431 | $3,000 | $34,569 | $6,000 | $31,569 |
+| Pro | 10,000 | $390,000 | $14,310 | $30,000 | $345,690 | $60,000 | $315,690 |
+| Studio | 100 | $9,900 | $317.10 | $900 | $8,682.90 | $1,800 | $7,782.90 |
+| Studio | 1,000 | $99,000 | $3,171 | $9,000 | $86,829 | $18,000 | $77,829 |
+| Studio | 10,000 | $990,000 | $31,710 | $90,000 | $868,290 | $180,000 | $778,290 |
+
+For a more plausible portfolio mix of 70% Creator, 25% Pro and 5% Studio, the
+weighted account produces $25.20 gross MRR and includes 61 standard-MP4
+minutes. The following is still the full-utilization case:
+
+| Total paid users | Gross MRR | Payment fees | Base variable COGS | Base contribution | Downside variable COGS | Downside contribution |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 100 | $2,520 | $103.08 | $183 | $2,233.92 | $366 | $2,050.92 |
+| 1,000 | $25,200 | $1,030.80 | $1,830 | $22,339.20 | $3,660 | $20,509.20 |
+| 10,000 | $252,000 | $10,308 | $18,300 | $223,392 | $36,600 | $205,092 |
+
+To turn contribution into a planning proxy for operating profit, subtract the
+real monthly fixed-cost ledger. If, purely for capacity planning, the business
+reserved $500/month at 100 paid users, $2,000 at 1,000 and $10,000 at 10,000
+for database, queue, logs, monitoring and platform headroom, the mixed-plan
+base/downside contribution after that reserve would be:
+
+| Paid users | Illustrative fixed platform reserve | Base after reserve | Downside after reserve |
+| ---: | ---: | ---: | ---: |
+| 100 | $500 | $1,733.92 | $1,550.92 |
+| 1,000 | $2,000 | $20,339.20 | $18,509.20 |
+| 10,000 | $10,000 | $213,392 | $195,092 |
+
+Those reserve figures are not forecasts and deliberately exclude people costs.
+The production dashboard must replace them with actual invoices. The margin
+policy should be enforced in code: alert when trailing P90 variable gross
+margin falls below 80%, stop increasing allowances below 75%, and reprice or
+reweight an output before it falls below 70%.
+
+### Free-tier and scale scenarios
+
+Free is a one-time proof allowance, not a renewable monthly subsidy. Require a
+verified account, cap it at one standard MP4 minute, do not permit overlays or
+multiple video outputs from the free pool, and rate-limit transcription and
+preview generation. At the planning envelope, fully consuming the grant costs
+about $0.03 base or $0.06 downside per non-paying signup before abuse controls.
+
+| Activated Free accounts in a signup cohort | Revenue | Base one-time grant cost | Downside one-time grant cost |
+| ---: | ---: | ---: | ---: |
+| 100 | $0 | $3 | $6 |
+| 1,000 | $0 | $30 | $60 |
+| 10,000 | $0 | $300 | $600 |
+| 100,000 | $0 | $3,000 | $6,000 |
+
+This is the maximum normal free-render liability if every verified account
+uses the whole grant. Fraud, repeated-account creation and preview abuse can
+exceed it, so phone/domain/device/rate controls and a global daily provider
+budget are economic requirements, not optional security polish.
+
+The following first-month cohort model uses deliberately explicit assumptions:
+
+- 1,000 new verified signups;
+- every non-paying signup consumes the entire one-minute free grant;
+- paid mix is 70% Creator, 25% Pro and 5% Studio;
+- paid customers use 35% of their included allowance in month one;
+- card processing is the same placeholder 2.9% + $0.30 per payment;
+- fixed infrastructure, support, tax and refunds remain excluded.
+
+| Signup-to-paid conversion | Paid customers | Gross first-month MRR | Base variable contribution | Base margin | Downside variable contribution | Downside margin |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 3% | 30 | $756 | $676.76 | 89.5% | $628.45 | 83.1% |
+| 5% | 50 | $1,260 | $1,147.94 | 91.1% | $1,087.41 | 86.3% |
+| 8% | 80 | $2,016 | $1,854.70 | 92.0% | $1,775.86 | 88.1% |
+
+The model scales linearly before fixed-capacity step changes: multiply the
+1,000-signup row by 10 for a 10,000-signup cohort and by 100 for 100,000. It is
+not an LTV model. Retained subscribers improve cohort economics after month one
+because the free proof cost does not recur; churn, refunds and support reduce
+them. Break-even paid customer count is therefore:
+
+`monthly fixed operating cost / contribution per retained paid account`
+
+At the assumed plan mix and 35% allowance use, weighted gross ARPU is $25.20
+and variable contribution is about $23.53 base or $22.89 downside before fixed
+costs. A $1,000 monthly fixed-cost base would therefore require roughly 43-44
+retained paid accounts; use the real fixed-cost ledger before treating this as
+a launch forecast.
 
 ## One catalog, two upgrade experiences
 
@@ -159,7 +257,7 @@ checkout flow and re-check directory policy before submission.
 
 1. Add a server-owned, versioned plan/top-up catalog separate from the existing
    render `PRICE_TABLE`; use both for enforcement, UI and tests.
-2. Reduce the public Free state from the 500-credit beta grant to 20 lifetime
+2. Reduce the public Free state from the 500-credit beta grant to 10 lifetime
    credits, while preserving explicitly granted beta/admin credits as their own
    pool.
 3. Add subscription and purchased-credit pools, rollover rules, entitlements,
@@ -193,4 +291,3 @@ proven.
 - Descript pricing: https://www.descript.com/price
 - VEED Subtitle API pricing: https://support.veed.io/en/articles/15230204-veed-subtitles-api
 - OpenAI plugin checkout guidance: https://developers.openai.com/plugins/build/monetization
-

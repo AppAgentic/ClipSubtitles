@@ -4,6 +4,21 @@ import Link from 'next/link';
 import { MCP_ENDPOINT } from './facts';
 import { MCP_CLIENTS, McpClientTiles, McpInstallSlot, useMcpClient } from './McpClientBoard';
 
+const AUTOMATION_PATHS = [
+  {
+    title: 'From a conversation',
+    body: 'Ask ChatGPT or Claude to caption a clip, correct a word, try a style and prepare the export.',
+  },
+  {
+    title: 'From your workspace',
+    body: 'Use Codex, Cursor or Claude Code to turn the videos already in your workflow into captioned deliverables.',
+  },
+  {
+    title: 'From an automation',
+    body: 'Connect through MCP or the API so your own system can prepare repeatable caption jobs for approval.',
+  },
+] as const;
+
 export function ConnectAgent({ standalone = false }: { standalone?: boolean }) {
   const { activeId, choose } = useMcpClient();
   const active = MCP_CLIENTS.find((item) => item.id === activeId) ?? {
@@ -19,14 +34,28 @@ export function ConnectAgent({ standalone = false }: { standalone?: boolean }) {
       aria-labelledby="tg-connect-title"
     >
       <div className="tg-connect-copy">
-        <p className="lo-eyebrow tg-eyebrow">Works with your agent</p>
-        <Heading id="tg-connect-title">Add ClipSubtitles to your agent.</Heading>
+        <p className="lo-eyebrow tg-eyebrow">AI and automation</p>
+        <Heading id="tg-connect-title">Power your captions with AI and automation.</Heading>
         <p>
-          Choose your client, install the server and sign in through your browser. No API key to
-          manage.
+          Keep the same review, style and approval flow whether you work in the browser, chat with
+          an agent or run your own automation.
         </p>
         <Link href="/developers">Read the developer guide →</Link>
       </div>
+
+      {standalone ? (
+        <ol className="tg-automation-paths">
+          {AUTOMATION_PATHS.map((path, index) => (
+            <li key={path.title}>
+              <span className="lo-mono">0{index + 1}</span>
+              <div>
+                <h3>{path.title}</h3>
+                <p>{path.body}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      ) : null}
 
       <div className="tg-connect-board">
         <McpClientTiles activeId={activeId} choose={choose} scope="guide" rail />

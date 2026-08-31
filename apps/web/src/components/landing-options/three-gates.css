@@ -1343,14 +1343,49 @@
 }
 
 [data-lo='three-gates'] .tg-connect-standalone {
-  grid-template-columns: minmax(240px, 0.55fr) minmax(0, 1.45fr);
+  grid-template-columns: minmax(300px, 0.8fr) minmax(0, 1.2fr);
   align-items: start;
+}
+
+[data-lo='three-gates'] .tg-automation-paths {
+  display: grid;
+  margin: 0;
+  border-top: 1px solid var(--line);
+}
+
+[data-lo='three-gates'] .tg-automation-paths li {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 16px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+[data-lo='three-gates'] .tg-automation-paths li > span {
+  padding-top: 3px;
+  color: var(--warm);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+[data-lo='three-gates'] .tg-automation-paths h3 {
+  font-size: 19px;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+}
+
+[data-lo='three-gates'] .tg-automation-paths p {
+  max-width: 50ch;
+  margin-top: 6px;
+  color: var(--dim);
+  font-size: 14px;
 }
 
 [data-lo='three-gates'] .tg-connect-board {
   display: grid;
   grid-template-columns: 190px minmax(0, 1fr);
   gap: 28px;
+  grid-column: 1 / -1;
   min-width: 0;
 }
 

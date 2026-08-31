@@ -19,6 +19,10 @@ const AUDIENCES: Array<[string, string]> = [
     'Studios & agencies',
     'Reuse the same caption look across a series, then deliver publish-ready video and subtitle files.',
   ],
+  [
+    'Agents & automation teams',
+    'Let ChatGPT, Claude, Codex or your own workflow prepare captioned videos while you keep approval over the final export.',
+  ],
 ];
 
 const FAQS: Array<[string, string]> = [
@@ -152,11 +156,15 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
           </Link>
         </section>
 
-        {/* 4 · Audience */}
+        {/* 4 · Audience: concrete self-selection before the automation path. */}
         <section className="tg-section tg-audience lo-wrap" aria-labelledby="tg-audience-title">
           <div className="tg-section-copy">
-            <p className="lo-eyebrow tg-eyebrow">Built for repeat video work</p>
-            <h2 id="tg-audience-title">Video captioning for creators, editors and agencies.</h2>
+            <p className="lo-eyebrow tg-eyebrow">Made for the way you work</p>
+            <h2 id="tg-audience-title">Who is ClipSubtitles for?</h2>
+            <p>
+              Start with one clip in the browser, repeat a look across client work, or connect the
+              same workflow to an AI agent.
+            </p>
           </div>
           <div className="tg-audience-body">
             <ul className="tg-audience-grid">

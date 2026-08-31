@@ -24,6 +24,16 @@ describe('HeroConnect', () => {
 });
 
 describe('ConnectAgent', () => {
+  it('explains the conversation, workspace and automation paths on the landing page', () => {
+    render(<ConnectAgent standalone />);
+    expect(
+      screen.getByRole('heading', { name: 'Power your captions with AI and automation.' }),
+    ).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'From a conversation' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'From your workspace' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'From an automation' })).toBeTruthy();
+  });
+
   it('exposes an accessible client board and changes commands', () => {
     render(<ConnectAgent />);
     expect(screen.getByRole('radio', { name: 'Claude Code' }).getAttribute('aria-checked')).toBe('true');
