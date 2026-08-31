@@ -44,5 +44,7 @@ describe('ChatGPT widget UI', () => {
     expect(html).toContain("media.preload=active?'metadata':'none'");
     expect(html).toContain('/marketing/style-previews/ui-');
     expect(html).toContain("document.getElementById('preview-style').onclick");
+    expect(html).toContain('.styles{grid-auto-columns:82%;gap:14px');
+    expect(html).toContain('.style{min-width:0;width:100%;scroll-snap-stop:always}');
   });
 });
