@@ -20,8 +20,8 @@ Generated with GPT Image 2 on 2026-08-31 from the current ClipSubtitles product 
 4. **Calm production flow** — strongest agency and high-volume model. Status bands and next actions scale cleanly, but the right-hand export controls should only appear after a project is selected.
 5. **Caption gallery / creative home** — strongest brand expression and caption-style discovery. It makes the output feel desirable, but needs a calmer navigation and a less marketing-like headline for daily use.
 
-## Recommended synthesis
+## Selected direction
 
-Use direction 2 as the dashboard foundation, direction 3 for the selected/active project module, and direction 4 for scalable status grouping. Borrow direction 5's visible caption treatments and direction 1's restrained export history. Keep upload prominent, but do not let storage, credits, developer tools, or export configuration compete with the user's videos.
+Joe selected **direction 1, Editorial production desk**, on 2026-08-31. The next exploration preserves its warm black, parchment, amber, editorial typography, restrained export history, and information-rich working-desk character while making the selected project and its next creative actions dominant.
 
-The next design pass should create desktop and mobile wireframes for that synthesis before implementation.
+The refined dashboard and agent/plugin family are documented in [`design-1-exploration/`](./design-1-exploration/). These remain design studies; implementation should copy the product hierarchy and interaction principles, not invented values or incidental image text.
