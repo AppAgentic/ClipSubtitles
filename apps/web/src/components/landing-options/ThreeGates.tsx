@@ -2,9 +2,9 @@ import Link from 'next/link';
 import { GatesStory } from './GatesStory';
 import { HeroCaptionVideo } from './HeroCaptionVideo';
 import { OptionSwitcher } from './OptionSwitcher';
+import { PathChooser } from './PathChooser';
 import { StyleBoard } from './StyleBoard';
 import { SITE_URL } from '@/components/marketing/seo-pages';
-import { FootageReel } from '@/components/marketing/FootageReel';
 import { ConnectAgent } from './ConnectAgent';
 import './landing-options.css';
 import './three-gates.css';
@@ -101,9 +101,8 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
               Create styled video captions <br /> <em>with your AI agent.</em>
             </h1>
             <p className="tg-lede">
-              Upload a short video and generate automatic captions with word-level timing. Correct
-              the transcript, choose a caption style and motion, preview the result, then export it
-              for publishing.
+              Upload a clip—or hand it to your AI agent. Review every word, choose a style, and
+              download a publish-ready captioned video.
             </p>
             <div className="tg-cta">
               <Link href="/sign-in?returnTo=/app/new" className="lo-btn tg-btn-primary">
@@ -113,6 +112,7 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
                 See how it works
               </a>
             </div>
+            <PathChooser />
           </div>
 
           <div className="tg-hero-proof">
@@ -120,16 +120,7 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
           </div>
         </section>
 
-        {/* 2 · How it works: the scroll story */}
-        <section id="tg-how" className="tg-how lo-wrap" aria-labelledby="tg-how-title">
-          <div className="tg-section-head">
-            <p className="lo-eyebrow tg-eyebrow">How to add captions to a video</p>
-            <h2 id="tg-how-title">Upload your clip. Leave with polished captions.</h2>
-          </div>
-          <GatesStory />
-        </section>
-
-        {/* 3 · Styles: real controls */}
+        {/* 2 · Styles: real controls, the first full section after the hero */}
         <section className="tg-section tg-styles lo-wrap" aria-labelledby="tg-styles-title">
           <div className="tg-section-copy">
             <p className="lo-eyebrow tg-eyebrow">Animated video captions</p>
@@ -143,7 +134,14 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
           <StyleBoard />
         </section>
 
-        <FootageReel />
+        {/* 3 · How it works: a static three-step strip, no scroll-jacking */}
+        <section id="tg-how" className="tg-how lo-wrap" aria-labelledby="tg-how-title">
+          <div className="tg-section-head">
+            <p className="lo-eyebrow tg-eyebrow">How to add captions to a video</p>
+            <h2 id="tg-how-title">Upload your clip. Leave with polished captions.</h2>
+          </div>
+          <GatesStory />
+        </section>
 
         {/* Mid-page CTA */}
         <section className="tg-mid lo-wrap" aria-labelledby="tg-mid-title">

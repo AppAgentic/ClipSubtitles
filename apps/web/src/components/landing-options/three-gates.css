@@ -7,7 +7,17 @@
  * `[data-theme]` on <html> for the manual override. `--tg-screen` is the one
  * exception — the phone/video-preview mockups stay a fixed dark surface in
  * both modes (media fidelity), so it is not part of the light/dark switch.
+ *
+ * Typography: display headings borrow Plus Jakarta Sans's confident weight,
+ * body/controls borrow DM Sans's softer reading texture (a Postiz audit
+ * trait, translated rather than cloned) — local, package-backed OFL faces,
+ * scoped to this public marketing surface only. The signed-in app keeps
+ * Bricolage Grotesque untouched.
  */
+@import '@fontsource-variable/plus-jakarta-sans';
+@import '@fontsource/dm-sans/400.css';
+@import '@fontsource/dm-sans/500.css';
+
 [data-lo='three-gates'] {
   --ink: #f5f5f7;
   --ink-2: #ffffff;
@@ -22,8 +32,20 @@
   --warm-ink: #ffffff;
   --lo-accent: var(--warm);
   --tg-screen: #17171a;
+  --tg-font-display:
+    'Plus Jakarta Sans Variable', 'Bricolage Grotesque Variable', ui-sans-serif, system-ui,
+    sans-serif;
+  --tg-font-body: 'DM Sans', 'Bricolage Grotesque Variable', ui-sans-serif, system-ui, sans-serif;
   background: var(--ink);
   color: var(--text);
+  font-family: var(--tg-font-body);
+}
+
+[data-lo='three-gates'] h1,
+[data-lo='three-gates'] h2,
+[data-lo='three-gates'] h3 {
+  font-family: var(--tg-font-display);
+  font-weight: 700;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -121,8 +143,8 @@
 [data-lo='three-gates'] .tg-section-copy h2 {
   font-size: clamp(36px, 5.2vw, 68px);
   line-height: 0.98;
-  letter-spacing: -0.045em;
-  font-weight: 500;
+  letter-spacing: -0.025em;
+  font-weight: 700;
 }
 
 /* ---------------------------------------------------------------- Hero */
@@ -150,9 +172,8 @@
   max-width: 13ch;
   font-size: clamp(40px, 6.6vw, 92px);
   line-height: 0.96;
-  letter-spacing: -0.045em;
-  font-weight: 500;
-  font-variation-settings: 'opsz' 96;
+  letter-spacing: -0.025em;
+  font-weight: 700;
 }
 
 [data-lo='three-gates'] .tg-hero h1 em,
@@ -405,11 +426,6 @@
     box-shadow 700ms ease;
 }
 
-[data-lo='three-gates'] .tg-frame-story {
-  width: min(100%, 240px);
-  border-radius: 18px;
-}
-
 [data-lo='three-gates'] .tg-frame-board {
   width: min(100%, 250px);
   border-radius: 18px;
@@ -599,208 +615,46 @@
   animation-delay: calc(120ms + var(--i) * 190ms);
 }
 
-/* ------------------------------------------------------------ Story */
-[data-lo='three-gates'] .tg-story {
+/* ---------------------------------------------------- Words → Look → Download */
+/* A static, always-visible three-step strip. No sticky figure, no
+ * IntersectionObserver, no scroll-jacking: every step is plain content that
+ * reads the same with or without JS, sized to stay compact on its own. */
+[data-lo='three-gates'] .tg-steps {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: clamp(32px, 6vw, 96px);
-  align-items: start;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(24px, 4vw, 40px);
 }
 
-[data-lo='three-gates'] .tg-artifact {
-  position: sticky;
-  top: 88px;
+[data-lo='three-gates'] .tg-step {
   display: grid;
-  justify-items: center;
-  gap: 20px;
-  padding-bottom: 24px;
+  align-content: start;
+  gap: 10px;
+  padding-top: 18px;
+  border-top: 2px solid var(--line);
 }
 
-[data-lo='three-gates'] .tg-artifact-side {
-  display: grid;
-  justify-items: center;
-  gap: 12px;
-}
-
-[data-lo='three-gates'] .tg-artifact-status {
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--mute);
-  transition: color 400ms ease;
-}
-
-[data-lo='three-gates'] .tg-story[data-gate='3'] .tg-artifact-status {
-  color: var(--warm);
-}
-
-[data-lo='three-gates'] .tg-story[data-gate='2'] .tg-frame-story {
-  box-shadow:
-    0 0 0 1px rgb(var(--warm-rgb) / 0.5),
-    0 40px 80px -40px rgb(var(--warm-rgb) / 0.5);
-}
-
-[data-lo='three-gates'] .tg-story[data-gate='3'] .tg-frame-story {
-  transform: scale(0.94);
-}
-
-[data-lo='three-gates'] .tg-story .tg-cap {
-  transition: opacity 500ms ease;
-}
-
-[data-lo='three-gates'] .tg-story[data-gate='2'] .tg-cap {
-  opacity: 0.35;
-}
-
-[data-lo='three-gates'] .tg-story .is-edited {
-  position: relative;
-  transition: color 400ms ease;
-}
-
-[data-lo='three-gates'] .tg-story[data-gate='1'] .is-edited,
-[data-lo='three-gates'] .tg-story[data-gate='3'] .is-edited {
-  color: var(--warm);
-}
-
-[data-lo='three-gates'] .tg-story .is-edited::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -0.1em;
-  height: 0.08em;
-  background: var(--warm);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 500ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-[data-lo='three-gates'] .tg-story[data-gate='1'] .is-edited::after {
-  transform: scaleX(1);
-}
-
-/* Look sheet rises inside the frame at step 2. */
-[data-lo='three-gates'] .tg-look-sheet {
-  position: absolute;
-  left: 8%;
-  right: 8%;
-  bottom: 7%;
-  display: grid;
-  gap: 1cqw;
-  padding: 4cqw 5cqw;
-  border-radius: 4cqw;
-  border: 1px solid var(--warm);
-  background: rgb(7 8 11 / 0.92);
-  color: var(--dim);
-  font-size: 3.8cqw;
-  opacity: 0;
-  transform: translateY(12px);
-  transition:
-    opacity 500ms ease,
-    transform 600ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-[data-lo='three-gates'] .tg-story[data-gate='2'] .tg-look-sheet {
-  opacity: 1;
-  transform: none;
-}
-
-[data-lo='three-gates'] .tg-look-name {
-  font-size: 7cqw;
-  color: var(--warm);
-  font-weight: 650;
-}
-
-/* Outputs separate with a soft rise at gate 3. */
-[data-lo='three-gates'] .tg-outputs {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-  min-height: 28px;
-}
-
-[data-lo='three-gates'] .tg-outputs li {
-  border-color: var(--warm);
-  opacity: 0;
-  transform: translateY(10px);
-  filter: blur(3px);
-  transition:
-    opacity 500ms ease,
-    transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    filter 500ms ease;
-  transition-delay: calc(var(--i) * 90ms);
-}
-
-[data-lo='three-gates'] .tg-story[data-gate='3'] .tg-outputs li {
-  opacity: 1;
-  transform: none;
-  filter: none;
-}
-
-/* Gates charge as they approach. */
-[data-lo='three-gates'] .tg-gates {
-  display: grid;
-}
-
-[data-lo='three-gates'] .tg-gate {
-  position: relative;
-  min-height: clamp(300px, 52vh, 480px);
-  display: grid;
-  align-content: center;
-  gap: 12px;
-  padding-left: 28px;
-}
-
-[data-lo='three-gates'] .tg-gate::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  background: var(--line);
-}
-
-[data-lo='three-gates'] .tg-gate::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  width: 1px;
-  height: 0;
-  background: var(--warm);
-  transform: translateY(-50%);
-  transition: height 900ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-[data-lo='three-gates'] .tg-gate[data-charged='true']::after {
-  height: 60%;
-}
-
-[data-lo='three-gates'] .tg-gate-n {
+[data-lo='three-gates'] .tg-step-n {
   font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--mute);
-  transition: color 500ms ease;
-}
-
-[data-lo='three-gates'] .tg-gate[data-charged='true'] .tg-gate-n {
   color: var(--warm);
 }
 
-[data-lo='three-gates'] .tg-gate h3 {
-  font-size: clamp(32px, 4.4vw, 56px);
-  line-height: 1;
-  letter-spacing: -0.04em;
-  font-weight: 500;
+[data-lo='three-gates'] .tg-step h3 {
+  font-size: clamp(22px, 2.4vw, 30px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
 }
 
-[data-lo='three-gates'] .tg-gate p {
-  max-width: 46ch;
-  font-size: 16.5px;
+[data-lo='three-gates'] .tg-step p {
+  max-width: 34ch;
+  font-size: 15px;
   color: var(--dim);
+}
+
+[data-lo='three-gates'] .tg-step .tg-outputs {
+  justify-content: flex-start;
+  margin-top: 2px;
 }
 
 /* ------------------------------------------------------- Sections */
@@ -813,7 +667,14 @@
 }
 
 [data-lo='three-gates'] .tg-how {
-  padding-bottom: clamp(48px, 8vw, 96px);
+  border-top: 1px solid var(--line);
+  padding-bottom: clamp(40px, 6vw, 72px);
+}
+
+/* Compact section head: this strip targets ~600-700px total on desktop. */
+[data-lo='three-gates'] .tg-how .tg-section-head {
+  padding-top: clamp(40px, 6vw, 64px);
+  padding-bottom: clamp(20px, 3vw, 32px);
 }
 
 [data-lo='three-gates'] .tg-section-copy {
@@ -1061,8 +922,8 @@
 
 [data-lo='three-gates'] .tg-mid h2 {
   font-size: clamp(22px, 2.6vw, 30px);
-  font-weight: 500;
-  letter-spacing: -0.03em;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 [data-lo='three-gates'] .tg-audience,
@@ -1072,8 +933,8 @@
 
 [data-lo='three-gates'] .tg-audience-grid h3 {
   font-size: 21px;
-  font-weight: 500;
-  letter-spacing: -0.025em;
+  font-weight: 700;
+  letter-spacing: -0.015em;
 }
 
 [data-lo='three-gates'] .tg-audience-grid p {
@@ -1127,8 +988,8 @@
   max-width: 13ch;
   font-size: clamp(28px, 3.8vw, 52px);
   line-height: 1;
-  letter-spacing: -0.04em;
-  font-weight: 500;
+  letter-spacing: -0.02em;
+  font-weight: 700;
 }
 
 [data-lo='three-gates'] .tg-connect:not(.tg-connect-standalone) .tg-connect-copy h3 {
@@ -1386,6 +1247,62 @@
   text-underline-offset: 3px;
 }
 
+/* Deliberately compact at hero width: 3 columns instead of the guide's full
+ * 6-tile row, so labels stay on one line instead of accidentally wrapping.
+ * The ≤560px 2-column rule below still wins on phones. */
+@media (min-width: 561px) {
+  [data-lo='three-gates'] .tg-hero-connect .tg-client-tiles {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Browser-vs-agent path chooser: one compact tabbed control, a single panel
+ * swaps in place, no second card competing with the primary CTA. */
+[data-lo='three-gates'] .tg-path {
+  display: grid;
+  gap: 12px;
+}
+
+[data-lo='three-gates'] .tg-path-tabs {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--ink-2);
+}
+
+[data-lo='three-gates'] .tg-path-tabs button {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--dim);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+[data-lo='three-gates'] .tg-path-tabs button[aria-selected='true'] {
+  background: var(--ink);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+}
+
+[data-lo='three-gates'] .tg-path-panel > p {
+  margin: 0 0 2px;
+  max-width: 40ch;
+  color: var(--dim);
+  font-size: 14px;
+}
+
+[data-lo='three-gates'] .tg-path-panel .tg-tertiary {
+  margin: 0;
+}
+
 [data-lo='three-gates'] .tg-connect-standalone {
   grid-template-columns: minmax(240px, 0.55fr) minmax(0, 1.45fr);
   align-items: start;
@@ -1427,8 +1344,8 @@
   margin: 0;
   font-size: clamp(28px, 3vw, 40px);
   line-height: 1;
-  letter-spacing: -0.035em;
-  font-weight: 500;
+  letter-spacing: -0.02em;
+  font-weight: 700;
 }
 
 [data-lo='three-gates'] .tg-install-slot.is-large {
@@ -1515,8 +1432,8 @@
   max-width: 15ch;
   font-size: clamp(36px, 5.2vw, 68px);
   line-height: 0.98;
-  letter-spacing: -0.045em;
-  font-weight: 500;
+  letter-spacing: -0.025em;
+  font-weight: 700;
 }
 
 [data-lo='three-gates'] .tg-related ul {
@@ -1567,8 +1484,8 @@
   max-width: 12ch;
   font-size: clamp(36px, 6.4vw, 88px);
   line-height: 0.98;
-  letter-spacing: -0.045em;
-  font-weight: 500;
+  letter-spacing: -0.025em;
+  font-weight: 800;
 }
 
 [data-lo='three-gates'] .tg-final > p {
@@ -1596,39 +1513,10 @@
     width: min(100%, 260px);
     border-radius: 24px;
   }
-  [data-lo='three-gates'] .tg-story {
+  /* Words → Look → Download: row becomes a stack. */
+  [data-lo='three-gates'] .tg-steps {
     grid-template-columns: minmax(0, 1fr);
-    gap: 0;
-  }
-  /* Compact, solid sticky artifact: frame beside its status, nothing bleeds through. */
-  [data-lo='three-gates'] .tg-artifact {
-    z-index: 1;
-    top: 0;
-    grid-template-columns: 76px minmax(0, 1fr);
-    align-items: center;
-    justify-items: start;
-    gap: 14px;
-    padding: 12px 0;
-    background: var(--ink);
-    border-bottom: 1px solid var(--line);
-  }
-  [data-lo='three-gates'] .tg-frame-story {
-    width: 76px;
-    border-radius: 8px;
-  }
-  [data-lo='three-gates'] .tg-frame-story .tg-frame-readout,
-  [data-lo='three-gates'] .tg-frame-story .tg-look-sheet {
-    display: none;
-  }
-  [data-lo='three-gates'] .tg-story[data-gate='2'] .tg-cap {
-    opacity: 1;
-  }
-  [data-lo='three-gates'] .tg-story[data-gate='3'] .tg-frame-story {
-    transform: none;
-  }
-  [data-lo='three-gates'] .tg-artifact-side {
-    justify-items: start;
-    gap: 8px;
+    gap: 28px;
   }
   [data-lo='three-gates'] .tg-outputs {
     justify-content: flex-start;
@@ -1638,10 +1526,6 @@
     height: 24px;
     padding: 0 8px;
     font-size: 10px;
-  }
-  [data-lo='three-gates'] .tg-gate {
-    min-height: clamp(240px, 42vh, 380px);
-    padding-top: 24px;
   }
   [data-lo='three-gates'] .tg-section {
     grid-template-columns: minmax(0, 1fr);
@@ -1722,9 +1606,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-lo='three-gates'] .tg-gate::after {
-    height: 60%;
-  }
   [data-lo='three-gates'] .tg-replay {
     display: none;
   }
