@@ -16,7 +16,7 @@ const project = {
   createdAt: now,
   updatedAt: now,
   source: {
-    playbackUrl: '/fixtures/generated/demo/clean-en-product-demo.mp4',
+    playbackUrl: '../../../../../fixtures/generated/demo/clean-en-product-demo.mp4',
   },
   transcript: {
     total: 8,
