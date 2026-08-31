@@ -73,6 +73,17 @@ async function main(): Promise<void> {
       wordId: (index) => deterministicId('word', `landing-style-preview:${index}`),
     },
   );
+  const pickerWords = normalizeWords(
+    [
+      { text: 'captions', startMs: 180, endMs: 850 },
+      { text: 'that', startMs: 900, endMs: 1_500 },
+      { text: 'move', startMs: 1_550, endMs: 2_700 },
+    ],
+    {
+      durationMs: DURATION_MS,
+      wordId: (index) => deterministicId('word', `style-picker-preview:${index}`),
+    },
+  );
   const renderer = new FfmpegCompositeRenderer();
 
   for (const styleId of STYLES) {
@@ -117,11 +128,13 @@ async function main(): Promise<void> {
     const uiPreset = stylePreset(styleId);
     const uiState = createCaptionState({
       title: `${styleId} picker preview`,
-      words,
+      words: pickerWords,
       style: {
         ...uiPreset,
-        fontSizePct: Math.max(uiPreset.fontSizePct, 0.1),
-        maxCharsPerLine: Math.min(uiPreset.maxCharsPerLine, 16),
+        position: 'center',
+        textAlign: 'center',
+        fontSizePct: Math.max(uiPreset.fontSizePct, 0.16),
+        maxCharsPerLine: Math.min(uiPreset.maxCharsPerLine, 12),
       },
       revisionSeed: `style-picker-preview:${styleId}`,
       language: 'en',
