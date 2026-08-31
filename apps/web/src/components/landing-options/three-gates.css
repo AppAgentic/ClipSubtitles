@@ -1588,28 +1588,31 @@
 
 [data-lo='three-gates'] .tg-audience-visual {
   position: relative;
-  min-height: 150px;
+  min-height: 184px;
   overflow: hidden;
   border-radius: 18px;
-  background: color-mix(in srgb, var(--warm) 8%, var(--ink));
+  background:
+    radial-gradient(circle at 50% 88%, rgb(0 113 227 / 0.16), transparent 58%),
+    #eef6ff;
 }
 
-[data-lo='three-gates'] .tg-audience-visual span {
-  position: absolute;
-  display: block;
-  border: 1px solid rgb(var(--warm-rgb) / 0.3);
-  background: var(--ink-2);
+[data-lo='three-gates'] .tg-audience-visual img {
+  object-fit: contain;
+  object-position: center bottom;
+  padding: 7px 5px 0;
+  filter: saturate(0.94) contrast(1.03);
+  transition: transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-[data-lo='three-gates'] .tg-audience-visual span:nth-child(1) { inset: 24px 34px 32px; border-radius: 18px; }
-[data-lo='three-gates'] .tg-audience-visual span:nth-child(2) { left: 50%; bottom: 48px; width: 62%; height: 14px; border-radius: 999px; translate: -50% 0; background: var(--warm); }
-[data-lo='three-gates'] .tg-audience-visual span:nth-child(3) { left: 50%; bottom: 26px; width: 34%; height: 8px; border-radius: 999px; translate: -50% 0; }
-[data-lo='three-gates'] .tg-audience-visual.is-2 span:nth-child(1) { inset: 24px 22px 44px; }
-[data-lo='three-gates'] .tg-audience-visual.is-2 span:nth-child(2) { left: 22%; bottom: 24px; width: 24%; height: 54px; translate: 0; }
-[data-lo='three-gates'] .tg-audience-visual.is-2 span:nth-child(3) { right: 22%; left: auto; bottom: 24px; width: 42%; height: 54px; translate: 0; }
-[data-lo='three-gates'] .tg-audience-visual.is-3 span:nth-child(1) { inset: 42px 24px; border-radius: 999px; }
-[data-lo='three-gates'] .tg-audience-visual.is-3 span:nth-child(2) { left: 28px; bottom: auto; top: 50%; width: 34px; height: 34px; border-radius: 50%; translate: 0 -50%; }
-[data-lo='three-gates'] .tg-audience-visual.is-3 span:nth-child(3) { right: 28px; left: auto; bottom: auto; top: 50%; width: 34px; height: 34px; border-radius: 50%; translate: 0 -50%; }
+[data-lo='three-gates'] .tg-audience-grid li:hover .tg-audience-visual img {
+  transform: translateY(-3px) scale(1.015);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-lo='three-gates'] .tg-audience-visual img {
+    transition: none;
+  }
+}
 
 [data-lo='three-gates'] .tg-automation-paths {
   display: grid;
@@ -1704,6 +1707,7 @@
   [data-lo='three-gates'] .tg-price-grid article { min-height: 0; }
   [data-lo='three-gates'] .tg-footer-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   [data-lo='three-gates'] .tg-bottom-cta { margin-inline: 16px; width: auto; border-radius: 28px; }
+  [data-lo='three-gates'] .tg-audience-visual { min-height: 224px; }
 }
 
 /* ------------------------------------------------------ Responsive */

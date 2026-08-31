@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { GatesStory } from './GatesStory';
 import { HeroCaptionVideo } from './HeroCaptionVideo';
 import { OptionSwitcher } from './OptionSwitcher';
@@ -12,19 +13,25 @@ import { MarketingFooter } from '@/components/marketing/MarketingFooter';
 import './landing-options.css';
 import './three-gates.css';
 
-const AUDIENCES: Array<[string, string]> = [
-  [
-    'Creators & editors',
-    'Add readable, animated captions to short videos without rebuilding every word on a timeline.',
-  ],
-  [
-    'Studios & agencies',
-    'Reuse the same caption look across a series, then deliver publish-ready video and subtitle files.',
-  ],
-  [
-    'Agents & automation teams',
-    'Let ChatGPT, Claude, Codex or your own workflow prepare captioned videos while you keep approval over the final export.',
-  ],
+const AUDIENCES = [
+  {
+    title: 'Creators & editors',
+    body: 'Add readable, animated captions to short videos without rebuilding every word on a timeline.',
+    image: '/marketing/audience-creators-editors.webp',
+    alt: 'A creator reviewing animated captions at an editing desk.',
+  },
+  {
+    title: 'Studios & agencies',
+    body: 'Reuse the same caption look across a series, then deliver publish-ready video and subtitle files.',
+    image: '/marketing/audience-studios-agencies.webp',
+    alt: 'A studio team reviewing a consistent set of captioned videos.',
+  },
+  {
+    title: 'Agents & automation teams',
+    body: 'Let ChatGPT, Claude, Codex or your own workflow prepare captioned videos while you keep approval over the final export.',
+    image: '/marketing/audience-agents-automation.webp',
+    alt: 'A builder connecting an AI workflow to a human-approved captioned video.',
+  },
 ];
 
 const FAQS: Array<[string, string]> = [
@@ -171,13 +178,18 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
           </div>
           <div className="tg-audience-body">
             <ul className="tg-audience-grid">
-              {AUDIENCES.map(([title, body], index) => (
-                <li key={title}>
-                  <div className={`tg-audience-visual is-${index + 1}`} aria-hidden>
-                    <span /><span /><span />
+              {AUDIENCES.map((audience) => (
+                <li key={audience.title}>
+                  <div className="tg-audience-visual">
+                    <Image
+                      src={audience.image}
+                      alt={audience.alt}
+                      fill
+                      sizes="(max-width: 620px) calc(100vw - 72px), (max-width: 900px) 36vw, 220px"
+                    />
                   </div>
-                  <h3>{title}</h3>
-                  <p>{body}</p>
+                  <h3>{audience.title}</h3>
+                  <p>{audience.body}</p>
                 </li>
               ))}
             </ul>
