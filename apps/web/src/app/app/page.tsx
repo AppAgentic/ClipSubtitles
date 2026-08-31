@@ -3,14 +3,13 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Export, ProjectSummary, Task } from '@clipsubtitles/contracts';
+import type { CaptionProject, Export, ProjectSummary, Task } from '@clipsubtitles/contracts';
 import { AppShell } from '@/components/shell/AppShell';
 import {
   Button,
   Chip,
   EmptyState,
   LinkButton,
-  Panel,
   Progress,
   statusTone,
 } from '@/components/ui/primitives';
@@ -29,6 +28,8 @@ function Library() {
   const [projects, setProjects] = useState<ProjectSummary[] | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [exports, setExports] = useState<Export[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedProject, setSelectedProject] = useState<CaptionProject | null>(null);
   const [fixtures, setFixtures] = useState<
     Array<{ id: string; title: string; available: boolean }>
   >([]);
@@ -40,6 +41,7 @@ function Library() {
       setProjects(p.projects);
       setTasks(t.tasks);
       setExports(e.exports);
+      setSelectedId((current) => current ?? p.projects[0]?.id ?? null);
     } catch (err) {
       toast.push('error', errorMessage(err));
     }
@@ -52,6 +54,25 @@ function Library() {
       .then((f) => setFixtures(f.fixtures.filter((x) => x.available)))
       .catch(() => setFixtures([]));
   }, [load]);
+
+  useEffect(() => {
+    if (!selectedId) {
+      setSelectedProject(null);
+      return;
+    }
+    let cancelled = false;
+    api
+      .getProject(selectedId)
+      .then((project) => {
+        if (!cancelled) setSelectedProject(project);
+      })
+      .catch(() => {
+        if (!cancelled) setSelectedProject(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedId]);
 
   const hasActive = tasks.some((t) => t.status === 'queued' || t.status === 'running');
   useInterval(() => void load(), hasActive ? 2000 : 15000);
@@ -87,139 +108,362 @@ function Library() {
     }
   };
 
+  const selectedSummary = projects?.find((project) => project.id === selectedId) ?? projects?.[0];
+
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-      <div className="min-w-0">
-        <div className="rise mb-5 flex items-end justify-between">
+    <div className="dashboard-editorial">
+      <section className="rise flex flex-col gap-5 border-b border-[#29241f] pb-7 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.2em] text-signal">
+            Your production desk
+          </p>
+          <h1 className="editorial-serif max-w-[760px] text-[36px] font-semibold leading-[1.02] tracking-[-0.045em] text-[#f3ece3] sm:text-[50px]">
+            {greeting()} What are we creating today?
+          </h1>
+        </div>
+        <LinkButton href="/app/new" variant="primary" size="lg" className="shrink-0">
+          <span aria-hidden>＋</span> New video
+        </LinkButton>
+      </section>
+
+      <section className="rise rise-1 mt-6 grid min-h-[132px] gap-5 rounded-xl border border-[#322c26] bg-[#11100e] p-5 sm:grid-cols-[1fr_auto] sm:items-center sm:px-7">
+        <div className="flex items-center gap-4">
+          <span
+            className="grid h-12 w-12 shrink-0 place-items-center rounded-lg border border-[#4b4137] bg-[#1b1815] text-[23px] text-signal"
+            aria-hidden
+          >
+            ↑
+          </span>
           <div>
-            <h1 className="text-[28px] font-semibold tracking-[-0.03em]">Library</h1>
-            <p className="text-[13px] text-ink-mute">
-              Your videos, current progress and recent downloads in one place.
+            <h2 className="editorial-serif text-[21px] font-semibold tracking-[-0.025em]">
+              Start with a video
+            </h2>
+            <p className="mt-1 max-w-[580px] text-[12px] leading-relaxed text-ink-dim">
+              Upload a clip or import a link. We’ll create the captions, then you can refine the
+              words and choose the look.
             </p>
           </div>
-          <LinkButton href="/app/new" variant="primary">
-            Caption a video
-          </LinkButton>
         </div>
+        <LinkButton href="/app/new" variant="ghost" className="w-full sm:w-auto">
+          Choose a video <span aria-hidden>→</span>
+        </LinkButton>
+      </section>
 
-        {projects === null ? (
-          <div className="text-[13px] text-ink-mute">Loading projects…</div>
-        ) : projects.length === 0 ? (
-          <div className="rise rise-1">
-            <EmptyState
-              title="Caption your first video."
-              body="Upload a short video, review the words, choose a style and preview the result before you export."
-              actions={
-                <>
-                  <LinkButton href="/app/new" variant="primary">
-                    Choose a video
-                  </LinkButton>
-                  {fixtures.map((f) => (
-                    <Button key={f.id} onClick={() => void useDemo(f.id)} loading={busy === f.id}>
-                      Use demo: {f.title}
-                    </Button>
-                  ))}
-                </>
-              }
-            />
-          </div>
-        ) : (
-          <Panel className="rise rise-1 table-scroll overflow-hidden">
-            <table className="w-full text-left text-[13px]">
-              <thead className="text-[10px] uppercase tracking-[0.14em] text-ink-mute">
-                <tr className="border-b border-line">
-                  <th className="px-4 py-2.5 font-medium">Video</th>
-                  <th className="px-3 py-2.5 font-medium">Status</th>
-                  <th className="px-3 py-2.5 text-right font-medium">Length</th>
-                  <th className="px-3 py-2.5 text-right font-medium">Captions</th>
-                  <th className="px-3 py-2.5 text-right font-medium">Updated</th>
-                  <th className="px-3 py-2.5" />
-                </tr>
-              </thead>
-              <tbody>
-                {projects.map((p) => (
-                  <tr
-                    key={p.id}
-                    className="group border-b border-line/60 transition-colors last:border-b-0 hover:bg-panel-2/60"
+      {projects === null ? (
+        <DashboardSkeleton />
+      ) : projects.length === 0 || !selectedSummary ? (
+        <div className="rise rise-2 mt-6">
+          <EmptyState
+            title="Caption your first video."
+            body="Upload a short video, review the words, choose a style and preview the result before you export."
+            actions={
+              <>
+                <LinkButton href="/app/new" variant="primary">
+                  Choose a video
+                </LinkButton>
+                {fixtures.map((fixture) => (
+                  <Button
+                    key={fixture.id}
+                    onClick={() => void useDemo(fixture.id)}
+                    loading={busy === fixture.id}
                   >
-                    <td className="px-4 py-3">
-                      <Link
-                        href={`/studio/${p.id}`}
-                        className="font-medium text-ink hover:text-signal"
-                      >
-                        {p.title}
-                      </Link>
-                    </td>
-                    <td className="px-3 py-3">
-                      <Chip
-                        tone={statusTone(p.status)}
-                        dot={p.status === 'transcribing' || p.status === 'importing'}
-                      >
-                        {titleCase(p.status)}
-                      </Chip>
-                    </td>
-                    <td className="mono px-3 py-3 text-right text-ink-dim">
-                      {p.durationMs !== undefined ? timecode(p.durationMs, false) : '—'}
-                    </td>
-                    <td className="mono px-3 py-3 text-right text-ink-dim">{p.pageCount}</td>
-                    <td className="mono px-3 py-3 text-right text-ink-mute">
-                      {relativeTime(p.updatedAt)}
-                    </td>
-                    <td className="px-3 py-3 text-right">
-                      <div className="flex justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
-                        <LinkButton href={`/studio/${p.id}`} size="sm">
-                          Open
-                        </LinkButton>
-                        <Button size="sm" variant="danger" onClick={() => void remove(p)}>
-                          Delete
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
+                    Try {fixture.title}
+                  </Button>
                 ))}
-              </tbody>
-            </table>
-          </Panel>
-        )}
-
-        {projects && projects.length > 0 && fixtures.length > 0 ? (
-          <div className="mt-4 flex flex-wrap items-center gap-2 text-[12px] text-ink-mute">
-            <span>Local demo clips:</span>
-            {fixtures.map((f) => (
-              <Button
-                key={f.id}
-                size="sm"
-                variant="subtle"
-                onClick={() => void useDemo(f.id)}
-                loading={busy === f.id}
-              >
-                {f.title}
-              </Button>
-            ))}
+              </>
+            }
+          />
+        </div>
+      ) : (
+        <>
+          <div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(300px,0.8fr)]">
+            <SelectedProject
+              summary={selectedSummary}
+              project={selectedProject?.id === selectedSummary?.id ? selectedProject : null}
+            />
+            <section className="rise rise-3 overflow-hidden rounded-xl border border-[#332d27] bg-[#11100f]">
+              <header className="flex items-center justify-between border-b border-[#2b2722] px-5 py-4">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-ink-mute">
+                    Ready when you are
+                  </p>
+                  <h2 className="editorial-serif mt-1 text-[20px] font-semibold">Recent exports</h2>
+                </div>
+                <Link
+                  href="/app/exports"
+                  className="text-[12px] text-signal hover:text-signal-soft"
+                >
+                  View all
+                </Link>
+              </header>
+              <ExportList exports={exports.slice(0, 5)} />
+            </section>
           </div>
-        ) : null}
-      </div>
 
-      <aside className="flex flex-col gap-4">
-        <Panel
-          title="In progress"
-          className="rise rise-2"
-          aside={
-            hasActive ? (
-              <Chip tone="signal" dot>
-                working
-              </Chip>
-            ) : null
-          }
-        >
-          <TaskList tasks={tasks} onChanged={() => void load()} />
-        </Panel>
-        <Panel title="Recent exports" className="rise rise-3">
-          <ExportList exports={exports.slice(0, 6)} />
-        </Panel>
-      </aside>
+          <section className="rise rise-3 mt-8">
+            <div className="mb-4 flex items-end justify-between gap-4">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.18em] text-ink-mute">
+                  Your workspace
+                </p>
+                <h2 className="editorial-serif mt-1 text-[24px] font-semibold tracking-[-0.025em]">
+                  Recent videos
+                </h2>
+              </div>
+              <span className="mono text-[11px] text-ink-mute">{projects.length} saved</span>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {projects.slice(0, 6).map((project, index) => (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  index={index}
+                  selected={project.id === selectedSummary?.id}
+                  onSelect={() => setSelectedId(project.id)}
+                  onDelete={() => void remove(project)}
+                />
+              ))}
+            </div>
+          </section>
+
+          <section className="rise rise-4 mt-8 overflow-hidden rounded-xl border border-[#302a24] bg-[#100f0d]">
+            <header className="flex items-center justify-between border-b border-[#29241f] px-5 py-4">
+              <h2 className="editorial-serif text-[19px] font-semibold">In progress</h2>
+              {hasActive ? (
+                <Chip tone="signal" dot>
+                  working
+                </Chip>
+              ) : (
+                <span className="text-[11px] text-ink-mute">All caught up</span>
+              )}
+            </header>
+            <TaskList tasks={tasks} onChanged={() => void load()} compact />
+          </section>
+        </>
+      )}
+
+      {projects && projects.length > 0 && fixtures.length > 0 ? (
+        <div className="mt-5 flex flex-wrap items-center gap-2 text-[11px] text-ink-mute">
+          <span>Demo clips:</span>
+          {fixtures.map((fixture) => (
+            <Button
+              key={fixture.id}
+              size="sm"
+              variant="subtle"
+              onClick={() => void useDemo(fixture.id)}
+              loading={busy === fixture.id}
+            >
+              {fixture.title}
+            </Button>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
+}
+
+function SelectedProject({
+  summary,
+  project,
+}: {
+  summary: ProjectSummary;
+  project: CaptionProject | null;
+}) {
+  return (
+    <article className="rise rise-2 grid overflow-hidden rounded-xl border border-[#3a332b] bg-[#13110f] lg:grid-cols-[minmax(220px,0.8fr)_minmax(300px,1.2fr)]">
+      <div className="relative min-h-[300px] overflow-hidden bg-[#070706] lg:min-h-[440px]">
+        {project?.source?.playbackUrl ? (
+          <video
+            className="h-full w-full object-cover"
+            src={project.source.playbackUrl}
+            muted
+            playsInline
+            controls
+            preload="metadata"
+            aria-label={`Preview of ${summary.title}`}
+          />
+        ) : (
+          <ProjectArtwork title={summary.title} index={0} large />
+        )}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/75 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-5 bottom-5">
+          <span className="inline-block rounded-md bg-black/70 px-3 py-2 text-[17px] font-bold leading-tight text-white shadow-lg">
+            {summary.status === 'captioned'
+              ? 'Your story, ready to share.'
+              : projectStatusSentence(summary.status)}
+          </span>
+        </div>
+      </div>
+      <div className="flex flex-col p-6 sm:p-7">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.19em] text-signal">Continue editing</p>
+            <h2 className="editorial-serif mt-2 text-[30px] font-semibold leading-tight tracking-[-0.04em] text-[#f3ece3]">
+              {summary.title}
+            </h2>
+          </div>
+          <Chip
+            tone={statusTone(summary.status)}
+            dot={summary.status === 'transcribing' || summary.status === 'importing'}
+          >
+            {titleCase(summary.status)}
+          </Chip>
+        </div>
+        <dl className="mt-6 grid grid-cols-3 gap-3 border-y border-[#302a24] py-4 text-[11px]">
+          <div>
+            <dt className="text-ink-mute">Length</dt>
+            <dd className="mono mt-1 text-[13px] text-ink">
+              {summary.durationMs !== undefined ? timecode(summary.durationMs, false) : '—'}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-ink-mute">Caption pages</dt>
+            <dd className="mono mt-1 text-[13px] text-ink">{summary.pageCount}</dd>
+          </div>
+          <div>
+            <dt className="text-ink-mute">Updated</dt>
+            <dd className="mt-1 text-[13px] text-ink">{relativeTime(summary.updatedAt)}</dd>
+          </div>
+        </dl>
+        <p className="mt-6 max-w-[44ch] text-[13px] leading-relaxed text-ink-dim">
+          Review the words, find the right visual rhythm, preview the finished clip, then export
+          when it feels right.
+        </p>
+        <div className="mt-auto grid grid-cols-2 gap-2 pt-7">
+          <LinkButton href={`/studio/${summary.id}`} variant="primary">
+            Fix words
+          </LinkButton>
+          <LinkButton href={`/studio/${summary.id}?panel=styles`} variant="ghost">
+            Try styles
+          </LinkButton>
+          <LinkButton href={`/studio/${summary.id}?preview=1`} variant="ghost">
+            Preview
+          </LinkButton>
+          <LinkButton href={`/studio/${summary.id}/render`} variant="ghost">
+            Export
+          </LinkButton>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function ProjectCard({
+  project,
+  index,
+  selected,
+  onSelect,
+  onDelete,
+}: {
+  project: ProjectSummary;
+  index: number;
+  selected: boolean;
+  onSelect: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <article
+      className={`group overflow-hidden rounded-lg border bg-[#12110f] transition-[border,transform,background] hover:-translate-y-0.5 hover:bg-[#171411] ${selected ? 'border-signal/65' : 'border-[#322c26]'}`}
+    >
+      <button
+        type="button"
+        onClick={onSelect}
+        className="grid w-full grid-cols-[112px_1fr] text-left"
+      >
+        <div className="h-[108px] overflow-hidden">
+          <ProjectArtwork title={project.title} index={index} />
+        </div>
+        <div className="min-w-0 p-4">
+          <div className="flex items-center justify-between gap-2">
+            <Chip tone={statusTone(project.status)}>{titleCase(project.status)}</Chip>
+            <span className="mono text-[10px] text-ink-mute">
+              {project.durationMs !== undefined ? timecode(project.durationMs, false) : '—'}
+            </span>
+          </div>
+          <h3 className="mt-3 truncate text-[14px] font-medium text-ink">{project.title}</h3>
+          <p className="mt-1 text-[11px] text-ink-mute">
+            Updated {relativeTime(project.updatedAt)}
+          </p>
+        </div>
+      </button>
+      <div className="flex items-center justify-between border-t border-[#2b2722] px-3 py-2">
+        <Link
+          href={`/studio/${project.id}`}
+          className="text-[11px] text-signal hover:text-signal-soft"
+        >
+          Open video
+        </Link>
+        <button
+          type="button"
+          onClick={onDelete}
+          className="text-[11px] text-ink-mute opacity-70 hover:text-danger group-hover:opacity-100"
+        >
+          Delete
+        </button>
+      </div>
+    </article>
+  );
+}
+
+function ProjectArtwork({
+  title,
+  index,
+  large = false,
+}: {
+  title: string;
+  index: number;
+  large?: boolean;
+}) {
+  const backgrounds = [
+    'from-[#43301e] via-[#1d1712] to-[#090909]',
+    'from-[#25333a] via-[#171b1d] to-[#080909]',
+    'from-[#3d2928] via-[#1e1414] to-[#090808]',
+  ];
+  return (
+    <div
+      className={`relative grid h-full w-full place-items-center bg-gradient-to-br ${backgrounds[index % backgrounds.length]}`}
+    >
+      <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(circle_at_30%_20%,white_0,transparent_28%),linear-gradient(120deg,transparent_30%,white_31%,transparent_32%)]" />
+      <span
+        className={`editorial-serif relative text-center font-semibold text-white/80 ${large ? 'max-w-[11ch] text-[30px]' : 'max-w-[9ch] text-[16px]'}`}
+      >
+        {title}
+      </span>
+    </div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="mt-6 grid animate-pulse gap-5 xl:grid-cols-[1.7fr_0.8fr]">
+      <div className="h-[450px] rounded-xl bg-[#171411]" />
+      <div className="h-[450px] rounded-xl bg-[#141210]" />
+    </div>
+  );
+}
+
+function greeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning.';
+  if (hour < 18) return 'Good afternoon.';
+  return 'Good evening.';
+}
+
+function projectStatusSentence(status: ProjectSummary['status']): string {
+  switch (status) {
+    case 'awaiting_source':
+      return 'Add a video to begin.';
+    case 'importing':
+      return 'Preparing your video…';
+    case 'transcribing':
+      return 'Listening for every word…';
+    case 'ready':
+      return 'Ready for captions.';
+    case 'failed':
+      return 'This video needs attention.';
+    default:
+      return 'Your story, ready to shape.';
+  }
 }
 
 export function TaskList({

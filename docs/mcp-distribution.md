@@ -6,6 +6,11 @@ The remote MCP server can be added directly by URL without any registry listing:
 https://api.clipsubtitles.com/api/mcp
 ```
 
+The server exposes portable MCP Apps UI resources for file selection, visual
+style review, explicit export approval, live progress/results and focused word
+editing. ChatGPT-specific metadata is additive compatibility: clients without
+UI support can complete the same workflow through the ordinary tools.
+
 The root `server.json` prepares ClipSubtitles for the official MCP Registry under
 the domain-verified name `com.clipsubtitles/mcp`. The registry hosts metadata for
 discovery and downstream marketplaces; it does not make a bare command such as

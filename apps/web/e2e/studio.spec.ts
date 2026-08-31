@@ -21,7 +21,7 @@ async function signIn(page: Page): Promise<void> {
   await page.goto('/auth/login?returnTo=/app');
   await expect(page.getByRole('heading', { name: 'Choose a local identity' })).toBeVisible();
   await page.getByRole('button', { name: /Joe \(mock\)/ }).click();
-  await expect(page.getByRole('heading', { name: 'Library' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /What are we creating today\?/ })).toBeVisible();
 }
 
 test.beforeAll(async ({ request }) => {
@@ -51,7 +51,7 @@ test('library, editor, and render routes stay within the viewport and the captio
   await page.goto('/app/new');
   await noHorizontalOverflow(page, 'new-clip');
   const demo = page.getByRole('button', { name: /Clean English product demo/ });
-  test.skip(!(await demo.count()), 'Demo fixtures are missing: run `pnpm fixtures:build`.');
+  await expect(demo).toBeVisible({ timeout: 10_000 });
   await demo.first().click();
   await expect(page).toHaveURL(/\/studio\/proj_/);
   await expect(page.getByRole('dialog', { name: /Generate captions/ })).toBeVisible();

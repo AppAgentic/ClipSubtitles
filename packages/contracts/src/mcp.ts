@@ -27,6 +27,9 @@ export const MCP_TOOL_NAMES = [
   'get_caption_task',
   'cancel_caption_task',
   'get_caption_style_catalog',
+  'open_caption_start',
+  'show_caption_style_picker',
+  'open_caption_editor',
 ] as const;
 export type McpToolName = (typeof MCP_TOOL_NAMES)[number];
 
@@ -68,6 +71,16 @@ const ProjectPointerSchema = z.object({
   version: z.number().int().positive(),
 });
 
+/** ChatGPT file parameter shape. The exact four properties are required by plugin scanning. */
+const OpenAiFileSchema = z
+  .object({
+    download_url: z.url({ protocol: /^https?$/ }),
+    file_id: z.string().min(1).max(200),
+    mime_type: z.string().max(120).optional(),
+    file_name: z.string().max(200).optional(),
+  })
+  .strict();
+
 export const CreateCaptionProjectTool = describe({
   name: 'create_caption_project',
   description:
@@ -79,6 +92,9 @@ export const CreateCaptionProjectTool = describe({
         .url({ protocol: /^https?$/ })
         .max(LIMITS.maxSourceUrlChars)
         .optional(),
+      file: OpenAiFileSchema.optional().describe(
+        'A ChatGPT file attachment. The server imports its temporary download_url.',
+      ),
       language: LanguageTagSchema.optional(),
       idempotencyKey: IdempotencyKeySchema.optional(),
     })
@@ -294,6 +310,57 @@ export const GetCaptionStyleCatalogTool = describe({
   cost: 'free',
 });
 
+export const OpenCaptionStartTool = describe({
+  name: 'open_caption_start',
+  description:
+    'Open the ClipSubtitles start card so the user can choose a ChatGPT file, create a project, and continue the caption workflow. This presentation tool does not create or change data until the user chooses a file in the UI.',
+  inputSchema: z.object({}).strict(),
+  outputSchema: z.object({ ready: z.literal(true) }),
+  annotations: {
+    title: 'Open caption start card',
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+  scope: 'captions:read',
+  cost: 'free',
+});
+
+export const ShowCaptionStylePickerTool = describe({
+  name: 'show_caption_style_picker',
+  description:
+    'Open an interactive visual style picker for an existing caption project. Returns the authoritative project snapshot and available presets; applying a style from the UI calls update_caption_project with optimistic versioning.',
+  inputSchema: z.object({ projectId: ProjectIdSchema }).strict(),
+  outputSchema: z.object({ project: CaptionProjectSchema, presets: z.array(StyleConfigSchema) }),
+  annotations: {
+    title: 'Show caption style picker',
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+  scope: 'captions:read',
+  cost: 'free',
+});
+
+export const OpenCaptionEditorTool = describe({
+  name: 'open_caption_editor',
+  description:
+    'Open the focused ChatGPT caption editor for an existing project. Returns the authoritative project, caption pages, and a bounded word window; edits from the UI call update_caption_project and remain version checked.',
+  inputSchema: z.object({ projectId: ProjectIdSchema }).strict(),
+  outputSchema: z.object({ project: CaptionProjectSchema }),
+  annotations: {
+    title: 'Open caption editor',
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+  scope: 'captions:read',
+  cost: 'free',
+});
+
 export const MCP_TOOLS = [
   CreateCaptionProjectTool,
   GenerateCaptionsTool,
@@ -304,6 +371,9 @@ export const MCP_TOOLS = [
   GetCaptionTaskTool,
   CancelCaptionTaskTool,
   GetCaptionStyleCatalogTool,
+  OpenCaptionStartTool,
+  ShowCaptionStylePickerTool,
+  OpenCaptionEditorTool,
 ] as const;
 
 export const MCP_SERVER_INFO = {

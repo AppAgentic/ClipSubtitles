@@ -38,9 +38,11 @@ Working with an assistant, you can:
 - **Recover your work** in the web studio at any time: the same projects,
   versions, tasks and downloads are there.
 
-ClipSubtitles is built agent-first: a typed REST API with OpenAPI, and an MCP
-server with nine tools over Streamable HTTP, share one contract with the web
-studio.
+ClipSubtitles is built agent-first: a typed REST API with OpenAPI and a
+goal-oriented MCP server over Streamable HTTP share one contract with the web
+studio. Compatible hosts can also render optional interactive file, style,
+approval, progress and editing surfaces; every workflow remains fully usable as
+ordinary tools when a host does not support UI resources.
 
 ## Category
 

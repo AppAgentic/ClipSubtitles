@@ -22,6 +22,7 @@ import {
 } from '../services/captions';
 import { createProject, getProjectView, patchProject } from '../services/projects';
 import { cancelTask, getTaskView } from '../services/tasks';
+import { registerClipSubtitlesUi, UI_RESOURCES } from './ui';
 
 type Handlers = {
   [K in McpToolName]: (ctx: AppContext, principal: Principal, input: unknown) => Promise<unknown>;
@@ -42,8 +43,25 @@ export const TOOL_HANDLERS: Handlers = {
     ) as {
       title?: string;
       sourceUrl?: string;
+      file?: {
+        download_url: string;
+        file_id: string;
+        mime_type?: string;
+        file_name?: string;
+      };
       language?: string;
       idempotencyKey?: string;
+    };
+    const sourceUrl = input.sourceUrl ?? input.file?.download_url;
+    const normalized = {
+      ...(input.title
+        ? { title: input.title }
+        : input.file?.file_name
+          ? { title: input.file.file_name.replace(/\.[^.]+$/, '').slice(0, 120) }
+          : {}),
+      ...(sourceUrl ? { sourceUrl } : {}),
+      ...(input.language ? { language: input.language } : {}),
+      ...(input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : {}),
     };
     const out = await withIdempotency(
       ctx,
@@ -51,9 +69,9 @@ export const TOOL_HANDLERS: Handlers = {
         workspaceId: principal.workspaceId,
         scope: 'projects.create',
         key: input.idempotencyKey,
-        payload: input,
+        payload: normalized,
       },
-      () => createProject(ctx, principal, input),
+      () => createProject(ctx, principal, normalized),
     );
     const res = out.body;
     const nextSteps = res.uploadTarget
@@ -198,6 +216,34 @@ export const TOOL_HANDLERS: Handlers = {
       ],
     };
   },
+
+  async open_caption_start(_ctx, _principal, raw) {
+    MCP_TOOLS[9].inputSchema.parse(raw);
+    return { ready: true as const };
+  },
+
+  async show_caption_style_picker(ctx, principal, raw) {
+    const input = MCP_TOOLS[10].inputSchema.parse(raw);
+    return {
+      project: await getProjectView(ctx, principal, input.projectId, {
+        includePages: true,
+        includeWords: false,
+      }),
+      presets: Object.values(STYLE_PRESETS),
+    };
+  },
+
+  async open_caption_editor(ctx, principal, raw) {
+    const input = MCP_TOOLS[11].inputSchema.parse(raw);
+    return {
+      project: await getProjectView(ctx, principal, input.projectId, {
+        includePages: true,
+        includeWords: true,
+        wordsOffset: 0,
+        wordsLimit: 500,
+      }),
+    };
+  },
 };
 
 function summarize(name: McpToolName, output: unknown): string {
@@ -215,6 +261,12 @@ function summarize(name: McpToolName, output: unknown): string {
     }
     case 'get_caption_style_catalog':
       return `${(o.presets as unknown[]).length} caption presets plus bounded font, layout, motion, highlight and emoji controls.`;
+    case 'open_caption_start':
+      return 'The ClipSubtitles video start card is ready.';
+    case 'show_caption_style_picker':
+      return `Showing caption styles for ${(o.project as { title: string }).title}.`;
+    case 'open_caption_editor':
+      return `Opening the focused caption editor for ${(o.project as { title: string }).title}.`;
     case 'render_caption_export': {
       const q = o.quote as { creditCost: number; id: string; expiresAt: string };
       return o.status === 'quote_required'
@@ -240,7 +292,9 @@ export function createMcpServer(ctx: AppContext, principal: Principal): McpServe
     { name: MCP_SERVER_INFO.name, title: MCP_SERVER_INFO.title, version: MCP_SERVER_INFO.version },
     { capabilities: { tools: {} }, instructions: llmInstructions(ctx) },
   );
+  registerClipSubtitlesUi(server, ctx);
   for (const tool of MCP_TOOLS) {
+    const resourceUri = toolResourceUri(tool.name);
     server.registerTool(
       tool.name,
       {
@@ -255,7 +309,23 @@ export function createMcpServer(ctx: AppContext, principal: Principal): McpServe
           idempotentHint: tool.annotations.idempotentHint,
           openWorldHint: tool.annotations.openWorldHint,
         },
-        _meta: { 'clipsubtitles/scope': tool.scope, 'clipsubtitles/cost': tool.cost },
+        _meta: {
+          'clipsubtitles/scope': tool.scope,
+          'clipsubtitles/cost': tool.cost,
+          ui: {
+            visibility: ['model', 'app'],
+            ...(resourceUri ? { resourceUri } : {}),
+          },
+          ...(resourceUri
+            ? {
+                'openai/outputTemplate': resourceUri,
+                'openai/widgetAccessible': true,
+              }
+            : {}),
+          ...(tool.name === 'create_caption_project' ? { 'openai/fileParams': ['file'] } : {}),
+          'openai/toolInvocation/invoking': invocationLabel(tool.name, true),
+          'openai/toolInvocation/invoked': invocationLabel(tool.name, false),
+        },
       },
       async (args: Record<string, unknown>): Promise<CallToolResult> => {
         const started = ctx.clock.now();
@@ -310,10 +380,39 @@ export function createMcpServer(ctx: AppContext, principal: Principal): McpServe
 export function llmInstructions(ctx: AppContext): string {
   return [
     'ClipSubtitles turns a short video into accurate, editable, styled captions and rendered exports.',
-    'Workflow: get_caption_style_catalog (optional) -> create_caption_project -> generate_captions -> get_caption_project -> (update_caption_project) -> render_caption_preview (free) -> render_caption_export (quote, then explicit approval) -> get_caption_task.',
+    'Workflow: open_caption_start (when visual file selection helps) -> create_caption_project -> generate_captions -> get_caption_project -> (show_caption_style_picker or open_caption_editor) -> update_caption_project -> render_caption_preview (free) -> render_caption_export (quote, then explicit approval) -> get_caption_task.',
     'Never rewrite spoken words yourself; use explicit per-word edit ops only when the user asks.',
     'Paid renders: always show the quote (credits, outputs, project version, expiry) and get explicit approval before passing approval.',
     CONTENT_NOTICE,
     `ClipSubtitles Library: ${ctx.config.webPublicUrl}/app. Developer guide: ${ctx.config.webPublicUrl}/developers.`,
   ].join(' ');
+}
+
+function toolResourceUri(name: McpToolName): string | undefined {
+  switch (name) {
+    case 'open_caption_start':
+      return UI_RESOURCES.start;
+    case 'show_caption_style_picker':
+      return UI_RESOURCES.styles;
+    case 'render_caption_export':
+      return UI_RESOURCES.approval;
+    case 'get_caption_task':
+      return UI_RESOURCES.progress;
+    case 'open_caption_editor':
+      return UI_RESOURCES.editor;
+    default:
+      return undefined;
+  }
+}
+
+function invocationLabel(name: McpToolName, active: boolean): string {
+  const labels: Partial<Record<McpToolName, [string, string]>> = {
+    open_caption_start: ['Opening video picker…', 'Video picker ready'],
+    show_caption_style_picker: ['Loading caption styles…', 'Caption styles ready'],
+    open_caption_editor: ['Opening caption editor…', 'Caption editor ready'],
+    render_caption_export: ['Preparing export…', 'Export details ready'],
+    get_caption_task: ['Checking progress…', 'Progress updated'],
+  };
+  const pair = labels[name] ?? ['Working…', 'Done'];
+  return pair[active ? 0 : 1];
 }

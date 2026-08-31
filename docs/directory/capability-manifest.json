@@ -173,6 +173,48 @@
       },
       "sideEffects": "none",
       "description": "Read all caption presets and the bounded font, layout, motion, highlight and decorative-emoji controls available to agents before editing a project."
+    },
+    {
+      "name": "open_caption_start",
+      "title": "Open caption start card",
+      "scope": "captions:read",
+      "cost": "free",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "sideEffects": "none until the user chooses a file in the optional UI; project creation is delegated to create_caption_project",
+      "description": "Open an optional MCP Apps / ChatGPT start card for choosing a video and beginning the caption workflow."
+    },
+    {
+      "name": "show_caption_style_picker",
+      "title": "Show caption style picker",
+      "scope": "captions:read",
+      "cost": "free",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "sideEffects": "none until the user applies a style in the optional UI; edits are delegated to update_caption_project with optimistic versioning",
+      "description": "Open a visual style picker backed by the authoritative project and preset catalog."
+    },
+    {
+      "name": "open_caption_editor",
+      "title": "Open caption editor",
+      "scope": "captions:read",
+      "cost": "free",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "sideEffects": "none until the user edits in the optional UI; edits are delegated to update_caption_project with optimistic versioning",
+      "description": "Open the focused optional caption editor with scenes, playback, word correction and style controls."
     }
   ],
   "billing": {
@@ -209,7 +251,7 @@
     "promptInjection": "media/transcript content is quarantined as data; tool descriptions instruct the model accordingly"
   },
   "evidence": {
-    "conformance": "pnpm mcp:conformance — initialize, tools/list (9 tools), DCR + PKCE, style catalog, full workflow to a completed render over Streamable HTTP",
+    "conformance": "pnpm mcp:conformance — initialize, tools/list, resources/list + resources/read, DCR + PKCE, optional UI surfaces, style catalog, and a full workflow to a completed render over Streamable HTTP",
     "apiTests": "packages/server/src/test/*.test.ts — auth, scopes, idempotency, quotes, billing, uploads, retention, SSRF guard",
     "renderDeterminism": "pnpm smoke:render — byte-identical repeat renders",
     "e2e": "pnpm smoke:e2e and apps/web/e2e/studio.spec.ts (desktop + 390px)"

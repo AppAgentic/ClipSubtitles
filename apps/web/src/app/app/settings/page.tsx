@@ -1,12 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { Connection, LedgerEntry, Me } from '@clipsubtitles/contracts';
+import type { LedgerEntry, Me } from '@clipsubtitles/contracts';
 import { AppShell } from '@/components/shell/AppShell';
-import { Button, Chip, Field, KV, Panel, Slider, TextInput } from '@/components/ui/primitives';
+import { Button, Field, KV, Panel, Slider, TextInput } from '@/components/ui/primitives';
 import { useToast } from '@/components/ui/Toast';
 import { api, errorMessage } from '@/lib/api';
-import { relativeTime } from '@/lib/format';
 
 export default function AppSettingsPage() {
   return <AppShell render={(me) => <Settings me={me} />} />;
@@ -18,14 +17,9 @@ function Settings({ me }: { me: Me }) {
   const [sourceDays, setSourceDays] = useState(me.workspace.retention.sourceDays);
   const [exportDays, setExportDays] = useState(me.workspace.retention.exportDays);
   const [saving, setSaving] = useState(false);
-  const [connections, setConnections] = useState<Connection[]>([]);
   const [ledger, setLedger] = useState<LedgerEntry[]>([]);
 
   const load = () => {
-    api
-      .connections()
-      .then((r) => setConnections(r.connections))
-      .catch(() => undefined);
     api
       .ledger()
       .then((r) => setLedger(r.entries))
@@ -42,22 +36,6 @@ function Settings({ me }: { me: Me }) {
       toast.push('error', errorMessage(err));
     } finally {
       setSaving(false);
-    }
-  };
-
-  const revoke = async (c: Connection) => {
-    if (
-      !window.confirm(
-        `Disconnect ${c.clientName ?? 'this agent'}? It will no longer be able to access your ClipSubtitles account.`,
-      )
-    )
-      return;
-    try {
-      await api.revokeConnection(c.id);
-      toast.push('ok', 'Agent disconnected.');
-      load();
-    } catch (err) {
-      toast.push('error', errorMessage(err));
     }
   };
 
@@ -112,39 +90,6 @@ function Settings({ me }: { me: Me }) {
         </Panel>
       </div>
       <div className="flex flex-col gap-5">
-        <Panel
-          title="Connected agents"
-          className="rise rise-1"
-          aside={<span className="text-[11px] text-ink-mute">{connections.length}</span>}
-        >
-          {connections.length === 0 ? (
-            <div className="px-4 py-3 text-[12px] text-ink-mute">
-              No agents are connected. Visit the developer guide when you want an AI agent to
-              caption videos for you.
-            </div>
-          ) : (
-            <ul className="divide-y divide-line/70">
-              {connections.map((c) => (
-                <li key={c.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                  <div>
-                    <div className="text-[13px] text-ink">{c.clientName ?? 'Connected agent'}</div>
-                    <div className="mono mt-0.5 text-[11px] text-ink-mute">
-                      Can work with your caption projects · last used{' '}
-                      {c.lastUsedAt ? relativeTime(c.lastUsedAt) : 'never'}
-                    </div>
-                  </div>
-                  {c.revokedAt ? (
-                    <Chip tone="danger">disconnected</Chip>
-                  ) : (
-                    <Button size="sm" variant="danger" onClick={() => void revoke(c)}>
-                      Disconnect
-                    </Button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </Panel>
         <Panel
           title="Credit activity"
           className="rise rise-2"

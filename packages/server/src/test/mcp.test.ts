@@ -72,7 +72,7 @@ describe('MCP conformance', () => {
     expect(meta.authorization_servers.length).toBe(1);
   });
 
-  it('lists exactly the nine contracted tools with annotations and schemas', async () => {
+  it('lists exactly the twelve contracted tools with annotations, schemas, and UI metadata', async () => {
     const client = await connect(await h.token());
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual([...MCP_TOOL_NAMES].sort());
@@ -87,6 +87,31 @@ describe('MCP conformance', () => {
     expect(
       (getProject.inputSchema as { additionalProperties?: boolean }).additionalProperties,
     ).toBe(false);
+    const create = tools.find((t) => t.name === 'create_caption_project')!;
+    expect(create._meta?.['openai/fileParams']).toEqual(['file']);
+    const start = tools.find((t) => t.name === 'open_caption_start')!;
+    expect(start._meta?.['openai/outputTemplate']).toBe('ui://clipsubtitles/start-v1.html');
+    expect((start._meta?.ui as { visibility?: string[] }).visibility).toEqual(['model', 'app']);
+    await client.close();
+  });
+
+  it('publishes five portable MCP App resources with ChatGPT compatibility metadata', async () => {
+    const client = await connect(await h.token());
+    const { resources } = await client.listResources();
+    expect(resources.map((resource) => resource.uri).sort()).toEqual(
+      [
+        'ui://clipsubtitles/start-v1.html',
+        'ui://clipsubtitles/styles-v1.html',
+        'ui://clipsubtitles/export-approval-v1.html',
+        'ui://clipsubtitles/progress-v1.html',
+        'ui://clipsubtitles/editor-v1.html',
+      ].sort(),
+    );
+    const read = await client.readResource({ uri: 'ui://clipsubtitles/start-v1.html' });
+    const content = read.contents[0]!;
+    expect(content.mimeType).toBe('text/html;profile=mcp-app');
+    expect('text' in content ? content.text : '').toContain('window.openai');
+    expect(content._meta?.['openai/widgetDescription']).toContain('Choose a video');
     await client.close();
   });
 
@@ -190,6 +215,17 @@ describe('MCP conformance', () => {
     expect(view.project.transcript?.words?.length).toBe(5);
     expect(view.project.pages![0]!.text).toContain('Welcome');
     expect(view.project.style.preset).toBe('bold-pop');
+
+    const styles = structured<{ project: CaptionProject; presets: Array<{ preset: string }> }>(
+      await client.callTool({ name: 'show_caption_style_picker', arguments: { projectId } }),
+    );
+    expect(styles.project.id).toBe(projectId);
+    expect(styles.presets.length).toBeGreaterThan(4);
+
+    const editor = structured<{ project: CaptionProject }>(
+      await client.callTool({ name: 'open_caption_editor', arguments: { projectId } }),
+    );
+    expect(editor.project.transcript?.words?.length).toBeGreaterThan(0);
 
     const firstWord = view.project.transcript!.words![0]!;
     const edited = structured<{ project: CaptionProject; applied: number }>(
