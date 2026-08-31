@@ -259,17 +259,17 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Selected GPT Image 2 "Editorial Strip" wordmark, rebuilt as live type. */
+/* Compact live-type wordmark: one weight, one colour, no badge treatment. */
 .cs-wordmark {
   display: inline-flex;
   align-items: center;
   white-space: nowrap;
   color: currentColor;
   font-family: var(--tg-font-display, var(--font-display));
-  font-weight: 800;
+  font-weight: 900;
   font-style: normal;
   line-height: 1;
-  letter-spacing: -0.055em;
+  letter-spacing: -0.07em;
 }
 
 .cs-wordmark__clip {
@@ -277,15 +277,7 @@ body {
 }
 
 .cs-wordmark__subtitles {
-  display: inline-flex;
-  align-items: center;
-  margin-left: 0.07em;
-  padding: 0.035em 0.14em 0.07em;
-  border-radius: 0.17em;
-  background: var(--warm, var(--color-signal-fill));
-  color: #fff;
-  line-height: 0.94;
-  letter-spacing: -0.045em;
+  color: currentColor;
 }
 
 .squircle {
