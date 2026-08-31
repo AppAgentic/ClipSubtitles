@@ -6,6 +6,7 @@ import { PathChooser } from './PathChooser';
 import { StyleBoard } from './StyleBoard';
 import { SITE_URL } from '@/components/marketing/seo-pages';
 import { ConnectAgent } from './ConnectAgent';
+import { ClipSubtitlesWordmark } from '@/components/brand/ClipSubtitlesWordmark';
 import './landing-options.css';
 import './three-gates.css';
 
@@ -83,7 +84,7 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
       />
       <header className="tg-top lo-wrap">
         <Link href={showSwitcher ? '/landing-options/three-gates' : '/'} className="tg-brand">
-          ClipSubtitles
+          <ClipSubtitlesWordmark />
         </Link>
         <nav aria-label="Primary" className="tg-nav">
           <Link href="/help">Help</Link>

@@ -9,42 +9,41 @@ afterEach(() => {
 });
 
 describe('PathChooser', () => {
-  it('defaults to the browser path with a subordinate sign-in link, agent panel hidden', () => {
+  it('defaults to the first agent path and exposes the verified client board', () => {
     render(<PathChooser />);
+    expect(
+      screen.getByRole('tab', { name: 'Connect your agent' }).getAttribute('aria-selected'),
+    ).toBe('true');
+    expect(screen.getByRole('tab', { name: 'Use in browser' }).getAttribute('aria-selected')).toBe(
+      'false',
+    );
+    expect(screen.getByRole('radio', { name: 'Claude Code' })).toBeTruthy();
+    expect(screen.getByText(/claude mcp add --transport http/)).toBeTruthy();
+  });
+
+  it('swaps to the browser panel on click and keeps its subordinate sign-in link', () => {
+    render(<PathChooser />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Use in browser' }));
     expect(screen.getByRole('tab', { name: 'Use in browser' }).getAttribute('aria-selected')).toBe(
       'true',
     );
-    expect(
-      screen.getByRole('tab', { name: 'Connect your agent' }).getAttribute('aria-selected'),
-    ).toBe('false');
     expect(screen.getByRole('link', { name: /Continue in browser/ }).getAttribute('href')).toBe(
       '/sign-in?returnTo=/app/new',
     );
     expect(screen.queryByRole('radio', { name: 'Claude Code' })).toBeNull();
   });
 
-  it('swaps in the agent panel on click, reusing the verified client board', () => {
-    render(<PathChooser />);
-    fireEvent.click(screen.getByRole('tab', { name: 'Connect your agent' }));
-    expect(
-      screen.getByRole('tab', { name: 'Connect your agent' }).getAttribute('aria-selected'),
-    ).toBe('true');
-    expect(screen.getByRole('radio', { name: 'Claude Code' })).toBeTruthy();
-    expect(screen.getByText(/claude mcp add --transport http/)).toBeTruthy();
-    expect(screen.getByRole('link', { name: /Full guide/ }).getAttribute('href')).toBe('#connect');
-  });
-
   it('moves tab focus with the arrow keys and never traps focus', () => {
     render(<PathChooser />);
-    const browserTab = screen.getByRole('tab', { name: 'Use in browser' });
-    browserTab.focus();
-    fireEvent.keyDown(browserTab, { key: 'ArrowRight' });
     const agentTab = screen.getByRole('tab', { name: 'Connect your agent' });
-    expect(agentTab.getAttribute('aria-selected')).toBe('true');
-    expect(document.activeElement).toBe(agentTab);
-    fireEvent.keyDown(agentTab, { key: 'ArrowLeft' });
+    agentTab.focus();
+    fireEvent.keyDown(agentTab, { key: 'ArrowRight' });
+    const browserTab = screen.getByRole('tab', { name: 'Use in browser' });
     expect(screen.getByRole('tab', { name: 'Use in browser' }).getAttribute('aria-selected')).toBe(
       'true',
     );
+    expect(document.activeElement).toBe(browserTab);
+    fireEvent.keyDown(browserTab, { key: 'ArrowLeft' });
+    expect(agentTab.getAttribute('aria-selected')).toBe('true');
   });
 });

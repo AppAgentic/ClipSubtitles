@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ClipSubtitlesWordmark } from '@/components/brand/ClipSubtitlesWordmark';
 import { CaptionFrame, PAGE_ONE } from '@/components/landing-options/StyleBoard';
 import { SAMPLE } from '@/components/landing-options/facts';
 import type { SeoPage } from './seo-pages';
@@ -41,7 +42,7 @@ export function SeoIntentPage({ page }: { page: SeoPage }) {
       />
       <header className="tg-top lo-wrap">
         <Link href="/" className="tg-brand">
-          ClipSubtitles
+          <ClipSubtitlesWordmark />
         </Link>
         <nav aria-label="Primary" className="tg-nav">
           <Link href="/video-caption-api">API</Link>

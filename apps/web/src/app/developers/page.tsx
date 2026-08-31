@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { MCP_TOOLS } from '@clipsubtitles/contracts';
 import { SITE_URL } from '@/components/marketing/seo-pages';
+import { ClipSubtitlesWordmark } from '@/components/brand/ClipSubtitlesWordmark';
 
 export const metadata: Metadata = {
   title: 'Video Caption API and Agent Integration',
@@ -17,7 +18,7 @@ export default function DevelopersPage() {
     <main className="min-h-screen bg-bg px-5 py-8 text-ink sm:px-8 lg:px-12">
       <header className="mx-auto flex max-w-[1080px] items-center justify-between border-b border-line pb-5">
         <Link href="/" className="text-[15px] font-semibold tracking-[-0.02em]">
-          ClipSubtitles
+          <ClipSubtitlesWordmark />
         </Link>
         <nav className="flex items-center gap-5 text-[13px] text-ink-dim" aria-label="Primary">
           <Link href="/help" className="hover:text-ink">

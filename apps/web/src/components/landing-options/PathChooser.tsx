@@ -7,8 +7,8 @@ import { HeroConnect } from './HeroConnect';
 type PathId = 'browser' | 'agent';
 
 const PATHS: ReadonlyArray<{ id: PathId; label: string }> = [
-  { id: 'browser', label: 'Use in browser' },
   { id: 'agent', label: 'Connect your agent' },
+  { id: 'browser', label: 'Use in browser' },
 ];
 
 /**
@@ -19,7 +19,7 @@ const PATHS: ReadonlyArray<{ id: PathId; label: string }> = [
  * behavior, #connect link) rather than a parallel agent installer.
  */
 export function PathChooser() {
-  const [active, setActive] = useState<PathId>('browser');
+  const [active, setActive] = useState<PathId>('agent');
   const panelId = useId();
 
   function move(event: KeyboardEvent<HTMLButtonElement>, index: number) {
@@ -32,7 +32,7 @@ export function PathChooser() {
         : event.key === 'End'
           ? PATHS.length - 1
           : (index + delta + PATHS.length) % PATHS.length;
-    const next = PATHS[nextIndex] ?? { id: 'browser' as const, label: 'Use in browser' };
+    const next = PATHS[nextIndex] ?? { id: 'agent' as const, label: 'Connect your agent' };
     setActive(next.id);
     document.getElementById(`tg-path-tab-${next.id}`)?.focus();
   }

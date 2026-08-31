@@ -6,6 +6,7 @@ import { useEffect, type ReactNode } from 'react';
 import type { Me } from '@clipsubtitles/contracts';
 import { useMe } from '@/lib/hooks';
 import { Spinner } from '@/components/ui/primitives';
+import { ClipSubtitlesWordmark } from '@/components/brand/ClipSubtitlesWordmark';
 
 type NavIconName = 'home' | 'plus' | 'film' | 'spark' | 'settings' | 'help' | 'code';
 
@@ -198,17 +199,10 @@ function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <Link
       href="/app"
-      className="inline-flex items-center gap-2.5 text-[17px] font-semibold tracking-[-0.04em] text-ink"
+      className="inline-flex items-center text-[17px] text-ink"
       aria-label="ClipSubtitles home"
     >
-      <img
-        src="/brand/clipsubtitles-mark.png"
-        alt=""
-        className="h-8 w-8 shrink-0 rounded-lg bg-panel-2 object-contain p-1"
-      />
-      <span>
-        Clip<span className="text-signal">Subtitles</span>
-      </span>
+      <ClipSubtitlesWordmark />
       {compact ? null : <span className="sr-only"> workspace</span>}
     </Link>
   );

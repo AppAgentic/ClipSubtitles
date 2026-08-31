@@ -2,6 +2,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import { ClipSubtitlesWordmark } from '@/components/brand/ClipSubtitlesWordmark';
 
 function SignInInner() {
   const params = useSearchParams();
@@ -10,13 +11,8 @@ function SignInInner() {
   return (
     <main className="relative grid min-h-screen place-items-center overflow-hidden px-6">
       <div className="w-full max-w-[520px]">
-        <div className="rise mb-10 flex items-center gap-3">
-          <span className="grid h-10 w-10 place-items-center rounded-xl bg-signal text-[16px] font-bold text-signal-ink">
-            cs
-          </span>
-          <span className="text-[13px] uppercase tracking-[0.2em] text-ink-mute">
-            ClipSubtitles
-          </span>
+        <div className="rise mb-10 flex items-center text-[20px] text-ink">
+          <ClipSubtitlesWordmark />
         </div>
         <h1 className="rise rise-1 text-[44px] font-semibold leading-[1.02] tracking-[-0.035em]">
           Welcome back.

@@ -108,6 +108,10 @@
   text-decoration: none;
 }
 
+[data-lo='three-gates'] .tg-brand .cs-wordmark {
+  font-size: 18px;
+}
+
 [data-lo='three-gates'] .tg-nav {
   display: flex;
   gap: 4px;
