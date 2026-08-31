@@ -125,7 +125,7 @@ export function VideoStage({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div ref={boxRef} className="relative grid min-h-0 flex-1 place-items-center">
-        <div className="relative overflow-hidden rounded-[10px] bg-black shadow-[0_30px_80px_-30px_rgb(0_0_0/0.9),0_0_0_1px_rgb(255_255_255/0.06)]" style={{ width: frame.width, height: frame.height }}>
+        <div className="relative overflow-hidden rounded-[10px] bg-black shadow-[var(--shadow-float)]" style={{ width: frame.width, height: frame.height }}>
           {source.playbackUrl ? (
             <video ref={videoRef} src={source.playbackUrl} playsInline preload="metadata" className="absolute inset-0 h-full w-full" style={{ objectFit: 'contain' }} />
           ) : (

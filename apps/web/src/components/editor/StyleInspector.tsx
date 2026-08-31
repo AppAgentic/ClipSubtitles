@@ -76,7 +76,7 @@ export function StyleInspector({
                 className={`group overflow-hidden rounded-[20px] border p-1.5 text-left transition-[border,background,transform] active:scale-[0.985] [corner-shape:squircle] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal ${active ? 'border-signal bg-signal/10' : 'border-line-strong hover:border-ink-mute'}`}
               >
                 <div
-                  className="grid aspect-[16/9] place-items-end overflow-hidden rounded-[15px] bg-[#24211f] p-3 text-center [corner-shape:squircle]"
+                  className="grid aspect-[16/9] place-items-end overflow-hidden rounded-[15px] bg-black p-3 text-center [corner-shape:squircle]"
                   style={{
                     fontFamily: `"${p.fontFamily}", sans-serif`,
                     fontWeight: p.fontWeight,

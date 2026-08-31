@@ -1,17 +1,73 @@
-/* 05 · Three Gates — deep ink, one warm accent, vast negative space. */
-
+/*
+ * 05 · Three Gates — Apple-HIG grouped light surfaces by default (system/light),
+ * neutral graphite in dark, one adaptive blue accent, vast negative space.
+ *
+ * Mirrors globals.css's token model: light values are the default (system
+ * fallback), dark overrides under `prefers-color-scheme`, both forceable via
+ * `[data-theme]` on <html> for the manual override. `--tg-screen` is the one
+ * exception — the phone/video-preview mockups stay a fixed dark surface in
+ * both modes (media fidelity), so it is not part of the light/dark switch.
+ */
 [data-lo='three-gates'] {
-  --ink: #07080b;
-  --ink-2: #0e1016;
-  --line: rgb(255 255 255 / 0.08);
-  --text: #ecebe6;
-  --dim: #a3a29b;
-  --mute: #8b8a83; /* ≥ 5:1 on --ink so 11 px eyebrows pass AA */
-  --warm: #e6a26b;
-  --warm-ink: #1c1006;
+  --ink: #f5f5f7;
+  --ink-2: #ffffff;
+  --line: rgb(0 0 0 / 0.08);
+  --tg-line-rgb: 0 0 0;
+  --text: #1d1d1f;
+  --dim: #6e6e73;
+  --mute: #5c5c61; /* ≥ 5:1 on --ink so 11 px eyebrows pass AA */
+  --warm: #0071e3;
+  --warm-soft: #3d94ec;
+  --warm-rgb: 0 113 227;
+  --warm-ink: #ffffff;
   --lo-accent: var(--warm);
+  --tg-screen: #17171a;
   background: var(--ink);
   color: var(--text);
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-lo='three-gates'] {
+    --ink: #0b0b0d;
+    --ink-2: #17171a;
+    --line: rgb(255 255 255 / 0.08);
+    --tg-line-rgb: 255 255 255;
+    --text: #f2f2f3;
+    --dim: #a1a1a6;
+    --mute: #8b8a8d;
+    --warm: #0a84ff;
+    --warm-soft: #409cff;
+    --warm-rgb: 10 132 255;
+    --warm-ink: #03101f;
+  }
+}
+
+:root[data-theme='light'] [data-lo='three-gates'] {
+  --ink: #f5f5f7;
+  --ink-2: #ffffff;
+  --line: rgb(0 0 0 / 0.08);
+  --tg-line-rgb: 0 0 0;
+  --text: #1d1d1f;
+  --dim: #6e6e73;
+  --mute: #5c5c61;
+  --warm: #0071e3;
+  --warm-soft: #3d94ec;
+  --warm-rgb: 0 113 227;
+  --warm-ink: #ffffff;
+}
+
+:root[data-theme='dark'] [data-lo='three-gates'] {
+  --ink: #0b0b0d;
+  --ink-2: #17171a;
+  --line: rgb(255 255 255 / 0.08);
+  --tg-line-rgb: 255 255 255;
+  --text: #f2f2f3;
+  --dim: #a1a1a6;
+  --mute: #8b8a8d;
+  --warm: #0a84ff;
+  --warm-soft: #409cff;
+  --warm-rgb: 10 132 255;
+  --warm-ink: #03101f;
 }
 
 [data-lo='three-gates'] .tg-top {
@@ -123,11 +179,11 @@
 }
 
 [data-lo='three-gates'] .tg-btn-primary:hover {
-  background: #f0b884;
+  background: var(--warm-soft);
 }
 
 [data-lo='three-gates'] .tg-btn-ghost {
-  border-color: rgb(255 255 255 / 0.2);
+  border-color: rgb(var(--tg-line-rgb) / 0.2);
   color: var(--text);
 }
 
@@ -144,7 +200,7 @@
   display: inline-block;
   padding-block: 12px; /* 44 px hit area on a text link */
   color: var(--dim);
-  text-decoration-color: rgb(255 255 255 / 0.25);
+  text-decoration-color: rgb(var(--tg-line-rgb) / 0.25);
   text-underline-offset: 3px;
 }
 
@@ -198,7 +254,7 @@
 [data-lo='three-gates'] .tg-hero-connect-tabs button {
   min-height: 36px;
   padding: 0 12px;
-  border: 1px solid rgb(255 255 255 / 0.14);
+  border: 1px solid rgb(var(--tg-line-rgb) / 0.14);
   border-radius: 999px;
   background: transparent;
   color: var(--dim);
@@ -239,7 +295,7 @@
   min-width: 64px;
   min-height: 36px;
   padding: 0 12px;
-  border: 1px solid rgb(255 255 255 / 0.2);
+  border: 1px solid rgb(var(--tg-line-rgb) / 0.2);
   border-radius: 999px;
   background: transparent;
   color: var(--text);
@@ -317,7 +373,7 @@
   height: 28px;
   padding: 0 10px;
   border-radius: 999px;
-  border: 1px solid rgb(230 162 107 / 0.55);
+  border: 1px solid rgb(var(--warm-rgb) / 0.55);
   color: var(--warm);
   font-size: 11px;
   letter-spacing: 0.1em;
@@ -331,7 +387,7 @@
   border-radius: 8cqw;
   overflow: hidden;
   border: 1px solid rgb(255 255 255 / 0.14);
-  background: var(--ink-2);
+  background: var(--tg-screen);
   container-type: inline-size;
   transition:
     transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1),
@@ -341,7 +397,7 @@
 [data-lo='three-gates'] .tg-frame-hero {
   width: min(100%, 300px);
   border-radius: 20px;
-  box-shadow: 0 60px 120px -60px rgb(230 162 107 / 0.45);
+  box-shadow: 0 60px 120px -60px rgb(var(--warm-rgb) / 0.45);
 }
 
 [data-lo='three-gates'] .tg-frame-story {
@@ -569,8 +625,8 @@
 
 [data-lo='three-gates'] .tg-story[data-gate='2'] .tg-frame-story {
   box-shadow:
-    0 0 0 1px rgb(230 162 107 / 0.5),
-    0 40px 80px -40px rgb(230 162 107 / 0.5);
+    0 0 0 1px rgb(var(--warm-rgb) / 0.5),
+    0 40px 80px -40px rgb(var(--warm-rgb) / 0.5);
 }
 
 [data-lo='three-gates'] .tg-story[data-gate='3'] .tg-frame-story {
@@ -703,7 +759,6 @@
   width: 1px;
   height: 0;
   background: var(--warm);
-  box-shadow: 0 0 14px var(--warm);
   transform: translateY(-50%);
   transition: height 900ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
@@ -771,7 +826,7 @@
   border: 1px solid var(--line);
   border-radius: 28px;
   background:
-    radial-gradient(70% 60% at 30% 40%, rgb(230 162 107 / 0.14), transparent 70%), var(--ink-2);
+    radial-gradient(70% 60% at 30% 40%, rgb(var(--warm-rgb) / 0.14), transparent 70%), var(--ink-2);
 }
 
 [data-lo='three-gates'] .tg-board-stage {
@@ -792,7 +847,7 @@
   align-items: center;
   min-height: 44px;
   padding: 0 16px;
-  border: 1px solid rgb(255 255 255 / 0.2);
+  border: 1px solid rgb(var(--tg-line-rgb) / 0.2);
   border-radius: 999px;
   background: transparent;
   color: var(--text);
@@ -835,7 +890,7 @@
 [data-lo='three-gates'] .tg-pills button {
   min-height: 44px;
   padding: 0 16px;
-  border: 1px solid rgb(255 255 255 / 0.16);
+  border: 1px solid rgb(var(--tg-line-rgb) / 0.16);
   border-radius: 999px;
   background: transparent;
   color: var(--dim);
@@ -849,7 +904,7 @@
 }
 
 [data-lo='three-gates'] .tg-pills button:hover {
-  border-color: rgb(255 255 255 / 0.4);
+  border-color: rgb(var(--tg-line-rgb) / 0.4);
   color: var(--text);
 }
 
@@ -898,8 +953,8 @@
   overflow: hidden;
   border: 1px solid rgb(255 255 255 / 0.13);
   border-radius: 22px;
-  background: var(--ink-2);
-  box-shadow: 0 32px 80px -52px rgb(230 162 107 / 0.42);
+  background: var(--tg-screen);
+  box-shadow: 0 32px 80px -52px rgb(var(--warm-rgb) / 0.42);
 }
 
 [data-lo='three-gates'] .tg-reel-shot:nth-child(2) {
@@ -1102,7 +1157,7 @@
 [data-lo='three-gates'] .tg-connect-tabs button {
   min-height: 44px;
   padding: 0 14px;
-  border: 1px solid rgb(255 255 255 / 0.16);
+  border: 1px solid rgb(var(--tg-line-rgb) / 0.16);
   border-radius: 999px;
   background: transparent;
   color: var(--dim);
@@ -1112,7 +1167,7 @@
 }
 
 [data-lo='three-gates'] .tg-connect-tabs button:hover {
-  border-color: rgb(255 255 255 / 0.4);
+  border-color: rgb(var(--tg-line-rgb) / 0.4);
   color: var(--text);
 }
 
@@ -1137,7 +1192,7 @@
   min-width: 76px;
   min-height: 44px;
   padding: 0 14px;
-  border: 1px solid rgb(255 255 255 / 0.2);
+  border: 1px solid rgb(var(--tg-line-rgb) / 0.2);
   border-radius: 999px;
   background: transparent;
   color: var(--text);
@@ -1194,7 +1249,7 @@
   align-items: center;
   min-height: 44px;
   padding: 0 15px;
-  border: 1px solid rgb(230 162 107 / 0.55);
+  border: 1px solid rgb(var(--warm-rgb) / 0.55);
   border-radius: 999px;
   color: var(--warm);
   font-weight: 600;
@@ -1234,7 +1289,7 @@
   min-width: 0;
   min-height: 40px;
   padding: 0 7px;
-  border: 1px solid rgb(255 255 255 / 0.14);
+  border: 1px solid rgb(var(--tg-line-rgb) / 0.14);
   border-radius: 9px;
   background: transparent;
   color: var(--dim);
@@ -1244,7 +1299,7 @@
 }
 
 [data-lo='three-gates'] .tg-client-tiles button:hover {
-  border-color: rgb(255 255 255 / 0.35);
+  border-color: rgb(var(--tg-line-rgb) / 0.35);
   color: var(--text);
 }
 
@@ -1281,7 +1336,7 @@
   justify-content: center;
   min-height: 38px;
   padding: 0 14px;
-  border: 1px solid rgb(255 255 255 / 0.22);
+  border: 1px solid rgb(var(--tg-line-rgb) / 0.22);
   border-radius: 999px;
   background: transparent;
   color: var(--text);
@@ -1303,7 +1358,7 @@
 }
 
 [data-lo='three-gates'] .tg-install-link a {
-  border-color: rgb(230 162 107 / 0.55);
+  border-color: rgb(var(--warm-rgb) / 0.55);
   color: var(--warm);
 }
 

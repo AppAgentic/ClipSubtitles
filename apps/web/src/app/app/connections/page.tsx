@@ -49,7 +49,7 @@ function Connections() {
 
   return (
     <div className="connections-editorial">
-      <header className="rise border-b border-[#2d2822] pb-7">
+      <header className="rise border-b border-line pb-7">
         <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-signal">
           Work naturally
         </p>
@@ -64,19 +64,19 @@ function Connections() {
 
       <div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.75fr)]">
         <main className="min-w-0 space-y-5">
-          <section className="rise rise-1 overflow-hidden rounded-xl border border-[#4b4137] bg-[#eee6dc] text-[#17130f]">
+          <section className="rise rise-1 overflow-hidden rounded-xl border border-signal/20 bg-signal/[0.06] text-ink">
             <div className="grid gap-6 p-6 sm:grid-cols-[170px_1fr] sm:items-center sm:p-8">
               <div className="flex items-center justify-center gap-4" aria-hidden>
-                <span className="grid h-[92px] w-[92px] place-items-center rounded-2xl border border-[#d4c8bb] bg-[#faf7f2] shadow-[0_12px_28px_rgb(46_33_20/0.18)]">
+                <span className="grid h-[92px] w-[92px] place-items-center rounded-2xl border border-line bg-bg-elev shadow-[var(--shadow-card)]">
                   <img
                     src="/brand/clipsubtitles-mark.png"
                     alt=""
                     className="h-[74px] w-[74px] object-contain"
                   />
                 </span>
-                <span className="relative h-px w-12 bg-[#b5a797] before:absolute before:-top-1 before:left-0 before:h-2 before:w-2 before:rounded-full before:bg-signal after:absolute after:-top-1 after:right-0 after:h-2 after:w-2 after:rounded-full after:bg-[#17130f]" />
-                <span className="grid h-[92px] w-[92px] place-items-center rounded-2xl border border-[#d4c8bb] bg-[#faf7f2] shadow-[0_12px_28px_rgb(46_33_20/0.12)]">
-                  <span className="grid h-10 w-10 place-items-center rounded-full border-2 border-[#17130f] text-[18px] font-semibold">
+                <span className="relative h-px w-12 bg-line-strong before:absolute before:-top-1 before:left-0 before:h-2 before:w-2 before:rounded-full before:bg-signal after:absolute after:-top-1 after:right-0 after:h-2 after:w-2 after:rounded-full after:bg-ink" />
+                <span className="grid h-[92px] w-[92px] place-items-center rounded-2xl border border-line bg-bg-elev shadow-[var(--shadow-card)]">
+                  <span className="grid h-10 w-10 place-items-center rounded-full border-2 border-ink text-[18px] font-semibold">
                     ◎
                   </span>
                 </span>
@@ -90,17 +90,13 @@ function Connections() {
                       ? 'Reconnect ChatGPT'
                       : 'Connect ChatGPT'}
                 </h2>
-                <p className="mt-2 max-w-[48ch] text-[13px] leading-relaxed text-[#62584f]">
+                <p className="mt-2 max-w-[48ch] text-[13px] leading-relaxed text-ink-dim">
                   Caption a video, correct the transcript, compare looks and prepare an export from
                   the same conversation.
                 </p>
                 <div className="mt-5 flex flex-wrap items-center gap-3">
                   {connectionState === 'connected' && chatGptConnection ? (
-                    <Button
-                      variant="danger"
-                      onClick={() => void revoke(chatGptConnection)}
-                      className="border-[#9f3d33]/35 text-[#8f3028] hover:bg-[#9f3d33]/10"
-                    >
+                    <Button variant="danger" onClick={() => void revoke(chatGptConnection)}>
                       Disconnect
                     </Button>
                   ) : (
@@ -108,14 +104,14 @@ function Connections() {
                       href="https://chatgpt.com"
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex h-10 items-center justify-center rounded-lg bg-[#14110e] px-4 text-[13px] font-medium text-[#fff8ef] transition-transform active:translate-y-px"
+                      className="inline-flex h-10 items-center justify-center rounded-lg bg-ink px-4 text-[13px] font-medium text-bg transition-transform active:translate-y-px"
                     >
                       {connectionState === 'reconnect'
                         ? 'Reconnect in ChatGPT'
                         : 'Connect in ChatGPT'}
                     </a>
                   )}
-                  <Link href="#example-prompts" className="text-[13px] font-medium text-[#ad5f19]">
+                  <Link href="#example-prompts" className="text-[13px] font-medium text-signal">
                     See example prompts <span aria-hidden>→</span>
                   </Link>
                 </div>
@@ -123,7 +119,7 @@ function Connections() {
             </div>
           </section>
 
-          <section className="rise rise-2 rounded-xl border border-[#342e28] bg-[#11100e] p-6">
+          <section className="rise rise-2 rounded-xl border border-line bg-panel p-6">
             <p className="text-[10px] uppercase tracking-[0.18em] text-ink-mute">
               Three simple steps
             </p>
@@ -149,7 +145,7 @@ function Connections() {
 
           <section
             id="example-prompts"
-            className="rise rise-3 rounded-xl border border-[#342e28] bg-[#11100e] p-6"
+            className="rise rise-3 rounded-xl border border-line bg-panel p-6"
           >
             <p className="text-[10px] uppercase tracking-[0.18em] text-ink-mute">
               Start a conversation
@@ -164,7 +160,7 @@ function Connections() {
               ].map((prompt) => (
                 <div
                   key={prompt}
-                  className="rounded-lg border border-[#332d27] bg-[#171411] px-4 py-3 text-[12px] leading-relaxed text-ink-dim"
+                  className="rounded-lg border border-line bg-panel-2 px-4 py-3 text-[12px] leading-relaxed text-ink-dim"
                 >
                   “{prompt}”
                 </div>
@@ -184,7 +180,7 @@ function Connections() {
                 <Link
                   key={client}
                   href="/developers"
-                  className="flex h-[76px] items-center justify-between rounded-lg border border-[#342e28] bg-[#11100e] px-4 text-[13px] text-ink transition-[border,transform] hover:-translate-y-0.5 hover:border-[#554a3f]"
+                  className="flex h-[76px] items-center justify-between rounded-lg border border-line bg-panel px-4 text-[13px] text-ink transition-[border,transform] hover:-translate-y-0.5 hover:border-line-strong"
                 >
                   <span>{client}</span>
                   <span className="text-signal" aria-hidden>
@@ -196,9 +192,9 @@ function Connections() {
           </section>
 
           {connections && connections.filter((connection) => !isChatGpt(connection)).length > 0 ? (
-            <section className="rise rise-4 rounded-xl border border-[#342e28] bg-[#11100e] p-6">
+            <section className="rise rise-4 rounded-xl border border-line bg-panel p-6">
               <h2 className="editorial-serif text-[21px] font-semibold">Other connected tools</h2>
-              <ul className="mt-4 divide-y divide-[#2d2822]">
+              <ul className="mt-4 divide-y divide-line">
                 {connections
                   .filter((connection) => !isChatGpt(connection))
                   .map((connection) => (
@@ -226,7 +222,7 @@ function Connections() {
         </main>
 
         <aside className="rise rise-2 space-y-5">
-          <section className="overflow-hidden rounded-xl border border-[#3a332c] bg-[#11100e]">
+          <section className="overflow-hidden rounded-xl border border-line bg-panel">
             <div className="aspect-[4/3] bg-[url('/marketing/filmmaker-workflow.webp')] bg-cover bg-center" />
             <div className="p-6">
               <p className="text-[10px] uppercase tracking-[0.18em] text-signal">
@@ -235,7 +231,7 @@ function Connections() {
               <h2 className="editorial-serif mt-1 text-[22px] font-semibold">
                 You stay in control
               </h2>
-              <ul className="mt-5 divide-y divide-[#302a24]">
+              <ul className="mt-5 divide-y divide-line">
                 <Permission
                   title="See your videos and styles"
                   body="Find the right project and understand the looks you have available."
@@ -255,7 +251,7 @@ function Connections() {
               </ul>
             </div>
           </section>
-          <section className="rounded-xl border border-[#342e28] bg-[#11100e] p-5">
+          <section className="rounded-xl border border-line bg-panel p-5">
             <h2 className="editorial-serif text-[19px] font-semibold">Developer setup</h2>
             <p className="mt-2 text-[12px] leading-relaxed text-ink-dim">
               Use the MCP endpoint directly from your own agent or automation.
@@ -281,21 +277,21 @@ function ConnectionBadge({
 }) {
   if (state === 'connected')
     return (
-      <span className="inline-flex items-center gap-2 rounded-full border border-[#789964]/50 bg-[#e8f1df] px-3 py-1 text-[11px] font-medium text-[#315425]">
-        <span className="h-2 w-2 rounded-full bg-[#4c8b37]" />
+      <span className="inline-flex items-center gap-2 rounded-full border border-phosphor/40 bg-phosphor/10 px-3 py-1 text-[11px] font-medium text-phosphor">
+        <span className="h-2 w-2 rounded-full bg-phosphor" />
         Connected{connection?.lastUsedAt ? ` · used ${relativeTime(connection.lastUsedAt)}` : ''}
       </span>
     );
   if (state === 'reconnect')
     return (
-      <span className="inline-flex items-center gap-2 rounded-full border border-[#cf8b32]/50 bg-[#fff0d6] px-3 py-1 text-[11px] font-medium text-[#864c0d]">
-        <span className="h-2 w-2 rounded-full bg-[#d9881e]" />
+      <span className="inline-flex items-center gap-2 rounded-full border border-warn/40 bg-warn/10 px-3 py-1 text-[11px] font-medium text-warn">
+        <span className="h-2 w-2 rounded-full bg-warn" />
         Reconnect needed
       </span>
     );
   return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-[#aa9e91] bg-[#f6efe6] px-3 py-1 text-[11px] font-medium text-[#62584f]">
-      <span className="h-2 w-2 rounded-full bg-[#8e8175]" />
+    <span className="inline-flex items-center gap-2 rounded-full border border-line-strong bg-panel-2 px-3 py-1 text-[11px] font-medium text-ink-dim">
+      <span className="h-2 w-2 rounded-full bg-ink-mute" />
       Not connected
     </span>
   );
@@ -303,7 +299,7 @@ function ConnectionBadge({
 
 function Step({ number, title, body }: { number: string; title: string; body: string }) {
   return (
-    <li className="relative border-l border-[#433a31] pl-5">
+    <li className="relative border-l border-line-strong pl-5">
       <span className="absolute -left-[13px] top-0 grid h-6 w-6 place-items-center rounded-full bg-signal text-[11px] font-semibold text-signal-ink">
         {number}
       </span>

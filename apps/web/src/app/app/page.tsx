@@ -112,12 +112,12 @@ function Library({ me }: { me: Me }) {
 
   return (
     <div className="dashboard-editorial">
-      <section className="rise flex flex-col gap-5 border-b border-[#29241f] pb-6 sm:flex-row sm:items-end sm:justify-between">
+      <section className="rise flex flex-col gap-5 border-b border-line pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.2em] text-signal">
             Your production desk
           </p>
-          <h1 className="editorial-serif max-w-[760px] text-[35px] font-semibold leading-[1.02] tracking-[-0.045em] text-[#f3ece3] sm:text-[46px]">
+          <h1 className="editorial-serif max-w-[760px] text-[35px] font-semibold leading-[1.02] tracking-[-0.045em] text-ink sm:text-[46px]">
             {greeting(me.user.displayName)}
           </h1>
           <p className="mt-2 text-[13px] text-ink-dim">What are we creating today?</p>
@@ -127,10 +127,10 @@ function Library({ me }: { me: Me }) {
         </LinkButton>
       </section>
 
-      <section className="rise rise-1 mt-6 grid min-h-[144px] gap-5 rounded-xl border border-[#d8ccbf] bg-[#eee6dc] p-5 text-[#17130f] shadow-[0_18px_50px_rgb(0_0_0/0.18)] sm:grid-cols-[1fr_auto] sm:items-center sm:px-7">
+      <section className="rise rise-1 mt-6 grid min-h-[144px] gap-5 rounded-xl border border-signal/20 bg-signal/[0.06] p-5 text-ink shadow-[var(--shadow-card)] sm:grid-cols-[1fr_auto] sm:items-center sm:px-7">
         <div className="flex items-center gap-4">
           <span
-            className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-[#17130f] text-[24px] text-signal"
+            className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-signal/15 text-[24px] text-signal"
             aria-hidden
           >
             ↑
@@ -139,7 +139,7 @@ function Library({ me }: { me: Me }) {
             <h2 className="editorial-serif text-[21px] font-semibold tracking-[-0.025em]">
               Start with a video
             </h2>
-            <p className="mt-1 max-w-[580px] text-[12px] leading-relaxed text-[#6b6056]">
+            <p className="mt-1 max-w-[580px] text-[12px] leading-relaxed text-ink-dim">
               Upload a clip or import a link. We’ll create the captions, then you can refine the
               words and choose the look.
             </p>
@@ -149,11 +149,7 @@ function Library({ me }: { me: Me }) {
           <LinkButton href="/app/new" variant="primary" className="w-full sm:w-auto">
             Upload a video
           </LinkButton>
-          <LinkButton
-            href="/app/new"
-            variant="ghost"
-            className="w-full border-[#b9aa9b] text-[#2c251f] sm:w-auto"
-          >
+          <LinkButton href="/app/new" variant="ghost" className="w-full sm:w-auto">
             Paste a link <span aria-hidden>→</span>
           </LinkButton>
         </div>
@@ -192,8 +188,8 @@ function Library({ me }: { me: Me }) {
               project={selectedProject?.id === selectedSummary?.id ? selectedProject : null}
             />
             <div className="rise rise-3 space-y-5">
-              <section className="overflow-hidden rounded-xl border border-[#332d27] bg-[#11100f]">
-                <header className="flex items-center justify-between border-b border-[#2b2722] px-5 py-4">
+              <section className="overflow-hidden rounded-xl border border-line bg-panel">
+                <header className="flex items-center justify-between border-b border-line px-5 py-4">
                   <div>
                     <p className="text-[10px] uppercase tracking-[0.18em] text-ink-mute">
                       Ready when you are
@@ -211,7 +207,7 @@ function Library({ me }: { me: Me }) {
                 </header>
                 <ExportList exports={exports.slice(0, 5)} />
               </section>
-              <section className="rounded-xl border border-[#4f4134] bg-[#1b160f] p-5">
+              <section className="rounded-xl border border-signal/25 bg-signal/[0.05] p-5">
                 <p className="text-[10px] uppercase tracking-[0.18em] text-signal">
                   Polish the next cut
                 </p>
@@ -255,8 +251,8 @@ function Library({ me }: { me: Me }) {
             </div>
           </section>
 
-          <section className="rise rise-4 mt-8 overflow-hidden rounded-xl border border-[#302a24] bg-[#100f0d]">
-            <header className="flex items-center justify-between border-b border-[#29241f] px-5 py-4">
+          <section className="rise rise-4 mt-8 overflow-hidden rounded-xl border border-line bg-panel">
+            <header className="flex items-center justify-between border-b border-line px-5 py-4">
               <h2 className="editorial-serif text-[19px] font-semibold">In progress</h2>
               {hasActive ? (
                 <Chip tone="signal" dot>
@@ -299,8 +295,8 @@ function SelectedProject({
   project: CaptionProject | null;
 }) {
   return (
-    <article className="rise rise-2 grid overflow-hidden rounded-xl border border-[#3a332b] bg-[#13110f] lg:grid-cols-[minmax(220px,0.8fr)_minmax(300px,1.2fr)]">
-      <div className="relative min-h-[300px] overflow-hidden bg-[#070706] lg:min-h-[440px]">
+    <article className="rise rise-2 grid overflow-hidden rounded-xl border border-line bg-panel lg:grid-cols-[minmax(220px,0.8fr)_minmax(300px,1.2fr)]">
+      <div className="relative min-h-[300px] overflow-hidden bg-black lg:min-h-[440px]">
         {project?.source?.playbackUrl ? (
           <video
             className="h-full w-full object-cover"
@@ -327,7 +323,7 @@ function SelectedProject({
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-[10px] uppercase tracking-[0.19em] text-signal">Continue editing</p>
-            <h2 className="editorial-serif mt-2 text-[30px] font-semibold leading-tight tracking-[-0.04em] text-[#f3ece3]">
+            <h2 className="editorial-serif mt-2 text-[30px] font-semibold leading-tight tracking-[-0.04em] text-ink">
               {summary.title}
             </h2>
           </div>
@@ -338,7 +334,7 @@ function SelectedProject({
             {titleCase(summary.status)}
           </Chip>
         </div>
-        <dl className="mt-6 grid grid-cols-3 gap-3 border-y border-[#302a24] py-4 text-[11px]">
+        <dl className="mt-6 grid grid-cols-3 gap-3 border-y border-line py-4 text-[11px]">
           <div>
             <dt className="text-ink-mute">Length</dt>
             <dd className="mono mt-1 text-[13px] text-ink">
@@ -392,7 +388,7 @@ function ProjectCard({
 }) {
   return (
     <article
-      className={`group overflow-hidden rounded-lg border bg-[#12110f] transition-[border,transform,background] hover:-translate-y-0.5 hover:bg-[#171411] ${selected ? 'border-signal/65' : 'border-[#322c26]'}`}
+      className={`group overflow-hidden rounded-lg border bg-panel transition-[border,transform,background] hover:-translate-y-0.5 hover:bg-panel-2 ${selected ? 'border-signal/65' : 'border-line'}`}
     >
       <button
         type="button"
@@ -415,7 +411,7 @@ function ProjectCard({
           </p>
         </div>
       </button>
-      <div className="flex items-center justify-between border-t border-[#2b2722] px-3 py-2">
+      <div className="flex items-center justify-between border-t border-line px-3 py-2">
         <Link
           href={`/studio/${project.id}`}
           className="text-[11px] text-signal hover:text-signal-soft"
@@ -444,9 +440,9 @@ function ProjectArtwork({
   large?: boolean;
 }) {
   const backgrounds = [
-    'from-[#43301e] via-[#1d1712] to-[#090909]',
-    'from-[#25333a] via-[#171b1d] to-[#080909]',
-    'from-[#3d2928] via-[#1e1414] to-[#090808]',
+    'from-[#1f2937] via-[#141a22] to-[#050608]',
+    'from-[#1c2b2a] via-[#131c1b] to-[#050807]',
+    'from-[#292339] via-[#191521] to-[#07060a]',
   ];
   return (
     <div
@@ -465,8 +461,8 @@ function ProjectArtwork({
 function DashboardSkeleton() {
   return (
     <div className="mt-6 grid animate-pulse gap-5 xl:grid-cols-[1.7fr_0.8fr]">
-      <div className="h-[450px] rounded-xl bg-[#171411]" />
-      <div className="h-[450px] rounded-xl bg-[#141210]" />
+      <div className="h-[450px] rounded-xl bg-panel-2" />
+      <div className="h-[450px] rounded-xl bg-panel" />
     </div>
   );
 }

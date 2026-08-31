@@ -39,8 +39,8 @@ export function UploadZone({ onFile, progress, busy, maxBytes }: { onFile: (file
       }}
       className={`relative grid min-h-[260px] cursor-pointer place-items-center overflow-hidden rounded-[18px] border transition-colors ${over ? 'border-signal bg-signal/5' : 'border-line-strong bg-panel/60 hover:border-ink-mute'}`}
     >
-      <svg className={`ants pointer-events-none absolute inset-0 h-full w-full ${over ? 'opacity-100' : 'opacity-0'}`} aria-hidden>
-        <rect x="6" y="6" width="calc(100% - 12px)" height="calc(100% - 12px)" rx="14" fill="none" stroke="#ff7a1a" strokeWidth="1.5" strokeDasharray="8 8" />
+      <svg className={`ants pointer-events-none absolute inset-0 h-full w-full text-signal ${over ? 'opacity-100' : 'opacity-0'}`} aria-hidden>
+        <rect x="6" y="6" width="calc(100% - 12px)" height="calc(100% - 12px)" rx="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray="8 8" />
       </svg>
       <input
         ref={input}

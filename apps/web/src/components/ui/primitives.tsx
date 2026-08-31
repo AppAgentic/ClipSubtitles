@@ -26,8 +26,7 @@ type Variant = 'primary' | 'ghost' | 'subtle' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
 
 const VARIANT: Record<Variant, string> = {
-  primary:
-    'bg-signal text-signal-ink hover:bg-signal-soft shadow-[0_0_0_1px_rgb(255_122_26/0.4),0_8px_30px_-10px_rgb(255_122_26/0.6)]',
+  primary: 'bg-[var(--color-signal-fill)] text-signal-ink hover:brightness-110',
   ghost: 'bg-transparent text-ink border border-line-strong hover:border-ink-mute hover:bg-panel-2',
   subtle: 'bg-panel-2 text-ink-dim hover:text-ink hover:bg-line',
   danger: 'bg-transparent text-danger border border-danger/40 hover:bg-danger/10',
@@ -301,7 +300,7 @@ export function Segmented<T extends string>({
           onClick={() => onChange(o.value)}
           className={`flex-1 rounded-full ${size === 'sm' ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-1.5 text-[12px]'} font-medium transition-colors disabled:cursor-not-allowed ${
             o.value === value
-              ? 'bg-panel-2 text-ink shadow-[inset_0_0_0_1px_rgb(255_255_255/0.06)]'
+              ? 'bg-bg-elev text-ink shadow-[var(--shadow-card)]'
               : 'text-ink-mute hover:text-ink-dim'
           }`}
         >

@@ -5,7 +5,7 @@
  */
 
 [data-lo] {
-  --lo-accent: #ff7a1a;
+  --lo-accent: #0071e3;
   position: relative;
   isolation: isolate;
   min-height: 100vh;
@@ -115,7 +115,7 @@
 /* Persistent option switcher — fixed, compact, out of the way. */
 .lo-switcher {
   --lo-switch-bg: rgb(14 14 16 / 0.86);
-  --lo-switch-ink: #f2efe9;
+  --lo-switch-ink: #f2f2f4;
   --lo-switch-line: rgb(255 255 255 / 0.12);
   --lo-switch-hover: rgb(255 255 255 / 0.08);
   position: fixed;

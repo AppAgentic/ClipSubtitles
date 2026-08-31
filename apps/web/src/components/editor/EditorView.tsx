@@ -406,7 +406,7 @@ export function EditorView({ projectId }: { projectId: string }) {
                 role="tab"
                 aria-selected={tab === t}
                 onClick={() => setTab(t)}
-                className={`flex-1 rounded-full px-4 py-2 text-[11px] font-semibold transition-colors ${tab === t ? 'bg-panel-2 text-ink shadow-[inset_0_0_0_1px_rgb(255_255_255/0.05)]' : 'text-ink-mute hover:text-ink-dim'}`}
+                className={`flex-1 rounded-full px-4 py-2 text-[11px] font-semibold transition-colors ${tab === t ? 'bg-bg-elev text-ink shadow-[var(--shadow-card)]' : 'text-ink-mute hover:text-ink-dim'}`}
               >
                 {t === 'words' ? 'Correct words' : 'Style'}
               </button>

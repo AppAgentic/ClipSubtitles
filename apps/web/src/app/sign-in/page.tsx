@@ -9,9 +9,6 @@ function SignInInner() {
   const href = `/auth/login?returnTo=${encodeURIComponent(returnTo)}`;
   return (
     <main className="relative grid min-h-screen place-items-center overflow-hidden px-6">
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute left-1/2 top-[-20%] h-[70vh] w-[70vw] -translate-x-1/2 rounded-full bg-signal/10 blur-[120px]" />
-      </div>
       <div className="w-full max-w-[520px]">
         <div className="rise mb-10 flex items-center gap-3">
           <span className="grid h-10 w-10 place-items-center rounded-xl bg-signal text-[16px] font-bold text-signal-ink">
@@ -32,7 +29,7 @@ function SignInInner() {
         <div className="rise rise-3 mt-8 flex flex-wrap items-center gap-3">
           <a
             href={href}
-            className="inline-flex h-11 items-center gap-2 rounded-xl bg-signal px-5 text-[14px] font-semibold text-signal-ink shadow-[0_0_0_1px_rgb(255_122_26/0.4),0_10px_40px_-10px_rgb(255_122_26/0.7)] transition hover:bg-signal-soft"
+            className="inline-flex h-11 items-center gap-2 rounded-xl bg-[var(--color-signal-fill)] px-5 text-[14px] font-semibold text-signal-ink transition hover:brightness-110"
           >
             Continue to sign in
             <span aria-hidden>→</span>

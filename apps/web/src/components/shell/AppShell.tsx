@@ -95,25 +95,22 @@ export function AppShell({
   }
 
   return (
-    <div className="flex min-h-screen bg-[#080807]">
-      <aside className="sticky top-0 hidden h-screen w-[220px] shrink-0 flex-col border-r border-[#2b2722] bg-[#0c0b0a]/95 px-3 py-5 lg:flex">
+    <div className="flex min-h-screen bg-bg">
+      <aside className="sticky top-0 hidden h-screen w-[220px] shrink-0 flex-col border-r border-line bg-panel/70 px-3 py-5 backdrop-blur-xl lg:flex">
         <Brand />
         <nav aria-label="Workspace" className="mt-8 flex flex-col gap-1">
           {NAV.map((n) => (
             <NavLink key={n.href} item={n} active={n.match(pathname)} />
           ))}
         </nav>
-        <nav
-          aria-label="Support"
-          className="mt-auto flex flex-col gap-1 border-t border-[#26221e] pt-4"
-        >
+        <nav aria-label="Support" className="mt-auto flex flex-col gap-1 border-t border-line pt-4">
           {SECONDARY_NAV.map((n) => (
             <NavLink key={n.href} item={n} active={n.match(pathname)} />
           ))}
         </nav>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex h-[66px] min-w-0 items-center justify-between gap-3 border-b border-[#2b2722] bg-[#090908]/90 px-4 backdrop-blur-xl sm:px-6">
+        <header className="sticky top-0 z-20 flex h-[66px] min-w-0 items-center justify-between gap-3 border-b border-line bg-bg-elev/85 px-4 backdrop-blur-xl sm:px-6">
           <div className="flex min-w-0 items-center gap-3 lg:hidden">
             <Brand compact />
           </div>
@@ -129,7 +126,7 @@ export function AppShell({
               Developer
             </Link>
             <span
-              className="grid h-8 w-8 place-items-center rounded-full border border-[#51483e] bg-[#211d19] text-[11px] font-semibold text-[#f3eadf]"
+              className="grid h-8 w-8 place-items-center rounded-full border border-line-strong bg-panel-2 text-[11px] font-semibold text-ink"
               title={me.user.displayName ?? me.user.emailMasked ?? me.user.id}
               aria-label={me.user.displayName ?? me.user.emailMasked ?? 'Account'}
             >
@@ -162,7 +159,7 @@ export function AppShell({
       </div>
       <nav
         aria-label="Workspace"
-        className="fixed inset-x-3 bottom-3 z-40 flex h-[62px] items-center justify-around rounded-2xl border border-[#39332c] bg-[#12100e]/95 px-1 shadow-[0_18px_50px_rgb(0_0_0/0.45)] backdrop-blur-xl lg:hidden"
+        className="fixed inset-x-3 bottom-3 z-40 flex h-[62px] items-center justify-around rounded-2xl border border-line bg-panel/95 px-1 shadow-[var(--shadow-float)] backdrop-blur-xl lg:hidden"
       >
         {NAV.slice(0, 5).map((n) => {
           const active = n.match(pathname);
@@ -186,7 +183,7 @@ export function AppShell({
 export function CreditsPill({ available }: { available: number }) {
   return (
     <span
-      className="mono inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-[#3e372f] bg-[#151311] px-3 py-1.5 text-[11px] text-ink-dim"
+      className="mono inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-line-strong bg-panel-2 px-3 py-1.5 text-[11px] text-ink-dim"
       title={`${available} credits available`}
       aria-label={`${available} credits available`}
     >
@@ -201,13 +198,13 @@ function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <Link
       href="/app"
-      className="inline-flex items-center gap-2.5 text-[17px] font-semibold tracking-[-0.04em] text-[#f5efe7]"
+      className="inline-flex items-center gap-2.5 text-[17px] font-semibold tracking-[-0.04em] text-ink"
       aria-label="ClipSubtitles home"
     >
       <img
         src="/brand/clipsubtitles-mark.png"
         alt=""
-        className="h-8 w-8 shrink-0 rounded-lg bg-[#eee6dc] object-contain p-1"
+        className="h-8 w-8 shrink-0 rounded-lg bg-panel-2 object-contain p-1"
       />
       <span>
         Clip<span className="text-signal">Subtitles</span>
@@ -228,7 +225,7 @@ function NavLink({
     <Link
       href={item.href}
       aria-current={active ? 'page' : undefined}
-      className={`group flex h-11 items-center gap-3 rounded-lg px-3 text-[13px] transition-[background,color,transform] active:translate-y-px ${active ? 'bg-[#2a251f] text-[#ff9d3f]' : 'text-[#c7bcae] hover:bg-[#191613] hover:text-[#f3eee4]'}`}
+      className={`group flex h-11 items-center gap-3 rounded-lg px-3 text-[13px] transition-[background,color,transform] active:translate-y-px ${active ? 'bg-signal/10 text-signal' : 'text-ink-dim hover:bg-panel-2 hover:text-ink'}`}
     >
       <NavIcon name={item.icon} className="h-[18px] w-[18px] shrink-0" />
       <span>{item.label}</span>

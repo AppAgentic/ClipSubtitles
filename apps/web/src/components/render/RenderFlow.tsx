@@ -194,7 +194,7 @@ export function RenderFlow({ projectId }: { projectId: string }) {
                       type="checkbox"
                       checked={on}
                       onChange={() => dispatch({ type: 'toggle_output', kind })}
-                      className="accent-[#ff7a1a]"
+                      className="accent-[var(--color-signal)]"
                     />
                     <span>
                       <span className="block text-[13px] text-ink">
@@ -309,7 +309,7 @@ export function RenderFlow({ projectId }: { projectId: string }) {
         {quote ? (
           <section
             aria-label="Export cost"
-            className={`rise rounded-[14px] border p-4 ${quoteStale ? 'border-warn/50' : 'border-signal/50 shadow-[0_0_0_1px_rgb(255_122_26/0.2),0_20px_60px_-20px_rgb(255_122_26/0.5)]'}`}
+            className={`rise rounded-[14px] border bg-panel p-4 ${quoteStale ? 'border-warn/50' : 'border-signal/50'}`}
           >
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-signal">

@@ -55,12 +55,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             key={t.id}
             role="status"
             data-toast-kind={t.kind}
-            className={`rise pointer-events-auto flex items-start justify-between gap-3 rounded-xl border px-3.5 py-2.5 text-[13px] shadow-2xl backdrop-blur ${
+            className={`rise pointer-events-auto flex items-start justify-between gap-3 rounded-xl border bg-panel px-3.5 py-2.5 text-[13px] text-ink shadow-[var(--shadow-float)] backdrop-blur ${
               t.kind === 'error'
-                ? 'border-danger/40 bg-[#2a1212]/95 text-[#ffd9d9]'
+                ? 'border-danger/40'
                 : t.kind === 'ok'
-                  ? 'border-phosphor/30 bg-[#12200f]/95 text-[#dfffd0]'
-                  : 'border-line-strong bg-panel-2/95 text-ink'
+                  ? 'border-phosphor/40'
+                  : 'border-line-strong'
             }`}
           >
             <span>{t.text}</span>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import type { LedgerEntry, Me } from '@clipsubtitles/contracts';
 import { AppShell } from '@/components/shell/AppShell';
 import { Button, Field, KV, Panel, Slider, TextInput } from '@/components/ui/primitives';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useToast } from '@/components/ui/Toast';
 import { api, errorMessage } from '@/lib/api';
 
@@ -45,6 +46,9 @@ function Settings({ me }: { me: Me }) {
         <Panel title="Account" className="rise p-4">
           <KV k="User" v={me.user.displayName ?? '—'} />
           <KV k="Email" v={me.user.emailMasked ?? '—'} mono />
+        </Panel>
+        <Panel title="Appearance" className="rise rise-1 p-4">
+          <ThemeToggle />
         </Panel>
         <Panel title="Workspace and storage" className="rise rise-1 p-4">
           <div className="flex flex-col gap-4">
