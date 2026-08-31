@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { CaptionProject, Export, ProjectSummary, Task } from '@clipsubtitles/contracts';
+import type { CaptionProject, Export, Me, ProjectSummary, Task } from '@clipsubtitles/contracts';
 import { AppShell } from '@/components/shell/AppShell';
 import {
   Button,
@@ -19,10 +19,10 @@ import { notifyCreditsChanged, useInterval } from '@/lib/hooks';
 import { bytes, relativeTime, timecode, titleCase } from '@/lib/format';
 
 export default function AppHomePage() {
-  return <AppShell render={() => <Library />} />;
+  return <AppShell render={(me) => <Library me={me} />} />;
 }
 
-function Library() {
+function Library({ me }: { me: Me }) {
   const router = useRouter();
   const toast = useToast();
   const [projects, setProjects] = useState<ProjectSummary[] | null>(null);
@@ -112,24 +112,25 @@ function Library() {
 
   return (
     <div className="dashboard-editorial">
-      <section className="rise flex flex-col gap-5 border-b border-[#29241f] pb-7 sm:flex-row sm:items-end sm:justify-between">
+      <section className="rise flex flex-col gap-5 border-b border-[#29241f] pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.2em] text-signal">
             Your production desk
           </p>
-          <h1 className="editorial-serif max-w-[760px] text-[36px] font-semibold leading-[1.02] tracking-[-0.045em] text-[#f3ece3] sm:text-[50px]">
-            {greeting()} What are we creating today?
+          <h1 className="editorial-serif max-w-[760px] text-[35px] font-semibold leading-[1.02] tracking-[-0.045em] text-[#f3ece3] sm:text-[46px]">
+            {greeting(me.user.displayName)}
           </h1>
+          <p className="mt-2 text-[13px] text-ink-dim">What are we creating today?</p>
         </div>
         <LinkButton href="/app/new" variant="primary" size="lg" className="shrink-0">
           <span aria-hidden>＋</span> New video
         </LinkButton>
       </section>
 
-      <section className="rise rise-1 mt-6 grid min-h-[132px] gap-5 rounded-xl border border-[#322c26] bg-[#11100e] p-5 sm:grid-cols-[1fr_auto] sm:items-center sm:px-7">
+      <section className="rise rise-1 mt-6 grid min-h-[144px] gap-5 rounded-xl border border-[#d8ccbf] bg-[#eee6dc] p-5 text-[#17130f] shadow-[0_18px_50px_rgb(0_0_0/0.18)] sm:grid-cols-[1fr_auto] sm:items-center sm:px-7">
         <div className="flex items-center gap-4">
           <span
-            className="grid h-12 w-12 shrink-0 place-items-center rounded-lg border border-[#4b4137] bg-[#1b1815] text-[23px] text-signal"
+            className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-[#17130f] text-[24px] text-signal"
             aria-hidden
           >
             ↑
@@ -138,15 +139,24 @@ function Library() {
             <h2 className="editorial-serif text-[21px] font-semibold tracking-[-0.025em]">
               Start with a video
             </h2>
-            <p className="mt-1 max-w-[580px] text-[12px] leading-relaxed text-ink-dim">
+            <p className="mt-1 max-w-[580px] text-[12px] leading-relaxed text-[#6b6056]">
               Upload a clip or import a link. We’ll create the captions, then you can refine the
               words and choose the look.
             </p>
           </div>
         </div>
-        <LinkButton href="/app/new" variant="ghost" className="w-full sm:w-auto">
-          Choose a video <span aria-hidden>→</span>
-        </LinkButton>
+        <div className="flex flex-wrap gap-2">
+          <LinkButton href="/app/new" variant="primary" className="w-full sm:w-auto">
+            Upload a video
+          </LinkButton>
+          <LinkButton
+            href="/app/new"
+            variant="ghost"
+            className="w-full border-[#b9aa9b] text-[#2c251f] sm:w-auto"
+          >
+            Paste a link <span aria-hidden>→</span>
+          </LinkButton>
+        </div>
       </section>
 
       {projects === null ? (
@@ -181,23 +191,42 @@ function Library() {
               summary={selectedSummary}
               project={selectedProject?.id === selectedSummary?.id ? selectedProject : null}
             />
-            <section className="rise rise-3 overflow-hidden rounded-xl border border-[#332d27] bg-[#11100f]">
-              <header className="flex items-center justify-between border-b border-[#2b2722] px-5 py-4">
-                <div>
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-ink-mute">
-                    Ready when you are
-                  </p>
-                  <h2 className="editorial-serif mt-1 text-[20px] font-semibold">Recent exports</h2>
-                </div>
-                <Link
-                  href="/app/exports"
-                  className="text-[12px] text-signal hover:text-signal-soft"
-                >
-                  View all
-                </Link>
-              </header>
-              <ExportList exports={exports.slice(0, 5)} />
-            </section>
+            <div className="rise rise-3 space-y-5">
+              <section className="overflow-hidden rounded-xl border border-[#332d27] bg-[#11100f]">
+                <header className="flex items-center justify-between border-b border-[#2b2722] px-5 py-4">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-ink-mute">
+                      Ready when you are
+                    </p>
+                    <h2 className="editorial-serif mt-1 text-[20px] font-semibold">
+                      Recent exports
+                    </h2>
+                  </div>
+                  <Link
+                    href="/app/exports"
+                    className="text-[12px] text-signal hover:text-signal-soft"
+                  >
+                    View all
+                  </Link>
+                </header>
+                <ExportList exports={exports.slice(0, 5)} />
+              </section>
+              <section className="rounded-xl border border-[#4f4134] bg-[#1b160f] p-5">
+                <p className="text-[10px] uppercase tracking-[0.18em] text-signal">
+                  Polish the next cut
+                </p>
+                <h2 className="editorial-serif mt-2 text-[21px] font-semibold">
+                  Fix the words, then make the look yours.
+                </h2>
+                <p className="mt-2 text-[12px] leading-relaxed text-ink-dim">
+                  Open your latest video to adjust any caption, compare styles and preview before
+                  export.
+                </p>
+                <LinkButton href={`/studio/${selectedSummary.id}`} variant="ghost" className="mt-4">
+                  Continue editing →
+                </LinkButton>
+              </section>
+            </div>
           </div>
 
           <section className="rise rise-3 mt-8">
@@ -207,7 +236,7 @@ function Library() {
                   Your workspace
                 </p>
                 <h2 className="editorial-serif mt-1 text-[24px] font-semibold tracking-[-0.025em]">
-                  Recent videos
+                  Your videos
                 </h2>
               </div>
               <span className="mono text-[11px] text-ink-mute">{projects.length} saved</span>
@@ -442,11 +471,11 @@ function DashboardSkeleton() {
   );
 }
 
-function greeting(): string {
+function greeting(displayName?: string | null): string {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning.';
-  if (hour < 18) return 'Good afternoon.';
-  return 'Good evening.';
+  const firstName = displayName?.trim().split(/\s+/)[0];
+  const daypart = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  return `${daypart}${firstName ? `, ${firstName}` : ''}.`;
 }
 
 function projectStatusSentence(status: ProjectSummary['status']): string {

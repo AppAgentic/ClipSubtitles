@@ -201,11 +201,17 @@ function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <Link
       href="/app"
-      className="inline-flex items-baseline gap-0.5 text-[20px] font-semibold tracking-[-0.045em] text-[#f5efe7]"
+      className="inline-flex items-center gap-2.5 text-[17px] font-semibold tracking-[-0.04em] text-[#f5efe7]"
       aria-label="ClipSubtitles home"
     >
-      <span>Clip</span>
-      <span className="text-signal">Subtitles</span>
+      <img
+        src="/brand/clipsubtitles-mark.png"
+        alt=""
+        className="h-8 w-8 shrink-0 rounded-lg bg-[#eee6dc] object-contain p-1"
+      />
+      <span>
+        Clip<span className="text-signal">Subtitles</span>
+      </span>
       {compact ? null : <span className="sr-only"> workspace</span>}
     </Link>
   );

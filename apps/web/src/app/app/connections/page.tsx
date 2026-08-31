@@ -67,12 +67,18 @@ function Connections() {
           <section className="rise rise-1 overflow-hidden rounded-xl border border-[#4b4137] bg-[#eee6dc] text-[#17130f]">
             <div className="grid gap-6 p-6 sm:grid-cols-[170px_1fr] sm:items-center sm:p-8">
               <div className="flex items-center justify-center gap-4" aria-hidden>
-                <span className="grid h-[82px] w-[82px] place-items-center rounded-2xl bg-[#11100f] text-[27px] font-bold text-[#f4ece2] shadow-[0_12px_28px_rgb(46_33_20/0.18)]">
-                  C<span className="text-[#e88726]">S</span>
+                <span className="grid h-[92px] w-[92px] place-items-center rounded-2xl border border-[#d4c8bb] bg-[#faf7f2] shadow-[0_12px_28px_rgb(46_33_20/0.18)]">
+                  <img
+                    src="/brand/clipsubtitles-mark.png"
+                    alt=""
+                    className="h-[74px] w-[74px] object-contain"
+                  />
                 </span>
-                <span className="text-[25px] tracking-[0.2em] text-[#776d62]">•••</span>
-                <span className="grid h-[82px] w-[82px] place-items-center rounded-2xl border border-[#d4c8bb] bg-[#faf7f2] text-[16px] font-semibold shadow-[0_12px_28px_rgb(46_33_20/0.12)]">
-                  ChatGPT
+                <span className="relative h-px w-12 bg-[#b5a797] before:absolute before:-top-1 before:left-0 before:h-2 before:w-2 before:rounded-full before:bg-signal after:absolute after:-top-1 after:right-0 after:h-2 after:w-2 after:rounded-full after:bg-[#17130f]" />
+                <span className="grid h-[92px] w-[92px] place-items-center rounded-2xl border border-[#d4c8bb] bg-[#faf7f2] shadow-[0_12px_28px_rgb(46_33_20/0.12)]">
+                  <span className="grid h-10 w-10 place-items-center rounded-full border-2 border-[#17130f] text-[18px] font-semibold">
+                    ◎
+                  </span>
                 </span>
               </div>
               <div>

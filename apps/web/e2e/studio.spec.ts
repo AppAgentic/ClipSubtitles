@@ -21,7 +21,9 @@ async function signIn(page: Page): Promise<void> {
   await page.goto('/auth/login?returnTo=/app');
   await expect(page.getByRole('heading', { name: 'Choose a local identity' })).toBeVisible();
   await page.getByRole('button', { name: /Joe \(mock\)/ }).click();
-  await expect(page.getByRole('heading', { name: /What are we creating today\?/ })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: /Good (morning|afternoon|evening), Joe\./ }),
+  ).toBeVisible();
 }
 
 test.beforeAll(async ({ request }) => {
