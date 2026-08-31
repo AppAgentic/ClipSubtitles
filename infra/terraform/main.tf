@@ -863,11 +863,18 @@ resource "google_compute_url_map" "public_edge" {
 }
 
 resource "google_compute_managed_ssl_certificate" "public_edge" {
-  count      = var.deploy_public_edge ? 1 : 0
-  name       = "${local.name}-public-edge"
+  count = var.deploy_public_edge ? 1 : 0
+  # The initial certificate was created before external DNS existed and its
+  # issuer cached the authoritative 30-minute negative response. Keep the
+  # revision in the resource name so a post-DNS certificate can be created
+  # before the never-active predecessor is retired.
+  name       = "${local.name}-public-edge-v2"
   depends_on = [google_project_service.required]
   managed {
     domains = [var.web_domain, var.api_domain]
+  }
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
