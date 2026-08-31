@@ -21,14 +21,16 @@ MIME type.
 
 ## R2 bucket gates
 
-These are live Cloudflare mutations and remain off until the production bucket
-is explicitly approved. After provisioning through `mc cloudflare r2 provision`:
+The production bucket was explicitly approved and provisioned on 2026-08-31
+through the non-printing Mission Control wrapper. Its exact-origin CORS and
+one-day abandoned-upload policy were applied from the checked-in JSON files and
+read back successfully:
 
 ```bash
-npx wrangler r2 bucket cors set clipsubtitles-media --file infra/r2/cors.production.json
-npx wrangler r2 bucket cors list clipsubtitles-media
-npx wrangler r2 bucket lifecycle add clipsubtitles-media clipsubtitles-abandoned-staging staging/ --expire-days 1
-npx wrangler r2 bucket lifecycle list clipsubtitles-media
+mc cloudflare r2 policy apply --business appagentic \
+  --bucket clipsubtitles-media-production \
+  --cors-file infra/r2/cors.production.json \
+  --lifecycle-file infra/r2/lifecycle.production.json
 ```
 
 The CORS origin must match exactly (no trailing slash). Only `PUT` and

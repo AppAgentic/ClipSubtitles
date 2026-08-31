@@ -13,8 +13,9 @@ taxes, and support plans.
 - Three full export downloads
 - Direct object-store downloads. The protected fallback streams uploads through
   the API. The optimized direct R2 path is implemented locally with an exact-size
-  staging PUT, authenticated snapshot, and durable hash/FFprobe finalization;
-  production CORS/lifecycle readback remains an external gate.
+  staging PUT, authenticated snapshot, and durable hash/FFprobe finalization.
+  Production bucket CORS and lifecycle policy were applied and read back on
+  2026-08-31; the deployed-origin upload smoke remains a launch gate.
 - Cloud Run and Cloud Storage colocated in one region
 
 ## Unit economics
@@ -69,11 +70,12 @@ content-type policy, late-overwrite isolation, SHA-256, and post-upload media pr
 Use R2 Standard for production source and export media, with Cloud Storage retained
 as a supported fallback. The safe API-streamed upload remains available. Direct-upload
 enforcement, late-overwrite isolation, checksum failure, project deletion, and
-abandoned-upload cleanup are covered locally; enable it in production only after R2
-CORS/lifecycle provider readback and a deployed-origin smoke. Benchmark worker-to-R2 throughput from the
-chosen Cloud Run region before launch. Keep objects private, use short-lived signed
-URLs, lifecycle cleanup in the application, and scoped credentials held in Secret
-Manager.
+abandoned-upload cleanup are covered locally. Production R2 is provisioned with
+exact-origin CORS and a one-day `staging/` cleanup rule; enable direct browser
+traffic only after the deployed-origin smoke. Benchmark worker-to-R2 throughput
+from the chosen Cloud Run region before launch. Keep objects private, use
+short-lived signed URLs, lifecycle cleanup in the application, and scoped
+credentials held in Secret Manager.
 
 Pricing references:
 

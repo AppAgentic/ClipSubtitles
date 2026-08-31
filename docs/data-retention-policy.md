@@ -28,10 +28,10 @@ metadata for audit consistency.
   succeeds. Provider failures remain eligible for the next sweep and are audited.
 - Render artifacts use task-scoped prefixes, allowing cleanup to remove row-less
   partial outputs as well as published rows.
-- GCS lifecycle deletion is a final orphan safety net. For R2, an equivalent
-  provider lifecycle rule should be installed when the production bucket is
-  provisioned; application retention remains authoritative because workspace
-  settings differ.
+- GCS lifecycle deletion is a final orphan safety net. Production R2 has a
+  provider-read-back one-day cleanup rule for abandoned `staging/` objects;
+  application retention remains authoritative because workspace settings
+  differ.
 
 The API and web UI expose the active source/export retention windows and each
 object's exact expiry timestamp. Retention extensions are explicit workspace
