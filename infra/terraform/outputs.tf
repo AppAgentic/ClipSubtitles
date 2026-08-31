@@ -7,3 +7,4 @@ output "cloud_sql_connection_name" { value = google_sql_database_instance.postgr
 output "worker_service" { value = try(google_cloud_run_v2_service.worker[0].uri, null) }
 output "api_service" { value = try(google_cloud_run_v2_service.api[0].uri, null) }
 output "web_service" { value = try(google_cloud_run_v2_service.web[0].uri, null) }
+output "public_edge_ip" { value = try(google_compute_global_address.public_edge[0].address, null) }

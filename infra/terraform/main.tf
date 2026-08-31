@@ -30,6 +30,7 @@ resource "google_project_service" "required" {
     "cloudtasks.googleapis.com",
     "cloudscheduler.googleapis.com",
     "cloudresourcemanager.googleapis.com",
+    "compute.googleapis.com",
     "apikeys.googleapis.com",
     "generativelanguage.googleapis.com",
     "iam.googleapis.com",
@@ -293,6 +294,10 @@ resource "google_cloud_run_v2_service" "api" {
     }
     containers {
       image = local.api_image
+      ports {
+        name           = "http1"
+        container_port = 8080
+      }
       resources {
         limits            = { cpu = "1", memory = "1Gi" }
         cpu_idle          = true
@@ -311,6 +316,12 @@ resource "google_cloud_run_v2_service" "api" {
         # secrets referenced as `latest` are re-resolved by fresh instances.
         name  = "DEPLOYMENT_REVISION"
         value = var.image_tag
+      }
+      env {
+        # Roll the API after runtime-only secret/config changes without
+        # publishing a duplicate image tag.
+        name  = "RUNTIME_CONFIG_REVISION"
+        value = var.runtime_config_revision
       }
       env {
         name  = "AUTH_MODE"
@@ -511,6 +522,10 @@ resource "google_cloud_run_v2_service" "web" {
     }
     containers {
       image = local.web_image
+      ports {
+        name           = "http1"
+        container_port = 8080
+      }
       resources {
         limits            = { cpu = "1", memory = "512Mi" }
         cpu_idle          = true
@@ -555,6 +570,10 @@ resource "google_cloud_run_v2_service" "worker" {
     }
     containers {
       image = local.worker_image
+      ports {
+        name           = "http1"
+        container_port = 8080
+      }
       resources {
         limits            = { cpu = "4", memory = "8Gi" }
         cpu_idle          = true
@@ -766,6 +785,133 @@ resource "google_cloud_run_v2_service" "worker" {
     }
   }
   depends_on = [google_artifact_registry_repository.images]
+}
+
+# Cloud Run domain mappings are not available in europe-west2. The production
+# edge therefore uses one global HTTPS load balancer with serverless NEGs and
+# host routing, keeping both origins in-region while Google manages TLS.
+resource "google_compute_global_address" "public_edge" {
+  count      = var.deploy_public_edge ? 1 : 0
+  name       = "${local.name}-public-edge"
+  depends_on = [google_project_service.required]
+}
+
+resource "google_compute_region_network_endpoint_group" "api" {
+  count                 = var.deploy_public_edge ? 1 : 0
+  name                  = "${local.name}-api-neg"
+  region                = var.region
+  network_endpoint_type = "SERVERLESS"
+  cloud_run {
+    service = google_cloud_run_v2_service.api[0].name
+  }
+  depends_on = [google_project_service.required]
+}
+
+resource "google_compute_region_network_endpoint_group" "web" {
+  count                 = var.deploy_public_edge ? 1 : 0
+  name                  = "${local.name}-web-neg"
+  region                = var.region
+  network_endpoint_type = "SERVERLESS"
+  cloud_run {
+    service = google_cloud_run_v2_service.web[0].name
+  }
+  depends_on = [google_project_service.required]
+}
+
+resource "google_compute_backend_service" "api" {
+  count                 = var.deploy_public_edge ? 1 : 0
+  name                  = "${local.name}-api"
+  protocol              = "HTTP"
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+  backend {
+    group = google_compute_region_network_endpoint_group.api[0].id
+  }
+}
+
+resource "google_compute_backend_service" "web" {
+  count                 = var.deploy_public_edge ? 1 : 0
+  name                  = "${local.name}-web"
+  protocol              = "HTTP"
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+  enable_cdn            = true
+  backend {
+    group = google_compute_region_network_endpoint_group.web[0].id
+  }
+}
+
+resource "google_compute_url_map" "public_edge" {
+  count           = var.deploy_public_edge ? 1 : 0
+  name            = "${local.name}-public-edge"
+  default_service = google_compute_backend_service.web[0].id
+
+  host_rule {
+    hosts        = [var.api_domain]
+    path_matcher = "api"
+  }
+
+  path_matcher {
+    name            = "api"
+    default_service = google_compute_backend_service.api[0].id
+  }
+
+  lifecycle {
+    precondition {
+      condition     = var.deploy_services && var.allow_unauthenticated
+      error_message = "deploy_public_edge requires deployed, publicly invokable web and API Cloud Run services."
+    }
+  }
+}
+
+resource "google_compute_managed_ssl_certificate" "public_edge" {
+  count      = var.deploy_public_edge ? 1 : 0
+  name       = "${local.name}-public-edge"
+  depends_on = [google_project_service.required]
+  managed {
+    domains = [var.web_domain, var.api_domain]
+  }
+}
+
+resource "google_compute_target_https_proxy" "public_edge" {
+  count            = var.deploy_public_edge ? 1 : 0
+  name             = "${local.name}-public-edge"
+  url_map          = google_compute_url_map.public_edge[0].id
+  ssl_certificates = [google_compute_managed_ssl_certificate.public_edge[0].id]
+}
+
+resource "google_compute_global_forwarding_rule" "https" {
+  count                 = var.deploy_public_edge ? 1 : 0
+  name                  = "${local.name}-https"
+  ip_address            = google_compute_global_address.public_edge[0].address
+  ip_protocol           = "TCP"
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+  port_range            = "443"
+  target                = google_compute_target_https_proxy.public_edge[0].id
+}
+
+resource "google_compute_url_map" "http_redirect" {
+  count      = var.deploy_public_edge ? 1 : 0
+  name       = "${local.name}-http-redirect"
+  depends_on = [google_project_service.required]
+  default_url_redirect {
+    https_redirect = true
+    strip_query    = false
+  }
+}
+
+resource "google_compute_target_http_proxy" "http_redirect" {
+  count   = var.deploy_public_edge ? 1 : 0
+  name    = "${local.name}-http-redirect"
+  url_map = google_compute_url_map.http_redirect[0].id
+}
+
+resource "google_compute_global_forwarding_rule" "http" {
+  count                 = var.deploy_public_edge ? 1 : 0
+  name                  = "${local.name}-http"
+  ip_address            = google_compute_global_address.public_edge[0].address
+  ip_protocol           = "TCP"
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+  port_range            = "80"
+  target                = google_compute_target_http_proxy.http_redirect[0].id
 }
 
 data "google_project" "current" { project_id = var.project_id }

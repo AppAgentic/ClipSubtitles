@@ -2,6 +2,7 @@ project_id              = "clipsubtitles-production"
 environment             = "production"
 deploy_services         = false
 allow_unauthenticated   = false
+deploy_public_edge      = false
 image_tag               = "replace-with-immutable-release-tag"
 runtime_config_revision = "production-initial"
 

@@ -35,6 +35,22 @@ variable "allow_unauthenticated" {
   default     = false
 }
 
+variable "deploy_public_edge" {
+  description = "Create the global HTTPS load balancer, managed certificate, and host routing for the production web and API domains."
+  type        = bool
+  default     = false
+}
+
+variable "web_domain" {
+  type    = string
+  default = "clipsubtitles.com"
+}
+
+variable "api_domain" {
+  type    = string
+  default = "api.clipsubtitles.com"
+}
+
 variable "image_tag" {
   type    = string
   default = "unset"
