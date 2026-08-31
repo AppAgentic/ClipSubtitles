@@ -1,2 +1,0 @@
-bucket = "clipsubtitles-production-tfstate-PROJECT_NUMBER"
-prefix = "terraform/production"
