@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { MCP_ENDPOINT } from './facts';
 import { MCP_CLIENTS, McpClientTiles, McpInstallSlot, useMcpClient } from './McpClientBoard';
 
@@ -9,16 +10,22 @@ const AUTOMATION_PATHS = [
     label: 'ChatGPT & Claude',
     title: 'From a conversation',
     body: 'Ask ChatGPT or Claude to caption a clip, correct a word, try a style and prepare the export.',
+    image: '/marketing/automation-conversation.webp',
+    alt: 'Conversation bubbles flowing into a captioned video.',
   },
   {
     label: 'Codex & Claude Code',
     title: 'From your workspace',
     body: 'Use Codex, Cursor or Claude Code to turn the videos already in your workflow into captioned deliverables.',
+    image: '/marketing/automation-workspace.webp',
+    alt: 'A workspace document flowing into a captioned video.',
   },
   {
     label: 'MCP & API',
     title: 'From an automation',
     body: 'Connect through MCP or the API so your own system can prepare repeatable caption jobs for approval.',
+    image: '/marketing/automation-api.webp',
+    alt: 'Automation nodes flowing into an approved captioned video.',
   },
 ] as const;
 
@@ -50,8 +57,16 @@ export function ConnectAgent({ standalone = false }: { standalone?: boolean }) {
         <ol className="tg-automation-paths">
           {AUTOMATION_PATHS.map((path) => (
             <li key={path.title}>
+              <div className="tg-automation-visual">
+                <Image
+                  src={path.image}
+                  alt={path.alt}
+                  fill
+                  sizes="(max-width: 760px) calc(100vw - 84px), 340px"
+                />
+              </div>
               <span className="tg-automation-label">{path.label}</span>
-              <div>
+              <div className="tg-automation-copy">
                 <h3>{path.title}</h3>
                 <p>{path.body}</p>
               </div>
