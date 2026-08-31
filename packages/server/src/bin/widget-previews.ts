@@ -4,7 +4,7 @@ import { STYLE_PRESETS } from '@clipsubtitles/core';
 import { widgetHtmlForPreview } from '../mcp/ui';
 
 const outputDir = resolve('docs/design/dashboard-concepts/design-1-exploration/live-widgets');
-const now = new Date().toISOString();
+const now = '2026-08-31T12:00:00.000Z';
 
 const project = {
   id: 'proj_01m1preview00000000000',
