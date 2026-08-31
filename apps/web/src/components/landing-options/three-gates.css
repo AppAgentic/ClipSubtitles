@@ -60,7 +60,7 @@
     --warm: #0a84ff;
     --warm-soft: #409cff;
     --warm-rgb: 10 132 255;
-    --warm-ink: #03101f;
+    --warm-ink: #ffffff;
   }
 }
 
@@ -89,7 +89,7 @@
   --warm: #0a84ff;
   --warm-soft: #409cff;
   --warm-rgb: 10 132 255;
-  --warm-ink: #03101f;
+  --warm-ink: #ffffff;
 }
 
 [data-lo='three-gates'] .tg-top {
