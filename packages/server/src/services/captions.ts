@@ -1,4 +1,5 @@
 import {
+  BILLING_PLANS,
   DEFAULT_OUTPUT_SETTINGS,
   PRICE_VERSION,
   type CaptionProject,
@@ -135,6 +136,15 @@ export async function startRender(ctx: AppContext, principal: Principal, project
       throw new ApiError('QUOTE_INVALIDATED');
     }
     if (req.approvedCreditCost !== quote.creditCost) throw new ApiError('QUOTE_MISMATCH');
+    const billingAccount = await ctx.db.getBillingAccount(principal.workspaceId);
+    const plan = BILLING_PLANS.find((candidate) => candidate.id === (billingAccount?.planId ?? 'free')) ?? BILLING_PLANS[0];
+    const activeRenders = await ctx.db.countActiveRenderTasksForUpdate(principal.workspaceId);
+    if (activeRenders >= plan.activeRenderLimit) {
+      throw new ApiError(
+        'RATE_LIMITED',
+        'This workspace has reached its active render limit. Wait for a render to finish or review the available plans.',
+      );
+    }
     const asset = await requireReadySource(ctx, project);
     const revision = await requireTranscript(ctx, project);
     const input: RenderExportInput = {

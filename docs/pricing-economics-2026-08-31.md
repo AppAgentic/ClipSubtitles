@@ -1,9 +1,11 @@
 # ClipSubtitles pricing and economics proposal — 2026-08-31
 
-This is a launch proposal, not a live catalog. No checkout products or prices
-exist yet. The current production beta grants credits at sign-in and already
-has deterministic render quotes plus an idempotent reserve/settle/release
-ledger.
+This document records the approved launch catalog and the economics behind it.
+The versioned catalog, lifetime Free allowance, pooled credit ledger, hosted
+checkout contract, signed idempotent webhook processing, web pricing surfaces,
+and agent `checkout_required` response are implemented in code. Live Whop
+products and production secrets remain an external launch gate; see
+`PARKED_ACTIONS.md`.
 
 ## Current product truth
 
@@ -13,11 +15,11 @@ ledger.
 - High quality: 1.5× the relevant video-output credits.
 - Minimum paid render: 2 credits.
 - Preview: free but rate-limited.
-- Beta sign-in grant: 500 credits. This is appropriate for a private beta, but
-  is too large for an ungated public Free plan: it represents about 50 minutes
-  of standard 1080p MP4 output.
-- Credit purchasing, subscriptions, checkout and webhook grants are not yet
-  implemented.
+- Public sign-in grant: 10 lifetime credits, approximately one standard 1080p
+  MP4 minute. Explicit beta/admin grants remain isolated in their own pool.
+- Credit purchasing, subscriptions, checkout and webhook grants are implemented
+  behind the config-gated Whop provider. They are disabled until the live Whop
+  products, webhook and Secret Manager bindings are verified.
 
 Credits should remain the internal accounting unit. Customer-facing plan copy
 should lead with approximate captioned-video minutes and explain that overlays,
@@ -253,23 +255,25 @@ private beta. It does not establish generally available embedded checkout for
 this digital SaaS. ClipSubtitles should therefore use its own hosted pricing and
 checkout flow and re-check directory policy before submission.
 
-## Implementation sequence
+## Implementation status
 
-1. Add a server-owned, versioned plan/top-up catalog separate from the existing
-   render `PRICE_TABLE`; use both for enforcement, UI and tests.
-2. Reduce the public Free state from the 500-credit beta grant to 10 lifetime
-   credits, while preserving explicitly granted beta/admin credits as their own
-   pool.
-3. Add subscription and purchased-credit pools, rollover rules, entitlements,
-   concurrency limits and immutable billing events.
-4. Add server-side checkout creation plus signed, idempotent webhook grants.
-5. Add `/pricing`, billing management and the web insufficient-balance chooser.
-6. Extend MCP output with `checkout_required`, the app-owned resume URL and a
-   responsive upgrade card.
-7. Test no-credit → checkout → webhook → resume end to end in web and ChatGPT;
-   cover duplicate/out-of-order webhooks, checkout cancellation, stale quotes,
-   retries and refunds.
-8. Instrument cost and funnel events: transcribed minutes, render seconds by
+1. **Implemented:** server-owned, versioned plan/top-up catalog separate from
+   the render `PRICE_TABLE`, shared by enforcement, UI and tests.
+2. **Implemented:** 10-credit lifetime Free pool while preserving explicit
+   beta/admin grants separately.
+3. **Implemented:** subscription and purchased-credit pools, rollover expiry,
+   entitlements, transactionally enforced active-render limits and immutable
+   billing events.
+4. **Implemented:** server-side workspace-bound checkout creation plus signed,
+   idempotent webhook grants.
+5. **Implemented:** `/pricing`, settings billing management and plan/top-up
+   checkout entry points.
+6. **Implemented:** MCP `checkout_required` with balance, shortfall, quote
+   expiry, catalog version and an app-owned resume URL.
+7. **External acceptance gate:** configure live Whop products/secrets and test
+   no-credit → checkout → webhook → resume end to end, including duplicate and
+   out-of-order webhooks, cancellation, stale quotes, retries and refunds.
+8. **Post-launch telemetry:** record transcribed minutes, render seconds by
    output/resolution/quality, worker vCPU/GiB seconds, bytes stored/delivered,
    retries, checkout starts, paid conversions, retained paid usage and refunds.
 

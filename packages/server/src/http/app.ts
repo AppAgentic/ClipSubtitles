@@ -10,6 +10,7 @@ import { audit } from '../services/audit';
 import { OPENAPI_INFO, createApi, registerSecuritySchemes, type Api } from './openapi';
 import { registerAccountRoutes } from './routes/account';
 import { registerAuthRoutes } from './routes/auth';
+import { registerBillingRoutes } from './routes/billing';
 import { registerDevRoutes } from './routes/dev';
 import { registerExportRoutes } from './routes/exports';
 import { registerProjectRoutes } from './routes/projects';
@@ -48,6 +49,7 @@ export function createApp(ctx: AppContext): App {
   registerTaskRoutes(api, ctx);
   registerExportRoutes(api, ctx);
   registerAccountRoutes(api, ctx);
+  registerBillingRoutes(api, ctx);
   registerMcpRoute(api, ctx);
 
   api.doc31('/openapi.json', {

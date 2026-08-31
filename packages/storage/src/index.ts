@@ -15,3 +15,4 @@ export * from './repos/credits';
 export * from './repos/idempotency';
 export * from './repos/exports';
 export * from './repos/audit';
+export * from './repos/billing';

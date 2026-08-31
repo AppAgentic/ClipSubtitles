@@ -17,6 +17,7 @@ import { LocalTokenVerifier, WorkOSTokenVerifier, type TokenVerifier } from './a
 import type { AppConfig } from './config';
 import { createLogger, type Logger } from './logging';
 import { createTaskDispatcher, type TaskDispatcher } from './tasks/dispatcher';
+import { createBillingProvider, type BillingProvider } from './billing/provider';
 
 export interface Clock {
   now(): number;
@@ -35,6 +36,7 @@ export interface AppContext {
   limiters: RateLimiters;
   clock: Clock;
   taskDispatcher: TaskDispatcher;
+  billing: BillingProvider;
 }
 
 export interface ContextOverrides {
@@ -47,6 +49,7 @@ export interface ContextOverrides {
   verifier?: TokenVerifier;
   clock?: Clock;
   taskDispatcher?: TaskDispatcher;
+  billing?: BillingProvider;
 }
 
 export function systemClock(): Clock {
@@ -157,5 +160,6 @@ export async function createAppContext(
     }),
     clock: overrides.clock ?? systemClock(),
     taskDispatcher: overrides.taskDispatcher ?? createTaskDispatcher(config),
+    billing: overrides.billing ?? createBillingProvider(config.billing),
   };
 }

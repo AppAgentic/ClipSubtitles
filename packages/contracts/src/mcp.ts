@@ -9,6 +9,7 @@ import {
   OutputSettingsSchema,
   RenderQuoteSchema,
 } from './render';
+import { CheckoutRequiredSchema } from './billing';
 import { CaptionPositionSchema, StyleConfigSchema, StylePresetIdSchema } from './style';
 import { TaskSchema } from './tasks';
 import { LanguageTagSchema, VocabularySchema } from './transcript';
@@ -237,10 +238,11 @@ export const RenderCaptionExportTool = describe({
     })
     .strict(),
   outputSchema: z.object({
-    status: z.enum(['quote_required', 'render_started']),
+    status: z.enum(['quote_required', 'checkout_required', 'render_started']),
     quote: RenderQuoteSchema,
     task: TaskPointerSchema.optional(),
     approvalInstructions: z.string().optional(),
+    checkout: CheckoutRequiredSchema.optional(),
   }),
   annotations: {
     title: 'Render caption export (paid)',

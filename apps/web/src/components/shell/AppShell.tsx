@@ -183,7 +183,8 @@ export function AppShell({
 
 export function CreditsPill({ available }: { available: number }) {
   return (
-    <span
+    <Link
+      href="/app/settings#billing"
       className="mono inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-line-strong bg-panel-2 px-3 py-1.5 text-[11px] text-ink-dim"
       title={`${available} credits available`}
       aria-label={`${available} credits available`}
@@ -191,7 +192,7 @@ export function CreditsPill({ available }: { available: number }) {
       <span className="h-1.5 w-1.5 rounded-full bg-signal" />
       <span className="text-ink">{available}</span>
       <span className="hidden text-ink-mute sm:inline">credits</span>
-    </span>
+    </Link>
   );
 }
 

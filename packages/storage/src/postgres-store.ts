@@ -19,6 +19,14 @@ import {
 } from './repos/assets';
 import { toEvent, type AuditEventInput, type AuditEventRecord } from './repos/audit';
 import {
+  toBillingAccount,
+  toBillingEvent,
+  toCreditPool,
+  type BillingAccountRecord,
+  type BillingEventRecord,
+  type CreditPoolRecord,
+} from './repos/billing';
+import {
   toLedger,
   toReservation,
   type CreditBalanceRecord,
@@ -166,7 +174,16 @@ export class PostgresStore implements DataStore {
         'INSERT INTO credit_accounts (workspace_id, available, reserved, updated_at) VALUES ($1, $2, 0, $3)',
         [workspaceId, input.initialCredits, input.now],
       );
+      await this.run(
+        "INSERT INTO billing_accounts (workspace_id, plan_id, status, updated_at) VALUES ($1, 'free', 'free', $2)",
+        [workspaceId, input.now],
+      );
       if (input.initialCredits > 0) {
+        await this.run(
+          `INSERT INTO credit_pools (id, workspace_id, kind, original_amount, available, reserved, idempotency_key, note, created_at)
+           VALUES ($1, $2, 'free', $3, $3, 0, $4, $5, $6)`,
+          [newId('pool'), workspaceId, input.initialCredits, `grant:initial:${workspaceId}`, 'Free lifetime credit grant', input.now],
+        );
         await this.run(
           `INSERT INTO credit_ledger (id, workspace_id, kind, amount, available_after, reserved_after, idempotency_key, note, created_at)
            VALUES ($1, $2, 'grant', $3, $3, 0, $4, $5, $6)`,
@@ -175,7 +192,7 @@ export class PostgresStore implements DataStore {
             workspaceId,
             input.initialCredits,
             `grant:initial:${workspaceId}`,
-            'Initial beta credit grant',
+            'Free lifetime credit grant',
             input.now,
           ],
         );
@@ -832,6 +849,21 @@ export class PostgresStore implements DataStore {
     ).map(toTask);
   }
 
+  async countActiveRenderTasksForUpdate(workspaceId: string): Promise<number> {
+    // Every render admission locks the same billing-account row first. This
+    // prevents two concurrent transactions from both observing spare capacity.
+    await this.one<Sql>(
+      'SELECT workspace_id FROM billing_accounts WHERE workspace_id = $1 FOR UPDATE',
+      [workspaceId],
+    );
+    const row = await this.one<Sql>(
+      `SELECT COUNT(*)::int AS count FROM tasks
+       WHERE workspace_id = $1 AND kind = 'render_export' AND status IN ('queued','running')`,
+      [workspaceId],
+    );
+    return Number(row?.count ?? 0);
+  }
+
   /** Concurrent workers take disjoint rows: SKIP LOCKED plus a status guard. */
   async claimNextTask(
     input: Parameters<DataStore['claimNextTask']>[0],
@@ -1279,6 +1311,13 @@ export class PostgresStore implements DataStore {
       if (existing) return bal;
       const available = bal.available + input.amount;
       await this.setBalance(input.workspaceId, available, bal.reserved, input.now);
+      if (input.amount > 0) {
+        await this.run(
+          `INSERT INTO credit_pools (id, workspace_id, kind, original_amount, available, reserved, expires_at, idempotency_key, note, created_at)
+           VALUES ($1, $2, $3, $4, $4, 0, $5, $6, $7, $8)`,
+          [newId('pool'), input.workspaceId, input.poolKind ?? 'admin', input.amount, input.expiresAt ?? null, input.idempotencyKey, input.note ?? null, input.now],
+        );
+      }
       await this.writeLedger({
         workspaceId: input.workspaceId,
         kind: input.kind ?? 'grant',
@@ -1315,6 +1354,22 @@ export class PostgresStore implements DataStore {
          VALUES ($1, $2, $3, $4, $5, 'reserved', $6, $6) RETURNING *`,
         [id, input.workspaceId, input.quoteId, input.taskId, input.amount, input.now],
       );
+      let remaining = input.amount;
+      const pools = await this.many<Sql>(
+        `SELECT * FROM credit_pools WHERE workspace_id = $1 AND available > 0 AND (expires_at IS NULL OR expires_at > $2)
+         ORDER BY CASE kind WHEN 'subscription' THEN 0 WHEN 'free' THEN 1 WHEN 'admin' THEN 2 ELSE 3 END,
+           CASE WHEN expires_at IS NULL THEN 1 ELSE 0 END, expires_at, created_at FOR UPDATE`,
+        [input.workspaceId, input.now],
+      );
+      for (const pool of pools) {
+        if (remaining <= 0) break;
+        const amount = Math.min(remaining, Number(pool.available ?? 0));
+        if (amount <= 0) continue;
+        await this.run('UPDATE credit_pools SET available = available - $1, reserved = reserved + $1 WHERE id = $2', [amount, String(pool.id)]);
+        await this.run('INSERT INTO credit_reservation_allocations (reservation_id, pool_id, amount) VALUES ($1, $2, $3)', [id, String(pool.id), amount]);
+        remaining -= amount;
+      }
+      if (remaining > 0) throw new StorageError('INVALID_STATE', 'Credit pools do not match the aggregate balance.');
       const available = bal.available - input.amount;
       const reserved = bal.reserved + input.amount;
       await this.setBalance(input.workspaceId, available, reserved, input.now);
@@ -1369,6 +1424,15 @@ export class PostgresStore implements DataStore {
       const actual = Math.min(res.amount, Math.max(0, input.actualAmount ?? res.amount));
       const reserved = Math.max(0, bal.reserved - res.amount);
       const available = bal.available + (res.amount - actual);
+      let actualRemaining = actual;
+      const allocations = await this.many<Sql>('SELECT * FROM credit_reservation_allocations WHERE reservation_id = $1 ORDER BY pool_id', [res.id]);
+      for (const allocation of allocations) {
+        const amount = Number(allocation.amount ?? 0);
+        const consumed = Math.min(actualRemaining, amount);
+        const refund = amount - consumed;
+        await this.run('UPDATE credit_pools SET reserved = GREATEST(0, reserved - $1), available = available + $2 WHERE id = $3', [amount, refund, String(allocation.pool_id)]);
+        actualRemaining -= consumed;
+      }
       await this.setBalance(res.workspaceId, available, reserved, input.now);
       const updated = await this.one<Sql>(
         "UPDATE credit_reservations SET status = 'settled', settled_amount = $2, updated_at = $3 WHERE id = $1 AND status = 'reserved' RETURNING *",
@@ -1407,6 +1471,11 @@ export class PostgresStore implements DataStore {
       if (res.status !== 'reserved') return { reservation: res, changed: false };
       const reserved = Math.max(0, bal.reserved - res.amount);
       const available = bal.available + res.amount;
+      const allocations = await this.many<Sql>('SELECT * FROM credit_reservation_allocations WHERE reservation_id = $1', [res.id]);
+      for (const allocation of allocations) {
+        const amount = Number(allocation.amount ?? 0);
+        await this.run('UPDATE credit_pools SET reserved = GREATEST(0, reserved - $1), available = available + $1 WHERE id = $2', [amount, String(allocation.pool_id)]);
+      }
       await this.setBalance(res.workspaceId, available, reserved, input.now);
       const updated = await this.one<Sql>(
         "UPDATE credit_reservations SET status = 'released', updated_at = $2 WHERE id = $1 AND status = 'reserved' RETURNING *",
@@ -1436,6 +1505,43 @@ export class PostgresStore implements DataStore {
         [workspaceId, limit],
       ),
     ).map(toLedger);
+  }
+
+  // --- plans, entitlements, and provider events -------------------------------
+
+  async getBillingAccount(workspaceId: string): Promise<BillingAccountRecord | null> {
+    return maybe(await this.one<Sql>('SELECT * FROM billing_accounts WHERE workspace_id = $1', [workspaceId]), toBillingAccount);
+  }
+
+  async upsertBillingAccount(input: Parameters<DataStore['upsertBillingAccount']>[0]): Promise<BillingAccountRecord> {
+    const row = await this.one<Sql>(
+      `INSERT INTO billing_accounts (workspace_id, plan_id, status, current_period_start, current_period_end, cancel_at_period_end, provider, provider_customer_id, provider_subscription_id, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+       ON CONFLICT(workspace_id) DO UPDATE SET plan_id=EXCLUDED.plan_id,status=EXCLUDED.status,current_period_start=EXCLUDED.current_period_start,
+       current_period_end=EXCLUDED.current_period_end,cancel_at_period_end=EXCLUDED.cancel_at_period_end,provider=EXCLUDED.provider,
+       provider_customer_id=EXCLUDED.provider_customer_id,provider_subscription_id=EXCLUDED.provider_subscription_id,updated_at=EXCLUDED.updated_at RETURNING *`,
+      [input.workspaceId,input.planId,input.status,input.currentPeriodStart ?? null,input.currentPeriodEnd ?? null,input.cancelAtPeriodEnd ? 1 : 0,input.provider ?? null,input.providerCustomerId ?? null,input.providerSubscriptionId ?? null,input.now],
+    );
+    return toBillingAccount(pgRow(row as Sql));
+  }
+
+  async listCreditPools(workspaceId: string, now: string): Promise<CreditPoolRecord[]> {
+    return pgRows(await this.many<Sql>(
+      `SELECT * FROM credit_pools WHERE workspace_id=$1 AND (expires_at IS NULL OR expires_at>$2) AND (available>0 OR reserved>0)
+       ORDER BY CASE kind WHEN 'subscription' THEN 0 WHEN 'free' THEN 1 WHEN 'admin' THEN 2 ELSE 3 END,
+       CASE WHEN expires_at IS NULL THEN 1 ELSE 0 END, expires_at, created_at`, [workspaceId, now],
+    )).map(toCreditPool);
+  }
+
+  async recordBillingEvent(input: Parameters<DataStore['recordBillingEvent']>[0]): Promise<{ event: BillingEventRecord; created: boolean }> {
+    const inserted = await this.one<Sql>(
+      `INSERT INTO billing_events (provider,event_id,event_type,workspace_id,status,occurred_at,processed_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(provider,event_id) DO NOTHING RETURNING *`,
+      [input.provider,input.eventId,input.eventType,input.workspaceId ?? null,input.status,input.occurredAt,input.processedAt],
+    );
+    const row = inserted ?? await this.one<Sql>('SELECT * FROM billing_events WHERE provider=$1 AND event_id=$2', [input.provider,input.eventId]);
+    if (!row) throw new StorageError('INVALID_STATE', 'Billing event was not saved.');
+    return { event: toBillingEvent(pgRow(row)), created: Boolean(inserted) };
   }
 
   // --- request idempotency ----------------------------------------------------

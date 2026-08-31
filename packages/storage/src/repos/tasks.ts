@@ -264,6 +264,16 @@ export function listTasks(
   ).map(toTask);
 }
 
+export function countActiveRenderTasks(db: Db, workspaceId: string): number {
+  const row = one(
+    db,
+    `SELECT COUNT(*) AS count FROM tasks
+     WHERE workspace_id = ? AND kind = 'render_export' AND status IN ('queued','running')`,
+    workspaceId,
+  );
+  return num(row?.count) ?? 0;
+}
+
 /** Atomically claim the oldest runnable task and lease it to `workerId`. */
 export function claimNextTask(
   db: Db,

@@ -8,6 +8,7 @@ import {
   type Task,
 } from '@clipsubtitles/contracts';
 import { createHarness, type Harness } from './harness';
+import type { SqliteStore } from '@clipsubtitles/storage';
 
 let h: Harness;
 let baseUrl: string;
@@ -280,6 +281,26 @@ describe('MCP conformance', () => {
     expect(quoted.status).toBe('quote_required');
     expect(quoted.quote.creditCost).toBeGreaterThan(0);
     expect(quoted.approvalInstructions).toContain(String(quoted.quote.creditCost));
+
+    const rawDb = (h.ctx.db as SqliteStore).raw;
+    const workspaceId = (await h.ctx.db.ensureUserWorkspace({ subject: 'mock|joe', now: h.clock.iso(), initialCredits: 10 })).workspace.id;
+    rawDb.prepare('UPDATE credit_accounts SET available = 0 WHERE workspace_id = ?').run(workspaceId);
+    rawDb.prepare('UPDATE credit_pools SET available = 0 WHERE workspace_id = ?').run(workspaceId);
+    const needsCheckout = structured<{ status: string; checkout: { shortfall: number; pricingUrl: string; quoteId: string } }>(
+      await client.callTool({
+        name: 'render_caption_export',
+        arguments: {
+          projectId,
+          approval: { quoteId: quoted.quote.id, approvedCreditCost: quoted.quote.creditCost },
+          idempotencyKey: 'mcp-render-no-credits',
+        },
+      }),
+    );
+    expect(needsCheckout.status).toBe('checkout_required');
+    expect(needsCheckout.checkout).toMatchObject({ quoteId: quoted.quote.id, shortfall: quoted.quote.creditCost });
+    expect(needsCheckout.checkout.pricingUrl).toContain('/pricing?source=agent');
+    rawDb.prepare('UPDATE credit_accounts SET available = 10 WHERE workspace_id = ?').run(workspaceId);
+    rawDb.prepare('UPDATE credit_pools SET available = 10 WHERE workspace_id = ?').run(workspaceId);
 
     const wrong = await client.callTool({
       name: 'render_caption_export',

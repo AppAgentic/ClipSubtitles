@@ -2,6 +2,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { openDatabase, type Db, type OpenDatabaseOptions } from './db';
 import * as assets from './repos/assets';
 import * as audit from './repos/audit';
+import * as billing from './repos/billing';
 import * as credits from './repos/credits';
 import * as exportsRepo from './repos/exports';
 import * as idempotency from './repos/idempotency';
@@ -250,6 +251,10 @@ export class SqliteStore implements DataStore {
   listTasks(workspaceId: string, opts: Parameters<DataStore['listTasks']>[1] = {}) {
     return this.run((db) => tasks.listTasks(db, workspaceId, opts));
   }
+  countActiveRenderTasksForUpdate(workspaceId: string) {
+    // BEGIN IMMEDIATE already serializes workspace admission in SQLite.
+    return this.run((db) => tasks.countActiveRenderTasks(db, workspaceId));
+  }
   claimNextTask(input: Parameters<DataStore['claimNextTask']>[0]) {
     return this.run((db) => tasks.claimNextTask(db, input));
   }
@@ -339,6 +344,20 @@ export class SqliteStore implements DataStore {
   }
   listLedger(workspaceId: string, limit?: number) {
     return this.run((db) => credits.listLedger(db, workspaceId, limit));
+  }
+
+  // --- plans, entitlements, and provider events -------------------------------
+  getBillingAccount(workspaceId: string) {
+    return this.run((db) => billing.getBillingAccount(db, workspaceId));
+  }
+  upsertBillingAccount(input: Parameters<DataStore['upsertBillingAccount']>[0]) {
+    return this.run((db) => billing.upsertBillingAccount(db, input));
+  }
+  listCreditPools(workspaceId: string, now: string) {
+    return this.run((db) => billing.listCreditPools(db, workspaceId, now));
+  }
+  recordBillingEvent(input: Parameters<DataStore['recordBillingEvent']>[0]) {
+    return this.run((db) => billing.recordBillingEvent(db, input));
   }
 
   // --- idempotency ------------------------------------------------------------

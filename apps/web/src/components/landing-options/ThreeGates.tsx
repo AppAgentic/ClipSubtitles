@@ -7,6 +7,8 @@ import { StyleBoard } from './StyleBoard';
 import { SITE_URL } from '@/components/marketing/seo-pages';
 import { ConnectAgent } from './ConnectAgent';
 import { ClipSubtitlesWordmark } from '@/components/brand/ClipSubtitlesWordmark';
+import { PricingSection } from '@/components/marketing/PricingSection';
+import { MarketingFooter } from '@/components/marketing/MarketingFooter';
 import './landing-options.css';
 import './three-gates.css';
 
@@ -92,6 +94,7 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
         </Link>
         <nav aria-label="Primary" className="tg-nav">
           <Link href="/help">Help</Link>
+          <Link href="#pricing">Pricing</Link>
           <Link href="/developers">Developers</Link>
           <Link href="/sign-in">Sign in</Link>
         </nav>
@@ -111,7 +114,7 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
             </p>
             <div className="tg-cta">
               <Link href="/sign-in?returnTo=/app/new" className="lo-btn tg-btn-primary">
-                Caption a video
+                Try for $0
               </Link>
               <a href="#tg-how" className="lo-btn tg-btn-ghost">
                 See how it works
@@ -152,7 +155,7 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
         <section className="tg-mid lo-wrap" aria-labelledby="tg-mid-title">
           <h2 id="tg-mid-title">Try it on your own clip.</h2>
           <Link href="/sign-in?returnTo=/app/new" className="lo-btn tg-btn-primary">
-            Caption a video
+            Try for $0
           </Link>
         </section>
 
@@ -168,8 +171,11 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
           </div>
           <div className="tg-audience-body">
             <ul className="tg-audience-grid">
-              {AUDIENCES.map(([title, body]) => (
+              {AUDIENCES.map(([title, body], index) => (
                 <li key={title}>
+                  <div className={`tg-audience-visual is-${index + 1}`} aria-hidden>
+                    <span /><span /><span />
+                  </div>
                   <h3>{title}</h3>
                   <p>{body}</p>
                 </li>
@@ -180,6 +186,8 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
 
         {/* Secondary path for people who want to operate ClipSubtitles through an agent. */}
         <ConnectAgent standalone />
+
+        <PricingSection />
 
         <nav className="tg-related lo-wrap" aria-labelledby="tg-related-title">
           <p className="lo-eyebrow tg-eyebrow">Explore caption workflows</p>
@@ -215,22 +223,20 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
           </div>
         </section>
 
-        {/* 6 · Final */}
-        <section className="tg-final lo-wrap lo-end" aria-labelledby="tg-h4">
-          <h2 id="tg-h4">
-            Create polished captions <em>for your next video.</em>
-          </h2>
-          <p>Caption one clip and see the whole flow.</p>
+        <section className="tg-bottom-cta lo-wrap" aria-labelledby="tg-h4">
+          <div>
+            <p className="lo-eyebrow">Your first clip is on us</p>
+            <h2 id="tg-h4">Ready to make every word worth watching?</h2>
+            <p>Bring one video. Leave with styled, publish-ready captions.</p>
+          </div>
           <div className="tg-cta">
-            <Link href="/sign-in?returnTo=/app/new" className="lo-btn tg-btn-primary">
-              Caption a video
-            </Link>
-            <Link href="/developers" className="lo-btn tg-btn-ghost">
-              Build with ClipSubtitles
-            </Link>
+            <Link href="/sign-in?returnTo=/app/new" className="lo-btn tg-bottom-primary">Try for $0</Link>
+            <Link href="/developers" className="lo-btn tg-bottom-secondary">Connect your agent</Link>
           </div>
         </section>
       </main>
+
+      <MarketingFooter />
 
       {showSwitcher ? <OptionSwitcher current="three-gates" /> : null}
     </div>

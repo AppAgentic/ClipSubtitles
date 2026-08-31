@@ -19,9 +19,9 @@ import { createHarness, type Harness } from './harness';
 let h: Harness;
 let token: string;
 
-async function uploadProject(fileName = 'clip.mp4', seconds = 2): Promise<CaptionProject> {
+async function uploadProject(fileName = 'clip.mp4', seconds = 2, authToken = token): Promise<CaptionProject> {
   const created = await h.api<CreateProjectResponse>('POST', '/v1/projects', {
-    token,
+    token: authToken,
     body: { title: 'Upload test', fileName },
   });
   expect(created.status).toBe(201);
@@ -38,26 +38,26 @@ async function uploadProject(fileName = 'clip.mp4', seconds = 2): Promise<Captio
   expect(put.status).toBe(200);
   expect(put.body.asset.status).toBe('ready');
   const project = await h.api<CaptionProject>('GET', `/v1/projects/${created.body.project.id}`, {
-    token,
+    token: authToken,
   });
   expect(project.body.links.editor).toBe(`http://127.0.0.1:3100/studio/${created.body.project.id}`);
   return project.body;
 }
 
-async function captionedProject(): Promise<CaptionProject> {
-  const project = await uploadProject();
+async function captionedProject(authToken = token, fileName = 'clip.mp4'): Promise<CaptionProject> {
+  const project = await uploadProject(fileName, 2, authToken);
   const gen = await h.api<{ task: Task }>('POST', `/v1/projects/${project.id}/captions`, {
-    token,
+    token: authToken,
     body: {},
   });
   expect(gen.status).toBe(202);
   await h.runTasks();
-  const done = await h.api<{ task: Task }>('GET', `/v1/tasks/${gen.body.task.id}`, { token });
+  const done = await h.api<{ task: Task }>('GET', `/v1/tasks/${gen.body.task.id}`, { token: authToken });
   expect(done.body.task.status).toBe('succeeded');
   const view = await h.api<CaptionProject>(
     'GET',
     `/v1/projects/${project.id}?include=pages,words`,
-    { token },
+    { token: authToken },
   );
   expect(view.body.status).toBe('captioned');
   return view.body;
@@ -96,7 +96,7 @@ describe('auth boundaries', () => {
     }>('GET', '/v1/me', { token });
     expect(me.status).toBe(200);
     expect(me.body.workspace.id).toMatch(/^ws_/);
-    expect(me.body.credits.available).toBe(500);
+    expect(me.body.credits.available).toBe(10);
     const again = await h.api<{ workspace: { id: string } }>('GET', '/v1/me', {
       token: await h.token(),
     });
@@ -106,6 +106,26 @@ describe('auth boundaries', () => {
       body: { title: 'x', workspaceId: 'ws_other' },
     });
     expect(bad.status).toBe(400);
+  });
+
+  it('publishes the billing catalog and returns workspace plan, pools, and entitlements', async () => {
+    const catalog = await h.api<{ version: string; plans: Array<{ id: string; monthlyPriceCents: number }> }>('GET', '/v1/billing/catalog');
+    expect(catalog.status).toBe(200);
+    expect(catalog.body.plans.map((plan) => [plan.id, plan.monthlyPriceCents])).toEqual([
+      ['free', 0], ['creator', 1500], ['pro', 3900], ['studio', 9900],
+    ]);
+    const overview = await h.api<{ planId: string; credits: { available: number }; pools: Array<{ kind: string; available: number }>; entitlements: { apiAccess: boolean } }>('GET', '/v1/billing', { token });
+    expect(overview.status).toBe(200);
+    expect(overview.body).toMatchObject({ planId: 'free', credits: { available: 10 }, entitlements: { apiAccess: false } });
+    expect(overview.body.pools).toEqual([{ kind: 'free', available: 10, reserved: 0 }]);
+  });
+
+  it('keeps checkout behind authentication and a configured provider', async () => {
+    const body = { sku: 'plan_creator_monthly', source: 'web' };
+    expect((await h.api('POST', '/v1/billing/checkout', { body, headers: { 'idempotency-key': 'checkout-anon-1' } })).status).toBe(401);
+    const disabled = await h.api<{ error: { code: string } }>('POST', '/v1/billing/checkout', { token, body, headers: { 'idempotency-key': 'checkout-auth-1' } });
+    expect(disabled.status).toBe(503);
+    expect(disabled.body.error.code).toBe('PROVIDER_UNAVAILABLE');
   });
 
   it('enforces scopes', async () => {
@@ -309,6 +329,56 @@ describe('projects, uploads, and captions', () => {
 });
 
 describe('quotes, renders, billing, tasks', () => {
+  it('enforces the plan active-render limit without consuming the rejected quote', async () => {
+    const limitedToken = await h.token('mock|render-limit');
+    const firstProject = await captionedProject(limitedToken, 'limit-first.mp4');
+    const secondProject = await captionedProject(limitedToken, 'limit-second.mp4');
+    const settings = {
+      outputs: ['mp4'] as const,
+      resolution: 'source' as const,
+      fps: 'source' as const,
+      quality: 'standard' as const,
+    };
+    const firstQuote = await h.api<RenderQuote>('POST', `/v1/projects/${firstProject.id}/render-quotes`, {
+      token: limitedToken,
+      body: { settings },
+    });
+    const secondQuote = await h.api<RenderQuote>('POST', `/v1/projects/${secondProject.id}/render-quotes`, {
+      token: limitedToken,
+      body: { settings },
+    });
+    const first = await h.api<{ task: Task }>('POST', `/v1/projects/${firstProject.id}/renders`, {
+      token: limitedToken,
+      body: {
+        quoteId: firstQuote.body.id,
+        approvedCreditCost: firstQuote.body.creditCost,
+        idempotencyKey: 'render-limit-first',
+      },
+    });
+    expect(first.status).toBe(202);
+    const blocked = await h.api<{ error: { code: string } }>('POST', `/v1/projects/${secondProject.id}/renders`, {
+      token: limitedToken,
+      body: {
+        quoteId: secondQuote.body.id,
+        approvedCreditCost: secondQuote.body.creditCost,
+        idempotencyKey: 'render-limit-second',
+      },
+    });
+    expect(blocked.status).toBe(429);
+    expect(blocked.body.error.code).toBe('RATE_LIMITED');
+
+    await h.runTasks();
+    const resumed = await h.api<{ task: Task }>('POST', `/v1/projects/${secondProject.id}/renders`, {
+      token: limitedToken,
+      body: {
+        quoteId: secondQuote.body.id,
+        approvedCreditCost: secondQuote.body.creditCost,
+        idempotencyKey: 'render-limit-second',
+      },
+    });
+    expect(resumed.status).toBe(202);
+  });
+
   it('quotes immutably, requires exact approval, reserves and settles credits exactly once', async () => {
     const project = await captionedProject();
     const ws = h.ctx.db;

@@ -70,6 +70,7 @@ process environment — never paste them into `.env`, commit them, or print them
 Everything runs with the defaults; every integration is config-gated:
 
 - `AUTH_MODE=mock|workos` — WorkOS/AuthKit is the only production identity and OAuth authority.
+- `BILLING_PROVIDER=none|whop` — local checkout is disabled by default; the live provider requires an AppAgentic-owned account, six catalog-matched plan IDs, and securely injected API/webhook secrets. See `docs/billing-launch.md`.
 - `TRANSCRIPTION_PROVIDERS=mock` — local deterministic mode; production uses `elevenlabs,gemini` as the ordered live chain.
 - `RENDERER=ffmpeg|remotion` — deterministic canvas+ffmpeg compositor by default.
 - `TRUSTED_PROXIES=` — comma-separated proxy IPs/CIDRs whose `X-Forwarded-For`/`X-Real-IP` are honoured for client-IP rate limiting. Empty (default) never trusts forwarding headers.

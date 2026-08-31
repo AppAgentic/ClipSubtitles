@@ -290,4 +290,39 @@ ALTER TABLE uploads ADD COLUMN purged_at TEXT;
 CREATE INDEX uploads_expired_direct ON uploads(transport, completed_at, purged_at, expires_at);
 `,
   },
+  {
+    version: 3,
+    name: 'billing_catalog_and_credit_pools',
+    sql: `
+CREATE TABLE billing_accounts (
+  workspace_id TEXT PRIMARY KEY REFERENCES workspaces(id), plan_id TEXT NOT NULL DEFAULT 'free',
+  status TEXT NOT NULL DEFAULT 'free', current_period_start TEXT, current_period_end TEXT,
+  cancel_at_period_end INTEGER NOT NULL DEFAULT 0, provider TEXT, provider_customer_id TEXT,
+  provider_subscription_id TEXT, updated_at TEXT NOT NULL
+);
+CREATE TABLE credit_pools (
+  id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL REFERENCES workspaces(id), kind TEXT NOT NULL,
+  original_amount INTEGER NOT NULL CHECK (original_amount >= 0), available INTEGER NOT NULL CHECK (available >= 0),
+  reserved INTEGER NOT NULL DEFAULT 0 CHECK (reserved >= 0), expires_at TEXT, idempotency_key TEXT NOT NULL,
+  note TEXT, created_at TEXT NOT NULL, UNIQUE(workspace_id, idempotency_key)
+);
+CREATE INDEX credit_pools_spend_order ON credit_pools(workspace_id, expires_at, created_at);
+CREATE TABLE credit_reservation_allocations (
+  reservation_id TEXT NOT NULL REFERENCES credit_reservations(id) ON DELETE CASCADE,
+  pool_id TEXT NOT NULL REFERENCES credit_pools(id), amount INTEGER NOT NULL CHECK (amount > 0),
+  PRIMARY KEY (reservation_id, pool_id)
+);
+CREATE TABLE billing_events (
+  provider TEXT NOT NULL, event_id TEXT NOT NULL, event_type TEXT NOT NULL, workspace_id TEXT,
+  status TEXT NOT NULL, occurred_at TEXT NOT NULL, processed_at TEXT NOT NULL,
+  PRIMARY KEY (provider, event_id)
+);
+INSERT INTO billing_accounts (workspace_id, plan_id, status, updated_at)
+  SELECT id, 'free', 'free', updated_at FROM workspaces;
+INSERT INTO credit_pools (id, workspace_id, kind, original_amount, available, reserved, idempotency_key, note, created_at)
+  SELECT 'pool_' || substring(md5(workspace_id) from 1 for 26), workspace_id, 'admin', available + reserved, available, reserved,
+         'migration:aggregate:v6', 'Balance migrated into the pooled credit ledger', updated_at
+  FROM credit_accounts WHERE available + reserved > 0;
+`,
+  },
 ];

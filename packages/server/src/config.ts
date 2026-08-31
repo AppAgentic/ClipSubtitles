@@ -1,4 +1,5 @@
 import path from 'node:path';
+import type { BillingSku } from '@clipsubtitles/contracts';
 import { KNOWN_PROVIDER_IDS } from '@clipsubtitles/transcription';
 import { z } from 'zod';
 import { createProxyTrust } from './auth/client-ip';
@@ -54,6 +55,16 @@ const EnvSchema = z.object({
   WORKOS_AUTHKIT_ISSUER: z.string().optional(),
   WORKOS_REDIRECT_URI: z.string().optional(),
   WORKOS_WEBHOOK_SECRET: z.string().optional(),
+  BILLING_PROVIDER: z.enum(['none', 'whop']).default('none'),
+  WHOP_API_KEY: z.string().optional(),
+  WHOP_ACCOUNT_ID: z.string().optional(),
+  WHOP_WEBHOOK_SECRET: z.string().optional(),
+  WHOP_PLAN_CREATOR_MONTHLY: z.string().optional(),
+  WHOP_PLAN_PRO_MONTHLY: z.string().optional(),
+  WHOP_PLAN_STUDIO_MONTHLY: z.string().optional(),
+  WHOP_PLAN_TOPUP_SMALL: z.string().optional(),
+  WHOP_PLAN_TOPUP_MEDIUM: z.string().optional(),
+  WHOP_PLAN_TOPUP_LARGE: z.string().optional(),
   TRANSCRIPTION_PROVIDERS: z.string().default('mock'),
   RENDERER: z.enum(['ffmpeg', 'remotion']).default('ffmpeg'),
   FFMPEG_PATH: z.string().default('ffmpeg'),
@@ -69,7 +80,7 @@ const EnvSchema = z.object({
   QUOTE_TTL_SECONDS: intish(900, 30),
   RATE_LIMIT_PER_MINUTE: intish(120, 1),
   PREVIEWS_PER_HOUR: intish(30, 1),
-  INITIAL_CREDIT_GRANT: intish(500, 0),
+  INITIAL_CREDIT_GRANT: intish(10, 0),
   MAX_JSON_BODY_BYTES: intish(1024 * 1024, 1024),
   WORKER_POLL_MS: intish(500, 50),
   WORKER_LEASE_MS: intish(60_000, 5_000),
@@ -155,6 +166,15 @@ export interface AppConfig {
     sessionTtlSeconds: number;
     tokenTtlSeconds: number;
   };
+  billing:
+    | { provider: 'none' }
+    | {
+        provider: 'whop';
+        apiKey: string;
+        accountId: string;
+        webhookSecret: string;
+        planIds: Record<BillingSku, string>;
+      };
   transcription: { providers: string[] };
   renderer: 'ffmpeg' | 'remotion';
   ffmpegPath: string;
@@ -247,6 +267,27 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       // The callback is reached through the web origin (proxied to the API) so the session cookie lands on the web host.
       redirectUri: e.WORKOS_REDIRECT_URI ?? `${e.WEB_PUBLIC_URL.replace(/\/$/, '')}/auth/callback`,
       ...(e.WORKOS_WEBHOOK_SECRET ? { webhookSecret: e.WORKOS_WEBHOOK_SECRET.trim() } : {}),
+    };
+  }
+  let billing: AppConfig['billing'] = { provider: 'none' };
+  if (e.BILLING_PROVIDER === 'whop') {
+    const planIds = {
+      plan_creator_monthly: e.WHOP_PLAN_CREATOR_MONTHLY,
+      plan_pro_monthly: e.WHOP_PLAN_PRO_MONTHLY,
+      plan_studio_monthly: e.WHOP_PLAN_STUDIO_MONTHLY,
+      topup_small: e.WHOP_PLAN_TOPUP_SMALL,
+      topup_medium: e.WHOP_PLAN_TOPUP_MEDIUM,
+      topup_large: e.WHOP_PLAN_TOPUP_LARGE,
+    };
+    if (!e.WHOP_API_KEY || !e.WHOP_ACCOUNT_ID || !e.WHOP_WEBHOOK_SECRET || Object.values(planIds).some((value) => !value)) {
+      throw new ConfigError('BILLING_PROVIDER=whop requires the Whop API key, account ID, webhook secret, and all six plan IDs.');
+    }
+    billing = {
+      provider: 'whop',
+      apiKey: e.WHOP_API_KEY.trim(),
+      accountId: e.WHOP_ACCOUNT_ID.trim(),
+      webhookSecret: e.WHOP_WEBHOOK_SECRET.trim(),
+      planIds: Object.fromEntries(Object.entries(planIds).map(([key, value]) => [key, String(value).trim()])) as Record<BillingSku, string>,
     };
   }
   if (e.NODE_ENV === 'production' && e.AUTH_MODE !== 'workos') {
@@ -350,6 +391,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       sessionTtlSeconds: 7 * 24 * 3600,
       tokenTtlSeconds: 3600,
     },
+    billing,
     transcription: {
       providers: transcriptionProviders,
     },

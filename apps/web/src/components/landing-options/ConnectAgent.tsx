@@ -6,14 +6,17 @@ import { MCP_CLIENTS, McpClientTiles, McpInstallSlot, useMcpClient } from './Mcp
 
 const AUTOMATION_PATHS = [
   {
+    label: 'ChatGPT & Claude',
     title: 'From a conversation',
     body: 'Ask ChatGPT or Claude to caption a clip, correct a word, try a style and prepare the export.',
   },
   {
+    label: 'Codex & Claude Code',
     title: 'From your workspace',
     body: 'Use Codex, Cursor or Claude Code to turn the videos already in your workflow into captioned deliverables.',
   },
   {
+    label: 'MCP & API',
     title: 'From an automation',
     body: 'Connect through MCP or the API so your own system can prepare repeatable caption jobs for approval.',
   },
@@ -45,9 +48,9 @@ export function ConnectAgent({ standalone = false }: { standalone?: boolean }) {
 
       {standalone ? (
         <ol className="tg-automation-paths">
-          {AUTOMATION_PATHS.map((path, index) => (
+          {AUTOMATION_PATHS.map((path) => (
             <li key={path.title}>
-              <span className="lo-mono">0{index + 1}</span>
+              <span className="tg-automation-label">{path.label}</span>
               <div>
                 <h3>{path.title}</h3>
                 <p>{path.body}</p>

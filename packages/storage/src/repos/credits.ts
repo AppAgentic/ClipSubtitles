@@ -1,4 +1,4 @@
-import type { LedgerEntry, LedgerEntryKind } from '@clipsubtitles/contracts';
+import type { CreditPoolKind, LedgerEntry, LedgerEntryKind } from '@clipsubtitles/contracts';
 import { newId } from '@clipsubtitles/core';
 import { many, num, one, run, text, transaction, type Db, type Row } from '../db';
 import { StorageError } from '../errors';
@@ -118,7 +118,7 @@ function setBalance(db: Db, workspaceId: string, available: number, reserved: nu
  */
 export function grantCredits(
   db: Db,
-  input: { workspaceId: string; amount: number; idempotencyKey: string; note?: string; now: string; kind?: 'grant' | 'adjust' },
+  input: { workspaceId: string; amount: number; idempotencyKey: string; note?: string; now: string; kind?: 'grant' | 'adjust'; poolKind?: CreditPoolKind; expiresAt?: string },
 ): CreditBalanceRecord {
   return transaction(db, () => {
     const existing = one(db, 'SELECT id FROM credit_ledger WHERE workspace_id = ? AND idempotency_key = ?', input.workspaceId, input.idempotencyKey);
@@ -126,6 +126,25 @@ export function grantCredits(
     const bal = getBalance(db, input.workspaceId);
     const available = bal.available + input.amount;
     setBalance(db, input.workspaceId, available, bal.reserved, input.now);
+    const hasPools = Boolean(
+      one(db, "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'credit_pools'"),
+    );
+    if (input.amount > 0 && hasPools) {
+      run(
+        db,
+        `INSERT INTO credit_pools (id, workspace_id, kind, original_amount, available, reserved, expires_at, idempotency_key, note, created_at)
+         VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?)`,
+        newId('pool'),
+        input.workspaceId,
+        input.poolKind ?? 'admin',
+        input.amount,
+        input.amount,
+        input.expiresAt ?? null,
+        input.idempotencyKey,
+        input.note ?? null,
+        input.now,
+      );
+    }
     writeLedger(db, {
       workspaceId: input.workspaceId,
       kind: input.kind ?? 'grant',
@@ -167,6 +186,24 @@ export function reserveCredits(
       input.now,
       input.now,
     );
+    let remaining = input.amount;
+    const pools = many(
+      db,
+      `SELECT * FROM credit_pools WHERE workspace_id = ? AND available > 0 AND (expires_at IS NULL OR expires_at > ?)
+       ORDER BY CASE kind WHEN 'subscription' THEN 0 WHEN 'free' THEN 1 WHEN 'admin' THEN 2 ELSE 3 END,
+         CASE WHEN expires_at IS NULL THEN 1 ELSE 0 END, expires_at, created_at`,
+      input.workspaceId,
+      input.now,
+    );
+    for (const pool of pools) {
+      if (remaining <= 0) break;
+      const amount = Math.min(remaining, num(pool.available) ?? 0);
+      if (amount <= 0) continue;
+      run(db, 'UPDATE credit_pools SET available = available - ?, reserved = reserved + ? WHERE id = ?', amount, amount, String(pool.id));
+      run(db, 'INSERT INTO credit_reservation_allocations (reservation_id, pool_id, amount) VALUES (?, ?, ?)', id, String(pool.id), amount);
+      remaining -= amount;
+    }
+    if (remaining > 0) throw new StorageError('INVALID_STATE', 'Credit pools do not match the aggregate balance.');
     const available = bal.available - input.amount;
     const reserved = bal.reserved + input.amount;
     setBalance(db, input.workspaceId, available, reserved, input.now);
@@ -214,6 +251,21 @@ export function settleReservation(
     const bal = getBalance(db, res.workspaceId);
     const reserved = Math.max(0, bal.reserved - res.amount);
     const available = bal.available + (res.amount - actual);
+    let actualRemaining = actual;
+    const allocations = many(db, 'SELECT * FROM credit_reservation_allocations WHERE reservation_id = ? ORDER BY rowid', res.id);
+    for (const allocation of allocations) {
+      const amount = num(allocation.amount) ?? 0;
+      const consumed = Math.min(actualRemaining, amount);
+      const refund = amount - consumed;
+      run(
+        db,
+        'UPDATE credit_pools SET reserved = MAX(0, reserved - ?), available = available + ? WHERE id = ?',
+        amount,
+        refund,
+        String(allocation.pool_id),
+      );
+      actualRemaining -= consumed;
+    }
     setBalance(db, res.workspaceId, available, reserved, input.now);
     run(
       db,
@@ -251,6 +303,17 @@ export function releaseReservation(
     const bal = getBalance(db, res.workspaceId);
     const reserved = Math.max(0, bal.reserved - res.amount);
     const available = bal.available + res.amount;
+    const allocations = many(db, 'SELECT * FROM credit_reservation_allocations WHERE reservation_id = ?', res.id);
+    for (const allocation of allocations) {
+      const amount = num(allocation.amount) ?? 0;
+      run(
+        db,
+        'UPDATE credit_pools SET reserved = MAX(0, reserved - ?), available = available + ? WHERE id = ?',
+        amount,
+        amount,
+        String(allocation.pool_id),
+      );
+    }
     setBalance(db, res.workspaceId, available, reserved, input.now);
     run(db, "UPDATE credit_reservations SET status = 'released', updated_at = ? WHERE id = ? AND status = 'reserved'", input.now, res.id);
     writeLedger(db, {

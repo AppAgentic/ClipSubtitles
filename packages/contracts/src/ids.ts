@@ -19,6 +19,7 @@ export const ID_PREFIXES = {
   quote: 'quote',
   export: 'exp',
   reservation: 'rsv',
+  pool: 'pool',
   ledger: 'led',
   audit: 'aud',
   errorRef: 'err',

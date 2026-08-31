@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   ApiErrorSchema,
+  BILLING_CATALOG,
+  BillingCatalogSchema,
   CreateProjectRequestSchema,
   ERROR_CODES,
   ERROR_HTTP_STATUS,
@@ -16,6 +18,39 @@ import {
   TranscriptWordSchema,
   idSchema,
 } from './index';
+
+describe('billing catalog', () => {
+  it('is valid, versioned, and exposes unique stable SKUs', () => {
+    expect(BillingCatalogSchema.parse(BILLING_CATALOG)).toEqual(BILLING_CATALOG);
+    expect(BILLING_CATALOG.version).toMatch(/^2026-/);
+    const skus = [
+      ...BILLING_CATALOG.plans.flatMap((plan) => ('sku' in plan ? [plan.sku] : [])),
+      ...BILLING_CATALOG.topUps.map((topUp) => topUp.sku),
+    ];
+    expect(new Set(skus).size).toBe(skus.length);
+  });
+
+  it('keeps the free grant separate from recurring paid credits', () => {
+    const free = BILLING_CATALOG.plans.find((plan) => plan.id === 'free');
+    expect(free).toMatchObject({ monthlyPriceCents: 0, monthlyCredits: 0 });
+    expect(BILLING_CATALOG.freeLifetimeCredits).toBe(10);
+  });
+
+  it('matches the approved launch prices and credit allowances', () => {
+    expect(
+      BILLING_CATALOG.plans.map(({ id, monthlyPriceCents, monthlyCredits }) => ({
+        id,
+        monthlyPriceCents,
+        monthlyCredits,
+      })),
+    ).toEqual([
+      { id: 'free', monthlyPriceCents: 0, monthlyCredits: 0 },
+      { id: 'creator', monthlyPriceCents: 1_500, monthlyCredits: 300 },
+      { id: 'pro', monthlyPriceCents: 3_900, monthlyCredits: 1_000 },
+      { id: 'studio', monthlyPriceCents: 9_900, monthlyCredits: 3_000 },
+    ]);
+  });
+});
 
 describe('error contract', () => {
   it('maps every error code to an HTTP status, retryability, and message', () => {

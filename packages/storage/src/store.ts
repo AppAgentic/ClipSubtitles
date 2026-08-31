@@ -1,5 +1,8 @@
 import type {
   ExpectedOutput,
+  BillingPlanId,
+  BillingSubscriptionStatus,
+  CreditPoolKind,
   LedgerEntry,
   OutputSettings,
   ProjectStatus,
@@ -15,6 +18,7 @@ import type {
 } from '@clipsubtitles/contracts';
 import type { AssetPatch, AssetRecord, AssetOrigin, AssetStatus, UploadRecord } from './repos/assets';
 import type { AuditEventInput, AuditEventRecord } from './repos/audit';
+import type { BillingAccountRecord, BillingEventRecord, CreditPoolRecord } from './repos/billing';
 import type { CreditBalanceRecord, ReservationRecord } from './repos/credits';
 import type { ExportRecord } from './repos/exports';
 import type { IdempotencyBegin } from './repos/idempotency';
@@ -200,6 +204,8 @@ export interface DataStore {
     workspaceId: string,
     opts?: { projectId?: string; activeOnly?: boolean; limit?: number },
   ): Promise<TaskRecord[]>;
+  /** Serialize paid render admission per workspace, then return queued/running exports. */
+  countActiveRenderTasksForUpdate(workspaceId: string): Promise<number>;
   claimNextTask(input: {
     workerId: string;
     now: string;
@@ -289,6 +295,8 @@ export interface DataStore {
     note?: string;
     now: string;
     kind?: 'grant' | 'adjust';
+    poolKind?: CreditPoolKind;
+    expiresAt?: string;
   }): Promise<CreditBalanceRecord>;
   reserveCredits(input: {
     workspaceId: string;
@@ -310,6 +318,31 @@ export interface DataStore {
     reason?: string;
   }): Promise<{ reservation: ReservationRecord; changed: boolean }>;
   listLedger(workspaceId: string, limit?: number): Promise<LedgerEntry[]>;
+
+  // --- plans, entitlements, and provider events -------------------------------
+  getBillingAccount(workspaceId: string): Promise<BillingAccountRecord | null>;
+  upsertBillingAccount(input: {
+    workspaceId: string;
+    planId: BillingPlanId;
+    status: BillingSubscriptionStatus;
+    currentPeriodStart?: string;
+    currentPeriodEnd?: string;
+    cancelAtPeriodEnd?: boolean;
+    provider?: string;
+    providerCustomerId?: string;
+    providerSubscriptionId?: string;
+    now: string;
+  }): Promise<BillingAccountRecord>;
+  listCreditPools(workspaceId: string, now: string): Promise<CreditPoolRecord[]>;
+  recordBillingEvent(input: {
+    provider: string;
+    eventId: string;
+    eventType: string;
+    workspaceId?: string;
+    status: 'processing' | 'processed' | 'ignored' | 'failed';
+    occurredAt: string;
+    processedAt: string;
+  }): Promise<{ event: BillingEventRecord; created: boolean }>;
 
   // --- request idempotency ----------------------------------------------------
   beginIdempotent(input: {

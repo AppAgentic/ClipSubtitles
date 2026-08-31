@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { LedgerEntry, Me } from '@clipsubtitles/contracts';
+import { BILLING_PLANS, BILLING_TOP_UPS, type BillingOverview, type BillingSku, type LedgerEntry, type Me } from '@clipsubtitles/contracts';
 import { AppShell } from '@/components/shell/AppShell';
 import { Button, Field, KV, Panel, Slider, TextInput } from '@/components/ui/primitives';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
@@ -19,12 +19,15 @@ function Settings({ me }: { me: Me }) {
   const [exportDays, setExportDays] = useState(me.workspace.retention.exportDays);
   const [saving, setSaving] = useState(false);
   const [ledger, setLedger] = useState<LedgerEntry[]>([]);
+  const [billing, setBilling] = useState<BillingOverview | null>(null);
+  const [checkoutSku, setCheckoutSku] = useState<BillingSku | null>(null);
 
   const load = () => {
     api
       .ledger()
       .then((r) => setLedger(r.entries))
       .catch(() => undefined);
+    api.billing().then(setBilling).catch(() => undefined);
   };
   useEffect(load, []);
 
@@ -37,6 +40,17 @@ function Settings({ me }: { me: Me }) {
       toast.push('error', errorMessage(err));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const checkout = async (sku: BillingSku) => {
+    setCheckoutSku(sku);
+    try {
+      const session = await api.createCheckout({ sku, source: 'web', returnTo: '/app/settings?checkout=complete' });
+      window.location.assign(session.url);
+    } catch (err) {
+      toast.push('error', errorMessage(err));
+      setCheckoutSku(null);
     }
   };
 
@@ -94,6 +108,24 @@ function Settings({ me }: { me: Me }) {
         </Panel>
       </div>
       <div className="flex flex-col gap-5">
+        <Panel
+          title="Plan and credits"
+          className="rise"
+          aside={<a href="/pricing" className="text-[11px] text-signal hover:underline">Compare plans</a>}
+        >
+          <div id="billing" className="flex flex-col gap-4 p-4">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div><p className="text-[11px] uppercase tracking-[.12em] text-ink-mute">Current plan</p><p className="mt-1 text-xl font-semibold">{BILLING_PLANS.find((plan) => plan.id === (billing?.planId ?? 'free'))?.name ?? 'Free'}</p></div>
+              <div className="text-right"><p className="text-[11px] uppercase tracking-[.12em] text-ink-mute">Available</p><p className="mono mt-1 text-xl">{billing?.credits.available ?? me.credits.available} credits</p></div>
+            </div>
+            {billing?.pools?.length ? <ul className="grid gap-2 sm:grid-cols-2">{billing.pools.map((pool, index) => <li key={`${pool.kind}-${index}`} className="rounded-xl border border-line bg-panel-2 px-3 py-2 text-[12px]"><span className="capitalize text-ink-dim">{pool.kind}</span><strong className="mono float-right">{pool.available}</strong>{pool.expiresAt ? <p className="mt-1 text-[10px] text-ink-mute">Rolls off {new Date(pool.expiresAt).toLocaleDateString()}</p> : null}</li>)}</ul> : null}
+            {billing?.planId === 'free' || !billing ? (
+              <div className="flex flex-wrap gap-2">{BILLING_PLANS.filter((plan) => plan.id !== 'free' && 'sku' in plan).map((plan) => <Button key={plan.id} variant={plan.id === 'pro' ? 'primary' : 'ghost'} onClick={() => void checkout(plan.sku)} loading={checkoutSku === plan.sku}>{plan.name} · ${plan.monthlyPriceCents / 100}/mo</Button>)}</div>
+            ) : (
+              <div><p className="mb-2 text-[12px] text-ink-dim">Need more render capacity this month?</p><div className="flex flex-wrap gap-2">{BILLING_TOP_UPS.map((topUp) => <Button key={topUp.sku} variant="ghost" onClick={() => void checkout(topUp.sku)} loading={checkoutSku === topUp.sku}>+{topUp.credits} · ${topUp.priceCents / 100}</Button>)}</div></div>
+            )}
+          </div>
+        </Panel>
         <Panel
           title="Credit activity"
           className="rise rise-2"

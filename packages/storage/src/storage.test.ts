@@ -9,6 +9,7 @@ import { MIGRATIONS } from './migrations';
 import { StorageError } from './errors';
 import { FileObjectStore, ObjectKeyError, ObjectTooLargeError } from './object-store';
 import { recordAudit, listAudit, findAuditByErrorRef } from './repos/audit';
+import { listCreditPools } from './repos/billing';
 import { createAsset, createUpload, completeUpload, findUploadByTokenHash, getAsset, listExpiredAssets, markAssetPurged, updateAsset } from './repos/assets';
 import { getBalance, grantCredits, listLedger, releaseReservation, reserveCredits, settleReservation } from './repos/credits';
 import { createExport, getExport, listExpiredExports, listExports, markExportPurged } from './repos/exports';
@@ -381,6 +382,24 @@ describe('credits', () => {
     grantCredits(db, { workspaceId: ws, amount: 10, idempotencyKey: 'topup-1', now: T0 });
     grantCredits(db, { workspaceId: ws, amount: 10, idempotencyKey: 'topup-1', now: plus(1) });
     expect(getBalance(db, ws).available).toBe(110);
+  });
+
+  it('tracks subscription and purchased pools through reserve, settle, and release', () => {
+    grantCredits(db, { workspaceId: ws, amount: 30, poolKind: 'subscription', idempotencyKey: 'renewal-1', expiresAt: plus(2_592_000_000), now: T0 });
+    grantCredits(db, { workspaceId: ws, amount: 20, poolKind: 'purchased', idempotencyKey: 'topup-2', now: plus(1) });
+    const before = listCreditPools(db, ws, plus(2));
+    expect(before.map((pool) => pool.kind)).toEqual(['subscription', 'free', 'purchased']);
+    const reservation = reserveCredits(db, { workspaceId: ws, quoteId: 'quote_pools', taskId: 'task_pools', amount: 115, now: plus(3) });
+    expect(listCreditPools(db, ws, plus(4)).map((pool) => [pool.kind, pool.available, pool.reserved])).toEqual([
+      ['subscription', 0, 30],
+      ['free', 15, 85],
+      ['purchased', 20, 0],
+    ]);
+    settleReservation(db, { reservationId: reservation.reservation.id, actualAmount: 105, now: plus(5) });
+    expect(listCreditPools(db, ws, plus(6)).map((pool) => [pool.kind, pool.available, pool.reserved])).toEqual([
+      ['free', 25, 0],
+      ['purchased', 20, 0],
+    ]);
   });
 
   it('scopes grant idempotency keys per workspace (the same provider key in another workspace is not denied)', () => {

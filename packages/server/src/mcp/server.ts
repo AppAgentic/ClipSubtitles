@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import type { z } from 'zod';
 import {
+  BILLING_CATALOG,
   CONTENT_NOTICE,
   MCP_SERVER_INFO,
   MCP_TOOLS,
@@ -173,23 +174,47 @@ export const TOOL_HANDLERS: Handlers = {
     }
     const approval = input.approval;
     const key = input.idempotencyKey ?? `mcp:${approval.quoteId}`;
-    const out = await withIdempotency(
-      ctx,
-      {
-        workspaceId: principal.workspaceId,
-        scope: `renders:${input.projectId}`,
-        key,
-        payload: approval,
-        status: 202,
-      },
-      () =>
-        startRender(ctx, principal, input.projectId, {
-          quoteId: approval.quoteId,
-          approvedCreditCost: approval.approvedCreditCost,
-          idempotencyKey: key,
-        }),
-    );
-    return { status: 'render_started', quote: out.body.quote, task: taskPointer(out.body.task) };
+    try {
+      const out = await withIdempotency(
+        ctx,
+        {
+          workspaceId: principal.workspaceId,
+          scope: `renders:${input.projectId}`,
+          key,
+          payload: approval,
+          status: 202,
+        },
+        () =>
+          startRender(ctx, principal, input.projectId, {
+            quoteId: approval.quoteId,
+            approvedCreditCost: approval.approvedCreditCost,
+            idempotencyKey: key,
+          }),
+      );
+      return { status: 'render_started', quote: out.body.quote, task: taskPointer(out.body.task) };
+    } catch (err) {
+      const apiErr = toApiError(err);
+      if (apiErr.code !== 'INSUFFICIENT_CREDITS') throw err;
+      const balance = await ctx.db.getBalance(principal.workspaceId);
+      const quote = await ctx.db.getQuote(principal.workspaceId, approval.quoteId);
+      if (!quote) throw err;
+      const pricingUrl = new URL('/pricing', `${ctx.config.webPublicUrl}/`);
+      pricingUrl.searchParams.set('source', 'agent');
+      pricingUrl.searchParams.set('resume', `render:${input.projectId}:${quote.id}`);
+      return {
+        status: 'checkout_required',
+        quote,
+        checkout: {
+          status: 'checkout_required',
+          balance: balance.available,
+          shortfall: Math.max(1, quote.creditCost - balance.available),
+          quoteId: quote.id,
+          quoteExpiresAt: quote.expiresAt,
+          pricingUrl: pricingUrl.toString(),
+          catalogVersion: BILLING_CATALOG.version,
+        },
+      };
+    }
   },
 
   async get_caption_task(ctx, principal, raw) {
@@ -269,6 +294,10 @@ function summarize(name: McpToolName, output: unknown): string {
       return `Opening the focused caption editor for ${(o.project as { title: string }).title}.`;
     case 'render_caption_export': {
       const q = o.quote as { creditCost: number; id: string; expiresAt: string };
+      if (o.status === 'checkout_required') {
+        const checkout = o.checkout as { pricingUrl: string; shortfall: number };
+        return `More credits are needed (${checkout.shortfall} short). Ask the user to open ${checkout.pricingUrl}; after checkout, retry the same approved quote before it expires.`;
+      }
       return o.status === 'quote_required'
         ? `Quote ${q.id}: ${q.creditCost} credits, expires ${q.expiresAt}. Approval required before rendering.`
         : `Render started (task ${(o.task as { id: string }).id}); ${q.creditCost} credits reserved.`;

@@ -150,7 +150,32 @@ export function ensureUserWorkspace(
       input.initialCredits,
       input.now,
     );
+    const hasBilling = Boolean(
+      one(db, "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'billing_accounts'"),
+    );
+    if (hasBilling) {
+      run(
+        db,
+        "INSERT INTO billing_accounts (workspace_id, plan_id, status, updated_at) VALUES (?, 'free', 'free', ?)",
+        workspaceId,
+        input.now,
+      );
+    }
     if (input.initialCredits > 0) {
+      if (hasBilling) {
+        run(
+          db,
+          `INSERT INTO credit_pools (id, workspace_id, kind, original_amount, available, reserved, idempotency_key, note, created_at)
+           VALUES (?, ?, 'free', ?, ?, 0, ?, ?, ?)`,
+          newId('pool'),
+          workspaceId,
+          input.initialCredits,
+          input.initialCredits,
+          `grant:initial:${workspaceId}`,
+          'Free lifetime credit grant',
+          input.now,
+        );
+      }
       run(
         db,
         'INSERT INTO credit_ledger (id, workspace_id, kind, amount, available_after, reserved_after, idempotency_key, note, created_at) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)',
@@ -160,7 +185,7 @@ export function ensureUserWorkspace(
         input.initialCredits,
         input.initialCredits,
         `grant:initial:${workspaceId}`,
-        'Initial beta credit grant',
+        'Free lifetime credit grant',
         input.now,
       );
     }
