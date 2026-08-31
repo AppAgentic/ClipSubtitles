@@ -118,10 +118,11 @@
   --color-danger: #ff5f5f;
   --color-info: #7cc4ff;
   --font-display:
-    'Bricolage Grotesque Variable', 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+    -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue',
+    ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
   --font-caption: 'Inter', ui-sans-serif, sans-serif;
-  --radius-panel: 14px;
+  --radius-panel: 22px;
   --shadow-glow: 0 0 0 1px rgb(255 122 26 / 0.35), 0 10px 40px -10px rgb(255 122 26 / 0.45);
 }
 
@@ -143,7 +144,16 @@ body {
   letter-spacing: -0.005em;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  font-feature-settings:
+    'kern' 1,
+    'liga' 1,
+    'calt' 1;
   overflow-x: hidden;
+}
+
+.squircle {
+  border-radius: var(--radius-panel);
+  corner-shape: squircle;
 }
 
 /* Darkroom atmosphere: warm vignette + film grain. */

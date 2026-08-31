@@ -73,10 +73,10 @@ export function StyleInspector({
                 disabled={busy}
                 onClick={() => onPreset(id)}
                 aria-pressed={active}
-                className={`group overflow-hidden rounded-xl border p-1.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal ${active ? 'border-signal bg-signal/10' : 'border-line-strong hover:border-ink-mute'}`}
+                className={`group overflow-hidden rounded-[20px] border p-1.5 text-left transition-[border,background,transform] active:scale-[0.985] [corner-shape:squircle] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal ${active ? 'border-signal bg-signal/10' : 'border-line-strong hover:border-ink-mute'}`}
               >
                 <div
-                  className="grid aspect-[16/9] place-items-end overflow-hidden rounded-lg bg-[#24211f] p-3 text-center"
+                  className="grid aspect-[16/9] place-items-end overflow-hidden rounded-[15px] bg-[#24211f] p-3 text-center [corner-shape:squircle]"
                   style={{
                     fontFamily: `"${p.fontFamily}", sans-serif`,
                     fontWeight: p.fontWeight,
@@ -141,7 +141,7 @@ export function StyleInspector({
           value={style.fontFamily}
           disabled={busy}
           onChange={(event) => onStyle({ fontFamily: event.target.value as FontFamily })}
-          className="h-9 w-full rounded-lg border border-line-strong bg-bg-elev px-3 text-[12px] text-ink focus:border-signal"
+          className="h-10 w-full rounded-full border border-line-strong bg-bg-elev px-4 text-[12px] text-ink focus:border-signal"
         >
           {(
             ['Inter', 'Bebas Neue', 'Nunito', 'Playfair Display', 'Space Mono'] as FontFamily[]

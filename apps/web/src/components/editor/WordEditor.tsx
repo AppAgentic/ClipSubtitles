@@ -107,7 +107,7 @@ function WordRow({
           }}
           disabled={busy}
           aria-label="Word text"
-          className={`min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1.5 py-1 text-[13px] text-ink hover:border-line-strong focus:border-signal focus:bg-bg-elev ${word.edited ? 'italic text-signal-soft' : ''}`}
+          className={`min-w-0 flex-1 rounded-full border border-transparent bg-transparent px-3 py-1.5 text-[13px] text-ink hover:border-line-strong focus:border-signal focus:bg-bg-elev ${word.edited ? 'italic text-signal-soft' : ''}`}
         />
         <button
           type="button"
@@ -139,7 +139,7 @@ function WordRow({
             type="button"
             disabled={busy}
             onClick={() => onOps([{ op: 'split_page', pageId, beforeWordId: word.id }])}
-            className="rounded border border-line-strong px-1.5 py-[1px] text-[10px] text-ink-mute hover:border-signal hover:text-signal"
+            className="rounded-full border border-line-strong px-2 py-1 text-[10px] text-ink-mute hover:border-signal hover:text-signal"
             title="Start a new page at this word"
           >
             split ↑
@@ -149,7 +149,7 @@ function WordRow({
           type="button"
           disabled={busy}
           onClick={() => onOps([{ op: 'delete_word', wordId: word.id }])}
-          className="rounded border border-line-strong px-1.5 py-[1px] text-[10px] text-ink-mute hover:border-danger hover:text-danger"
+          className="rounded-full border border-line-strong px-2 py-1 text-[10px] text-ink-mute hover:border-danger hover:text-danger"
           title="Remove this word"
         >
           delete
@@ -173,7 +173,7 @@ function Nudge({
   disabled: boolean;
 }) {
   return (
-    <span className="inline-flex items-center overflow-hidden rounded border border-line-strong text-[10px]">
+    <span className="inline-flex items-center overflow-hidden rounded-full border border-line-strong text-[10px]">
       <span className="mono bg-bg-elev px-1.5 py-[2px] text-ink-mute">{label}</span>
       <button
         type="button"

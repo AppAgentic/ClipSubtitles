@@ -360,14 +360,14 @@ export function EditorView({ projectId }: { projectId: string }) {
               handleRef={stage}
             />
           ) : (
-            <div className="grid h-full place-items-center rounded-[14px] border border-dashed border-line-strong text-[12px] text-ink-mute">
+            <div className="squircle grid h-full place-items-center border border-dashed border-line-strong text-[12px] text-ink-mute">
               No source media.
             </div>
           )}
         </section>
 
         <section
-          className="rise rise-1 order-2 flex max-h-[420px] min-h-0 flex-col overflow-hidden rounded-[14px] border border-line bg-panel/80 lg:order-1 lg:max-h-none"
+          className="squircle rise rise-1 order-2 flex max-h-[420px] min-h-0 flex-col overflow-hidden border border-line bg-panel/80 lg:order-1 lg:max-h-none"
           aria-label="Caption pages"
         >
           <header className="flex items-center justify-between border-b border-line px-4 py-2.5">
@@ -392,10 +392,13 @@ export function EditorView({ projectId }: { projectId: string }) {
         </section>
 
         <section
-          className="rise rise-3 order-3 flex max-h-[560px] min-h-0 flex-col overflow-hidden rounded-[14px] border border-line bg-panel/80 lg:max-h-none"
+          className="squircle rise rise-3 order-3 flex max-h-[560px] min-h-0 flex-col overflow-hidden border border-line bg-panel/80 lg:max-h-none"
           aria-label="Inspector"
         >
-          <header className="flex items-center border-b border-line" role="tablist">
+          <header
+            className="m-2 flex items-center rounded-full border border-line bg-bg-elev p-1"
+            role="tablist"
+          >
             {(['style', 'words'] as const).map((t) => (
               <button
                 key={t}
@@ -403,7 +406,7 @@ export function EditorView({ projectId }: { projectId: string }) {
                 role="tab"
                 aria-selected={tab === t}
                 onClick={() => setTab(t)}
-                className={`flex-1 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] transition-colors ${tab === t ? 'text-ink' : 'text-ink-mute hover:text-ink-dim'}`}
+                className={`flex-1 rounded-full px-4 py-2 text-[11px] font-semibold transition-colors ${tab === t ? 'bg-panel-2 text-ink shadow-[inset_0_0_0_1px_rgb(255_255_255/0.05)]' : 'text-ink-mute hover:text-ink-dim'}`}
               >
                 {t === 'words' ? 'Correct words' : 'Style'}
               </button>
