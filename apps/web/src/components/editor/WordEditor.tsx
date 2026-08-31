@@ -19,12 +19,18 @@ export function WordEditor({
   onSeek: (ms: number) => void;
   busy: boolean;
 }) {
-  if (!page) return <div className="px-4 py-6 text-[12px] text-ink-mute">Select a caption page to edit its words.</div>;
+  if (!page)
+    return (
+      <div className="px-4 py-6 text-[12px] text-ink-mute">
+        Select a caption page to edit its words.
+      </div>
+    );
   const slice = words.slice(page.startWordIndex, page.endWordIndex + 1);
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
       <div className="border-b border-line px-4 py-2 text-[11px] text-ink-mute">
-        Page {page.index + 1} · {slice.length} words · edits are explicit and recorded as a new transcript revision.
+        Caption {page.index + 1} · {slice.length} words · select a word to hear it or correct the
+        text and timing.
       </div>
       <ul>
         {slice.map((w, i) => {
@@ -103,20 +109,49 @@ function WordRow({
           aria-label="Word text"
           className={`min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1.5 py-1 text-[13px] text-ink hover:border-line-strong focus:border-signal focus:bg-bg-elev ${word.edited ? 'italic text-signal-soft' : ''}`}
         />
-        <button type="button" onClick={() => onSeek(word.startMs)} className="mono text-[11px] text-ink-mute hover:text-ink" title="Jump to word">
+        <button
+          type="button"
+          onClick={() => onSeek(word.startMs)}
+          className="mono text-[11px] text-ink-mute hover:text-ink"
+          title="Jump to word"
+        >
           {timecode(word.startMs)}
         </button>
       </div>
       <div className="mt-1 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
-        <Nudge label="in" onMinus={() => timing(-NUDGE_MS, 0)} onPlus={() => timing(NUDGE_MS, 0)} value={word.startMs} disabled={busy} />
-        <Nudge label="out" onMinus={() => timing(0, -NUDGE_MS)} onPlus={() => timing(0, NUDGE_MS)} value={word.endMs} disabled={busy} />
+        <Nudge
+          label="in"
+          onMinus={() => timing(-NUDGE_MS, 0)}
+          onPlus={() => timing(NUDGE_MS, 0)}
+          value={word.startMs}
+          disabled={busy}
+        />
+        <Nudge
+          label="out"
+          onMinus={() => timing(0, -NUDGE_MS)}
+          onPlus={() => timing(0, NUDGE_MS)}
+          value={word.endMs}
+          disabled={busy}
+        />
         <span className="flex-1" />
         {canSplit ? (
-          <button type="button" disabled={busy} onClick={() => onOps([{ op: 'split_page', pageId, beforeWordId: word.id }])} className="rounded border border-line-strong px-1.5 py-[1px] text-[10px] text-ink-mute hover:border-signal hover:text-signal" title="Start a new page at this word">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => onOps([{ op: 'split_page', pageId, beforeWordId: word.id }])}
+            className="rounded border border-line-strong px-1.5 py-[1px] text-[10px] text-ink-mute hover:border-signal hover:text-signal"
+            title="Start a new page at this word"
+          >
             split ↑
           </button>
         ) : null}
-        <button type="button" disabled={busy} onClick={() => onOps([{ op: 'delete_word', wordId: word.id }])} className="rounded border border-line-strong px-1.5 py-[1px] text-[10px] text-ink-mute hover:border-danger hover:text-danger" title="Remove this word">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => onOps([{ op: 'delete_word', wordId: word.id }])}
+          className="rounded border border-line-strong px-1.5 py-[1px] text-[10px] text-ink-mute hover:border-danger hover:text-danger"
+          title="Remove this word"
+        >
           delete
         </button>
       </div>
@@ -124,15 +159,37 @@ function WordRow({
   );
 }
 
-function Nudge({ label, value, onMinus, onPlus, disabled }: { label: string; value: number; onMinus: () => void; onPlus: () => void; disabled: boolean }) {
+function Nudge({
+  label,
+  value,
+  onMinus,
+  onPlus,
+  disabled,
+}: {
+  label: string;
+  value: number;
+  onMinus: () => void;
+  onPlus: () => void;
+  disabled: boolean;
+}) {
   return (
     <span className="inline-flex items-center overflow-hidden rounded border border-line-strong text-[10px]">
       <span className="mono bg-bg-elev px-1.5 py-[2px] text-ink-mute">{label}</span>
-      <button type="button" disabled={disabled} onClick={onMinus} className="px-1.5 py-[2px] text-ink-dim hover:bg-panel-2 hover:text-ink">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={onMinus}
+        className="px-1.5 py-[2px] text-ink-dim hover:bg-panel-2 hover:text-ink"
+      >
         −
       </button>
       <span className="mono px-1 text-ink-dim">{(value / 1000).toFixed(2)}</span>
-      <button type="button" disabled={disabled} onClick={onPlus} className="px-1.5 py-[2px] text-ink-dim hover:bg-panel-2 hover:text-ink">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={onPlus}
+        className="px-1.5 py-[2px] text-ink-dim hover:bg-panel-2 hover:text-ink"
+      >
         +
       </button>
     </span>

@@ -10,7 +10,7 @@ import { UploadZone } from '@/components/upload/UploadZone';
 import { api, bestUploadTarget, errorMessage, uploadToTarget } from '@/lib/api';
 import { titleCase } from '@/lib/format';
 
-export default function UploadPage() {
+export default function StudioUploadPage() {
   return <AppShell render={() => <Upload />} />;
 }
 
@@ -23,7 +23,10 @@ function Upload() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    api.getProject(params.projectId).then(setProject).catch((err) => toast.push('error', errorMessage(err)));
+    api
+      .getProject(params.projectId)
+      .then(setProject)
+      .catch((err) => toast.push('error', errorMessage(err)));
   }, [params.projectId, toast]);
 
   const onFile = async (file: File) => {
@@ -32,8 +35,8 @@ function Upload() {
     try {
       const target = await bestUploadTarget(params.projectId, file);
       await uploadToTarget(target, file, setProgress);
-      toast.push('ok', 'Source stored. Your agent can now call generate_captions.');
-      router.push(`/projects/${params.projectId}?generate=1`);
+      toast.push('ok', 'Video uploaded. You can create captions now.');
+      router.push(`/studio/${params.projectId}?generate=1`);
     } catch (err) {
       toast.push('error', errorMessage(err));
       setBusy(false);
@@ -49,11 +52,10 @@ function Upload() {
       <div className="rise mb-6">
         <div className="mb-2 flex items-center gap-2">
           <Chip tone={statusTone(project.status)}>{titleCase(project.status)}</Chip>
-          <span className="mono text-[11px] text-ink-mute">{project.id}</span>
         </div>
         <h1 className="text-[28px] font-semibold tracking-[-0.03em]">{project.title}</h1>
         <p className="text-[13px] text-ink-mute">
-          {needsSource ? 'This project was created by an agent and is waiting for its video. Upload it here.' : 'This project already has its source media.'}
+          {needsSource ? 'Choose the video you want to caption.' : 'This video is ready to open.'}
         </p>
       </div>
       {needsSource ? (
@@ -61,7 +63,7 @@ function Upload() {
           <UploadZone onFile={(f) => void onFile(f)} progress={progress} busy={busy} />
         </div>
       ) : (
-        <LinkButton href={`/projects/${project.id}`} variant="primary">
+        <LinkButton href={`/studio/${project.id}`} variant="primary">
           Open in editor
         </LinkButton>
       )}

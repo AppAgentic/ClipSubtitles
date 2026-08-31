@@ -115,7 +115,7 @@ async function uploadTarget(
       maxBytes: ctx.config.limits.maxUploadBytes,
       acceptedMimeTypes: [...SUPPORTED_SOURCE_MIME_TYPES],
       expiresAt: new Date(expiresAtSeconds * 1000).toISOString(),
-      webUploadUrl: `${ctx.config.webPublicUrl}/projects/${project.id}/upload`,
+      webUploadUrl: `${ctx.config.webPublicUrl}/studio/${project.id}/upload`,
     };
   }
   return {
@@ -133,7 +133,7 @@ async function uploadTarget(
     maxBytes: ctx.config.limits.maxUploadBytes,
     acceptedMimeTypes: [...SUPPORTED_SOURCE_MIME_TYPES],
     expiresAt: new Date(expiresAtSeconds * 1000).toISOString(),
-    webUploadUrl: `${ctx.config.webPublicUrl}/projects/${project.id}/upload`,
+    webUploadUrl: `${ctx.config.webPublicUrl}/studio/${project.id}/upload`,
   };
 }
 
@@ -408,5 +408,10 @@ export async function deleteProject(
   }
   await ctx.db.invalidateOpenQuotes(project.id, 'project deleted');
   await ctx.db.softDeleteProject(principal.workspaceId, project.id, now);
-  await audit(ctx, { principal, action: 'project.delete', targetType: 'project', targetId: project.id });
+  await audit(ctx, {
+    principal,
+    action: 'project.delete',
+    targetType: 'project',
+    targetId: project.id,
+  });
 }

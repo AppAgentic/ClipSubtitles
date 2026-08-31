@@ -147,7 +147,9 @@ describe('MCP conformance', () => {
       }),
     );
     expect(created.project.status).toBe('awaiting_source');
-    expect(created.uploadTarget?.webUploadUrl).toContain('/upload');
+    expect(created.uploadTarget?.webUploadUrl).toBe(
+      `http://127.0.0.1:3100/studio/${created.project.id}/upload`,
+    );
     const replay = structured<{ project: { id: string } }>(
       await client.callTool({
         name: 'create_caption_project',

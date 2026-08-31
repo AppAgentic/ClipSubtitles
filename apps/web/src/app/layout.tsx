@@ -7,8 +7,9 @@ import { ToastProvider } from '@/components/ui/Toast';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://clipsubtitles.com'),
-  title: { default: 'ClipSubtitles Studio', template: '%s · ClipSubtitles' },
-  description: 'Precision caption editor and recovery library for agent-generated captions.',
+  title: { default: 'ClipSubtitles', template: '%s · ClipSubtitles' },
+  description:
+    'Create accurate, styled video captions, preview the result and export the files you need.',
   robots: { index: false },
 };
 

@@ -1,7 +1,16 @@
 import Link from 'next/link';
 import { FrameCounter } from './FrameCounter';
 import { OptionSwitcher } from './OptionSwitcher';
-import { EDITED_WORD, MOTION_PRESETS, OUTPUTS, SAMPLE, STYLE_PRESETS, shortHash, timecode, wordsForPage } from './facts';
+import {
+  EDITED_WORD,
+  MOTION_PRESETS,
+  OUTPUTS,
+  SAMPLE,
+  STYLE_PRESETS,
+  shortHash,
+  timecode,
+  wordsForPage,
+} from './facts';
 import './frame-exact.css';
 
 const page1 = wordsForPage(SAMPLE.pages[0]);
@@ -22,7 +31,7 @@ export function FrameExact() {
           v{SAMPLE.version} · {shortHash(SAMPLE.hashV3)}
         </span>
         <nav className="fx-nav" aria-label="Primary">
-          <Link href="/docs">Agents</Link>
+          <Link href="/developers">Agents</Link>
           <Link href="/sign-in">Sign in</Link>
         </nav>
       </header>
@@ -34,7 +43,9 @@ export function FrameExact() {
             <div className="fx-frame">
               <div className="fx-frame-video" />
               <span className="fx-frame-readout lo-mono fx-frame-tl">{SAMPLE.projectId}</span>
-              <span className="fx-frame-readout lo-mono fx-frame-tr">{timecode(SAMPLE.excerptStartMs)}</span>
+              <span className="fx-frame-readout lo-mono fx-frame-tr">
+                {timecode(SAMPLE.excerptStartMs)}
+              </span>
               <div className="fx-band" aria-hidden>
                 <p className="fx-caption lo-cap fx-caption-a">
                   {page1.map((w) => (
@@ -56,35 +67,49 @@ export function FrameExact() {
                 {SAMPLE.width}×{SAMPLE.height} · sha256 {shortHash(SAMPLE.hashV3, 6, 6)}
               </span>
             </div>
-            <div className="fx-ticks" role="img" aria-label="Word ticks: one tick per word at its start time">
+            <div
+              className="fx-ticks"
+              role="img"
+              aria-label="Word ticks: one tick per word at its start time"
+            >
               {SAMPLE.words.map((w) => (
                 <span
                   key={w.id}
                   className={`fx-tick${w.was ? ' fx-tick-edited' : ''}`}
-                  style={{ left: `${(w.startMs / captionSpanMs) * 100}%`, width: `${((w.endMs - w.startMs) / captionSpanMs) * 100}%` }}
+                  style={{
+                    left: `${(w.startMs / captionSpanMs) * 100}%`,
+                    width: `${((w.endMs - w.startMs) / captionSpanMs) * 100}%`,
+                  }}
                   title={`${w.text} ${w.startMs}–${w.endMs} ms`}
                 />
               ))}
             </div>
-            <FrameCounter frames={SAMPLE.frames} fps={SAMPLE.fps} startFrame={Math.round((SAMPLE.excerptStartMs / 1000) * SAMPLE.fps)} />
+            <FrameCounter
+              frames={SAMPLE.frames}
+              fps={SAMPLE.fps}
+              startFrame={Math.round((SAMPLE.excerptStartMs / 1000) * SAMPLE.fps)}
+            />
           </figure>
 
           <div className="fx-hero-copy">
-            <p className="lo-eyebrow fx-eyebrow">Precise, repeatable video captions for agents and editors</p>
+            <p className="lo-eyebrow fx-eyebrow">
+              Precise, repeatable video captions for agents and editors
+            </p>
             <h1 id="fx-h1">
               Automatic video captions
               <br />
               <em>with word-level timing.</em>
             </h1>
             <p className="fx-lede">
-              Transcribe, edit, style and export short videos in one workflow. Five caption styles, four motion presets and a deterministic renderer
-              mean the preview you approve is the file you download.
+              Transcribe, edit, style and export short videos in one workflow. Five caption styles,
+              four motion presets and a deterministic renderer mean the preview you approve is the
+              file you download.
             </p>
             <div className="fx-cta">
               <Link href="/sign-in" className="lo-btn fx-btn-primary">
                 Caption a video
               </Link>
-              <Link href="/docs" className="lo-btn fx-btn-ghost">
+              <Link href="/developers" className="lo-btn fx-btn-ghost">
                 View agent API
               </Link>
             </div>
@@ -97,8 +122,9 @@ export function FrameExact() {
             <p className="lo-eyebrow fx-eyebrow">5 presets × 4 motions</p>
             <h2 id="fx-h2">Choose a caption style and motion.</h2>
             <p>
-              Sizes are fractions of the shorter frame side, so a preset looks the same at 720p, 1080p and source. The editor overlay, the Skia
-              rasterizer and the renderer call the same <span className="lo-mono">layoutCaption</span>.
+              Sizes are fractions of the shorter frame side, so a preset looks the same at 720p,
+              1080p and source. The editor overlay, the Skia rasterizer and the renderer call the
+              same <span className="lo-mono">layoutCaption</span>.
             </p>
           </div>
           <div className="fx-matrix-scroll">
@@ -123,7 +149,11 @@ export function FrameExact() {
                     </th>
                     {MOTION_PRESETS.map((m, mi) => (
                       <td key={m}>
-                        <span className={`fx-tile fx-tile-${p} fx-tile-m-${m} lo-cap`} style={{ ['--d' as string]: pi * 4 + mi }} aria-label={`${p} with ${m}`}>
+                        <span
+                          className={`fx-tile fx-tile-${p} fx-tile-m-${m} lo-cap`}
+                          style={{ ['--d' as string]: pi * 4 + mi }}
+                          aria-label={`${p} with ${m}`}
+                        >
                           <span className="fx-tile-word">update</span>
                         </span>
                       </td>
@@ -170,9 +200,11 @@ export function FrameExact() {
                 </tbody>
               </table>
               <p className="fx-proof-note">
-                The patch is <span className="lo-mono">{`{ op: "replace_word_text", wordId: "${EDITED_WORD.id}", text: "${EDITED_WORD.text}" }`}</span> against{' '}
-                <span className="lo-mono">expectedVersion: {SAMPLE.prevVersion}</span>. Timings are untouched. The commit is v{SAMPLE.version}; open quotes
-                on v{SAMPLE.prevVersion} are invalidated.
+                The patch is{' '}
+                <span className="lo-mono">{`{ op: "replace_word_text", wordId: "${EDITED_WORD.id}", text: "${EDITED_WORD.text}" }`}</span>{' '}
+                against <span className="lo-mono">expectedVersion: {SAMPLE.prevVersion}</span>.
+                Timings are untouched. The commit is v{SAMPLE.version}; open quotes on v
+                {SAMPLE.prevVersion} are invalidated.
               </p>
             </div>
 
@@ -183,7 +215,8 @@ export function FrameExact() {
                 <div>
                   <dt>input</dt>
                   <dd>
-                    v{SAMPLE.version} · {shortHash(SAMPLE.hashV3, 10, 6)} · 1080p · {SAMPLE.fps} fps · bold-pop · spring-pop
+                    v{SAMPLE.version} · {shortHash(SAMPLE.hashV3, 10, 6)} · 1080p · {SAMPLE.fps} fps
+                    · bold-pop · spring-pop
                   </dd>
                 </div>
                 <div>
@@ -200,9 +233,12 @@ export function FrameExact() {
                 </div>
               </dl>
               <p className="fx-proof-note">
-                Captions are rasterized with Skia and composited by FFmpeg running <span className="lo-mono">-fflags +bitexact -map_metadata -1</span>.
-                Motion is evaluated on the exact frame grid. <span className="lo-mono">pnpm smoke:render</span> renders the demo fixture twice and asserts
-                byte identity; renderer tests assert full-frame and cropped-band identity.
+                Captions are rasterized with Skia and composited by FFmpeg running{' '}
+                <span className="lo-mono">-fflags +bitexact -map_metadata -1</span>. Motion is
+                evaluated on the exact frame grid.{' '}
+                <span className="lo-mono">pnpm smoke:render</span> renders the demo fixture twice
+                and asserts byte identity; renderer tests assert full-frame and cropped-band
+                identity.
               </p>
             </div>
           </div>
@@ -216,17 +252,20 @@ export function FrameExact() {
             <em>Cost approved by you.</em>
           </h2>
           <p>
-            Every paid render starts as an immutable quote pinned to a version and a hash. Approve the credits to the unit or nothing renders.
+            Every paid render starts as an immutable quote pinned to a version and a hash. Approve
+            the credits to the unit or nothing renders.
           </p>
           <div className="fx-cta">
             <Link href="/sign-in" className="lo-btn fx-btn-primary">
               Caption a video
             </Link>
-            <Link href="/docs" className="lo-btn fx-btn-ghost">
+            <Link href="/developers" className="lo-btn fx-btn-ghost">
               View agent API
             </Link>
           </div>
-          <p className="fx-foot lo-mono">8 MCP tools · {OUTPUTS.map((o) => o.label).join(' / ')} · /api/mcp</p>
+          <p className="fx-foot lo-mono">
+            8 MCP tools · {OUTPUTS.map((o) => o.label).join(' / ')} · /api/mcp
+          </p>
         </section>
       </main>
 

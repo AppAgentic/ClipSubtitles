@@ -6,7 +6,6 @@ import { CaptionFrame, PAGE_ONE, StyleBoard } from './StyleBoard';
 import { SITE_URL } from '@/components/marketing/seo-pages';
 import { FootageReel } from '@/components/marketing/FootageReel';
 import { ConnectAgent } from './ConnectAgent';
-import { HeroConnect } from './HeroConnect';
 import './landing-options.css';
 import './three-gates.css';
 
@@ -36,11 +35,11 @@ const FAQS: Array<[string, string]> = [
   ],
   [
     'Which subtitle and video files can I export?',
-    'You can export a captioned MP4, a transparent caption overlay, SRT or VTT from the same approved words and timing. The available catalog can expand without changing the workflow.',
+    'Choose a captioned video, transparent caption overlay or separate subtitle file from the same reviewed words and timing.',
   ],
   [
     'Can an AI agent caption videos through an API?',
-    'Yes. Agents can import a clip, generate captions, apply explicit word edits, choose a style, request a preview and prepare an export through MCP or the video caption API. Paid renders still wait for human approval.',
+    'Yes. Agents can import a clip, generate captions, apply word edits, choose a style, request a preview and prepare an export through MCP or the video caption API. A person still approves before a paid export begins.',
   ],
 ];
 
@@ -61,7 +60,7 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
         name: 'ClipSubtitles',
         applicationCategory: 'MultimediaApplication',
         operatingSystem: 'Web',
-        url: new URL('/ai-video-caption-generator', SITE_URL).toString(),
+        url: new URL('/', SITE_URL).toString(),
         description:
           'Generate automatic video captions, correct the transcript, choose a style and export a polished video or subtitle file.',
       },
@@ -78,13 +77,17 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
 
   return (
     <div data-lo="three-gates" className="tg">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <header className="tg-top lo-wrap">
-        <Link href={showSwitcher ? "/landing-options/three-gates" : "/ai-video-caption-generator"} className="tg-brand">
+        <Link href={showSwitcher ? '/landing-options/three-gates' : '/'} className="tg-brand">
           ClipSubtitles
         </Link>
         <nav aria-label="Primary" className="tg-nav">
-          <Link href="/docs">Docs</Link>
+          <Link href="/help">Help</Link>
+          <Link href="/developers">Developers</Link>
           <Link href="/sign-in">Sign in</Link>
         </nav>
       </header>
@@ -95,9 +98,7 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
           <div className="tg-hero-copy">
             <p className="lo-eyebrow tg-eyebrow tg-hero-eyebrow">AI video caption generator</p>
             <h1 id="tg-h1">
-              Create styled video captions{' '}
-              <br />{' '}
-              <em>with your AI agent.</em>
+              Create styled video captions <br /> <em>with your AI agent.</em>
             </h1>
             <p className="tg-lede">
               Upload a short video and generate automatic captions with word-level timing. Correct
@@ -105,14 +106,13 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
               for publishing.
             </p>
             <div className="tg-cta">
-              <Link href="/sign-in" className="lo-btn tg-btn-primary">
+              <Link href="/sign-in?returnTo=/app/new" className="lo-btn tg-btn-primary">
                 Caption a video
               </Link>
               <a href="#tg-how" className="lo-btn tg-btn-ghost">
                 See how it works
               </a>
             </div>
-            <HeroConnect />
           </div>
 
           <div className="tg-hero-proof">
@@ -154,9 +154,6 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
           <GatesStory />
         </section>
 
-        {/* Agent setup: selected Client Board direction. */}
-        <ConnectAgent standalone />
-
         {/* 3 · Styles: real controls */}
         <section className="tg-section tg-styles lo-wrap" aria-labelledby="tg-styles-title">
           <div className="tg-section-copy">
@@ -164,7 +161,8 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
             <h2 id="tg-styles-title">Choose a caption style that fits your video.</h2>
             <p>
               Explore readable looks and motion presets for short-form video. Preview a direction,
-              then reuse it to keep every clip in a series visually consistent—without manual keyframes.
+              then reuse it to keep every clip in a series visually consistent—without manual
+              keyframes.
             </p>
           </div>
           <StyleBoard />
@@ -175,7 +173,7 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
         {/* Mid-page CTA */}
         <section className="tg-mid lo-wrap" aria-labelledby="tg-mid-title">
           <h2 id="tg-mid-title">Try it on your own clip.</h2>
-          <Link href="/sign-in" className="lo-btn tg-btn-primary">
+          <Link href="/sign-in?returnTo=/app/new" className="lo-btn tg-btn-primary">
             Caption a video
           </Link>
         </section>
@@ -198,13 +196,19 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
           </div>
         </section>
 
+        {/* Secondary path for people who want to operate ClipSubtitles through an agent. */}
+        <ConnectAgent standalone />
+
         <nav className="tg-related lo-wrap" aria-labelledby="tg-related-title">
           <p className="lo-eyebrow tg-eyebrow">Explore caption workflows</p>
           <h2 id="tg-related-title">Find the right way to caption your video.</h2>
           <ul>
             {RELATED_PAGES.map(([href, label]) => (
               <li key={href}>
-                <Link href={href}>{label}<span aria-hidden>↗</span></Link>
+                <Link href={href}>
+                  {label}
+                  <span aria-hidden>↗</span>
+                </Link>
               </li>
             ))}
           </ul>
@@ -236,11 +240,11 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
           </h2>
           <p>Caption one clip and see the whole flow.</p>
           <div className="tg-cta">
-            <Link href="/sign-in" className="lo-btn tg-btn-primary">
+            <Link href="/sign-in?returnTo=/app/new" className="lo-btn tg-btn-primary">
               Caption a video
             </Link>
-            <Link href="/docs" className="lo-btn tg-btn-ghost">
-              Read the docs
+            <Link href="/developers" className="lo-btn tg-btn-ghost">
+              Build with ClipSubtitles
             </Link>
           </div>
         </section>

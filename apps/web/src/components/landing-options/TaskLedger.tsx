@@ -5,11 +5,46 @@ import { MCP_TOOLS, OUTPUTS, SAMPLE, shortHash } from './facts';
 import './task-ledger.css';
 
 const ROWS = [
-  { id: SAMPLE.quoteId, kind: 'render_export', state: 'awaiting approval', detail: `quote open · v${SAMPLE.version} · ${SAMPLE.outputs.join('+')} · expires 15 min`, credits: `${SAMPLE.creditCost} quoted`, tone: 'gate' },
-  { id: SAMPLE.taskId.replace(/.$/, '5'), kind: 'render_preview', state: 'succeeded', detail: `v${SAMPLE.version} · 480p · ${shortHash(SAMPLE.hashV3, 6, 4)}`, credits: '0', tone: 'ok' },
-  { id: SAMPLE.taskId.replace(/.$/, '4'), kind: 'generate_captions', state: 'succeeded', detail: `v2 · ${SAMPLE.words.length} words · ${SAMPLE.pages.length} pages`, credits: '0', tone: 'ok' },
-  { id: SAMPLE.taskId.replace(/.$/, '3'), kind: 'render_export', state: 'cancelled', detail: `v${SAMPLE.prevVersion} · cancel_requested → lease released`, credits: `${SAMPLE.creditCost} released`, tone: 'rel' },
-  { id: SAMPLE.taskId.replace(/.$/, '2'), kind: 'import_source', state: 'succeeded', detail: `v1 · sha256 · ffprobe · ${SAMPLE.width}×${SAMPLE.height}`, credits: '0', tone: 'ok' },
+  {
+    id: SAMPLE.quoteId,
+    kind: 'render_export',
+    state: 'awaiting approval',
+    detail: `quote open · v${SAMPLE.version} · ${SAMPLE.outputs.join('+')} · expires 15 min`,
+    credits: `${SAMPLE.creditCost} quoted`,
+    tone: 'gate',
+  },
+  {
+    id: SAMPLE.taskId.replace(/.$/, '5'),
+    kind: 'render_preview',
+    state: 'succeeded',
+    detail: `v${SAMPLE.version} · 480p · ${shortHash(SAMPLE.hashV3, 6, 4)}`,
+    credits: '0',
+    tone: 'ok',
+  },
+  {
+    id: SAMPLE.taskId.replace(/.$/, '4'),
+    kind: 'generate_captions',
+    state: 'succeeded',
+    detail: `v2 · ${SAMPLE.words.length} words · ${SAMPLE.pages.length} pages`,
+    credits: '0',
+    tone: 'ok',
+  },
+  {
+    id: SAMPLE.taskId.replace(/.$/, '3'),
+    kind: 'render_export',
+    state: 'cancelled',
+    detail: `v${SAMPLE.prevVersion} · cancel_requested → lease released`,
+    credits: `${SAMPLE.creditCost} released`,
+    tone: 'rel',
+  },
+  {
+    id: SAMPLE.taskId.replace(/.$/, '2'),
+    kind: 'import_source',
+    state: 'succeeded',
+    detail: `v1 · sha256 · ffprobe · ${SAMPLE.width}×${SAMPLE.height}`,
+    credits: '0',
+    tone: 'ok',
+  },
 ] as const;
 
 export function TaskLedger() {
@@ -19,9 +54,12 @@ export function TaskLedger() {
         <Link href="/" className="tl-brand">
           clipsubtitles
         </Link>
-        <span className="tl-top-meta">workspace · personal · credits 42 <span className="tl-amber">+{SAMPLE.creditCost} reserved</span> · example</span>
+        <span className="tl-top-meta">
+          workspace · personal · credits 42{' '}
+          <span className="tl-amber">+{SAMPLE.creditCost} reserved</span> · example
+        </span>
         <nav aria-label="Primary" className="tl-nav">
-          <Link href="/docs">agents</Link>
+          <Link href="/developers">agents</Link>
           <Link href="/sign-in">sign in</Link>
         </nav>
       </header>
@@ -30,21 +68,24 @@ export function TaskLedger() {
         {/* 1 · Hero — the ledger */}
         <section className="tl-hero lo-wrap" aria-labelledby="tl-h1">
           <div className="tl-hero-copy">
-            <p className="lo-eyebrow tl-eyebrow">Agent-run video captioning · tracked jobs · fixed render costs</p>
+            <p className="lo-eyebrow tl-eyebrow">
+              Agent-run video captioning · tracked jobs · fixed render costs
+            </p>
             <h1 id="tl-h1">
               Video caption API
               <br />
               <em>for high-volume workflows.</em>
             </h1>
             <p className="tl-lede">
-              Batch-caption short videos through MCP or REST. Every import, transcription, preview and render is tracked; paid renders use a fixed
-              quote you approve, and nothing is charged twice.
+              Batch-caption short videos through MCP or REST. Every import, transcription, preview
+              and render is tracked; paid renders use a fixed quote you approve, and nothing is
+              charged twice.
             </p>
             <div className="tl-cta">
               <Link href="/sign-in" className="lo-btn tl-btn-primary">
                 Caption a video
               </Link>
-              <Link href="/docs" className="lo-btn tl-btn-ghost">
+              <Link href="/developers" className="lo-btn tl-btn-ghost">
                 View agent API
               </Link>
             </div>
@@ -63,7 +104,11 @@ export function TaskLedger() {
               </thead>
               <tbody>
                 {ROWS.map((r, i) => (
-                  <tr key={r.id} className={`tl-row tl-row-${r.tone}`} style={{ ['--i' as string]: i }}>
+                  <tr
+                    key={r.id}
+                    className={`tl-row tl-row-${r.tone}`}
+                    style={{ ['--i' as string]: i }}
+                  >
                     <td className="tl-id">{r.id}</td>
                     <td>{r.kind}</td>
                     <td className="tl-state">
@@ -77,7 +122,8 @@ export function TaskLedger() {
               </tbody>
             </table>
             <p className="tl-ledger-foot lo-mono">
-              {SAMPLE.projectId} · only the approval row moves · <Link href="/sign-in">approve {SAMPLE.creditCost} credits in the studio →</Link>
+              {SAMPLE.projectId} · only the approval row moves ·{' '}
+              <Link href="/sign-in">approve {SAMPLE.creditCost} credits in the studio →</Link>
             </p>
           </div>
         </section>
@@ -89,25 +135,43 @@ export function TaskLedger() {
             <h2>Every caption job is tracked from start to finish.</h2>
           </div>
           <div className="tl-life-grid">
-            <svg className="tl-graph" viewBox="0 0 640 220" role="img" aria-label="Task states: queued to running; running to succeeded, failed or cancelled; failed re-queues while attempts remain">
+            <svg
+              className="tl-graph"
+              viewBox="0 0 640 220"
+              role="img"
+              aria-label="Task states: queued to running; running to succeeded, failed or cancelled; failed re-queues while attempts remain"
+            >
               <g className="tl-edges" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <path d="M92 110 H190" />
                 <path d="M292 110 H400 V40 H430" />
                 <path d="M292 110 H430" />
                 <path d="M292 110 H400 V180 H430" />
-                <path d="M480 40 C520 40 520 20 500 20 H260 C240 20 240 40 260 40 V70" strokeDasharray="4 4" />
+                <path
+                  d="M480 40 C520 40 520 20 500 20 H260 C240 20 240 40 260 40 V70"
+                  strokeDasharray="4 4"
+                />
               </g>
               <g className="tl-nodes lo-mono" fontSize="12" textAnchor="middle">
                 <rect x="10" y="92" width="82" height="36" rx="6" />
-                <text x="51" y="115">queued</text>
+                <text x="51" y="115">
+                  queued
+                </text>
                 <rect x="190" y="92" width="102" height="36" rx="6" />
-                <text x="241" y="115">running</text>
+                <text x="241" y="115">
+                  running
+                </text>
                 <rect x="430" y="22" width="110" height="36" rx="6" />
-                <text x="485" y="45">failed</text>
+                <text x="485" y="45">
+                  failed
+                </text>
                 <rect x="430" y="92" width="110" height="36" rx="6" className="tl-node-ok" />
-                <text x="485" y="115">succeeded</text>
+                <text x="485" y="115">
+                  succeeded
+                </text>
                 <rect x="430" y="162" width="110" height="36" rx="6" />
-                <text x="485" y="185">cancelled</text>
+                <text x="485" y="185">
+                  cancelled
+                </text>
                 <text x="241" y="150" fontSize="10" className="tl-node-note">
                   lease · heartbeat · progress
                 </text>
@@ -117,12 +181,17 @@ export function TaskLedger() {
               </g>
             </svg>
 
-            <div className="tl-credits-flow" role="group" aria-label="Credit states for a paid render">
+            <div
+              className="tl-credits-flow"
+              role="group"
+              aria-label="Credit states for a paid render"
+            >
               <ol className="tl-flow lo-mono">
                 <li>
                   <span className="tl-flow-k">quote</span>
                   <span className="tl-flow-v">
-                    immutable · v{SAMPLE.version} · {SAMPLE.creditCost} credits · {SAMPLE.priceVersion}
+                    immutable · v{SAMPLE.version} · {SAMPLE.creditCost} credits ·{' '}
+                    {SAMPLE.priceVersion}
                   </span>
                 </li>
                 <li>
@@ -145,12 +214,15 @@ export function TaskLedger() {
                 </li>
                 <li>
                   <span className="tl-flow-k">release</span>
-                  <span className="tl-flow-v">on failure, cancel or lease loss · same idempotency key, never twice</span>
+                  <span className="tl-flow-v">
+                    on failure, cancel or lease loss · same idempotency key, never twice
+                  </span>
                 </li>
               </ol>
               <p className="tl-flow-note">
-                Reserve, settle and release are ledger rows keyed per workspace. A duplicate render request with the same{' '}
-                <span className="lo-mono">idempotencyKey</span> returns the same task and moves no credits.
+                Reserve, settle and release are ledger rows keyed per workspace. A duplicate render
+                request with the same <span className="lo-mono">idempotencyKey</span> returns the
+                same task and moves no credits.
               </p>
             </div>
           </div>
@@ -162,7 +234,10 @@ export function TaskLedger() {
             <div>
               <p className="lo-eyebrow tl-eyebrow">Redacted by construction</p>
               <h2>Useful error details. Your transcript stays private.</h2>
-              <pre className="tl-code lo-mono" aria-label="Public error and its audit event (example)">
+              <pre
+                className="tl-code lo-mono"
+                aria-label="Public error and its audit event (example)"
+              >
                 <span className="tl-c">// public error, returned to the agent</span>
                 {'\n'}
                 {`{ "code": "RENDER_FAILED", "retryable": false,\n  "errorRef": "${SAMPLE.errorRef}" }`}
@@ -214,7 +289,7 @@ export function TaskLedger() {
             <Link href="/sign-in" className="lo-btn tl-btn-primary">
               Caption a video
             </Link>
-            <Link href="/docs" className="lo-btn tl-btn-ghost">
+            <Link href="/developers" className="lo-btn tl-btn-ghost">
               View agent API
             </Link>
           </div>

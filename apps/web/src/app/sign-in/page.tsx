@@ -5,7 +5,7 @@ import { Suspense } from 'react';
 
 function SignInInner() {
   const params = useSearchParams();
-  const returnTo = params.get('returnTo') ?? '/';
+  const returnTo = params.get('returnTo') ?? '/app';
   const href = `/auth/login?returnTo=${encodeURIComponent(returnTo)}`;
   return (
     <main className="relative grid min-h-screen place-items-center overflow-hidden px-6">
@@ -14,36 +14,45 @@ function SignInInner() {
       </div>
       <div className="w-full max-w-[520px]">
         <div className="rise mb-10 flex items-center gap-3">
-          <span className="grid h-10 w-10 place-items-center rounded-xl bg-signal text-[16px] font-bold text-signal-ink">cs</span>
-          <span className="text-[13px] uppercase tracking-[0.2em] text-ink-mute">ClipSubtitles Studio</span>
+          <span className="grid h-10 w-10 place-items-center rounded-xl bg-signal text-[16px] font-bold text-signal-ink">
+            cs
+          </span>
+          <span className="text-[13px] uppercase tracking-[0.2em] text-ink-mute">
+            ClipSubtitles
+          </span>
         </div>
         <h1 className="rise rise-1 text-[44px] font-semibold leading-[1.02] tracking-[-0.035em]">
-          Captions your agent drafted.
+          Welcome back.
           <br />
-          <span className="text-ink-dim">Precision you control.</span>
+          <span className="text-ink-dim">Your videos are waiting.</span>
         </h1>
         <p className="rise rise-2 mt-5 max-w-[42ch] text-[15px] leading-relaxed text-ink-dim">
-          Sign in to review word timing, restyle, approve render costs, and recover any project or export your agent created through ChatGPT, Claude, or the API.
+          Sign in to review captions, continue editing and download your finished videos.
         </p>
         <div className="rise rise-3 mt-8 flex flex-wrap items-center gap-3">
-          <a href={href} className="inline-flex h-11 items-center gap-2 rounded-xl bg-signal px-5 text-[14px] font-semibold text-signal-ink shadow-[0_0_0_1px_rgb(255_122_26/0.4),0_10px_40px_-10px_rgb(255_122_26/0.7)] transition hover:bg-signal-soft">
-            Continue with WorkOS
+          <a
+            href={href}
+            className="inline-flex h-11 items-center gap-2 rounded-xl bg-signal px-5 text-[14px] font-semibold text-signal-ink shadow-[0_0_0_1px_rgb(255_122_26/0.4),0_10px_40px_-10px_rgb(255_122_26/0.7)] transition hover:bg-signal-soft"
+          >
+            Continue to sign in
             <span aria-hidden>→</span>
           </a>
-          <span className="text-[12px] text-ink-mute">One identity → one personal workspace.</span>
+          <span className="text-[12px] text-ink-mute">
+            Secure sign-in for your ClipSubtitles account.
+          </span>
         </div>
-        <dl className="rise rise-4 mt-14 grid grid-cols-3 gap-4 border-t border-line pt-6 text-[12px] text-ink-mute">
+        <dl className="rise rise-4 mt-14 grid gap-4 border-t border-line pt-6 text-[12px] text-ink-mute sm:grid-cols-3">
           <div>
-            <dt className="mono text-[10px] uppercase tracking-[0.18em]">Fidelity</dt>
-            <dd className="mt-1 text-ink-dim">Spoken words are never rewritten.</dd>
+            <dt className="mono text-[10px] uppercase tracking-[0.18em]">Your videos</dt>
+            <dd className="mt-1 text-ink-dim">Find every caption project in your Library.</dd>
           </div>
           <div>
-            <dt className="mono text-[10px] uppercase tracking-[0.18em]">Cost</dt>
-            <dd className="mt-1 text-ink-dim">Every paid render needs an immutable quote.</dd>
+            <dt className="mono text-[10px] uppercase tracking-[0.18em]">Your captions</dt>
+            <dd className="mt-1 text-ink-dim">Review the words and look before exporting.</dd>
           </div>
           <div>
-            <dt className="mono text-[10px] uppercase tracking-[0.18em]">Recovery</dt>
-            <dd className="mt-1 text-ink-dim">Tasks are durable; exports are retrievable.</dd>
+            <dt className="mono text-[10px] uppercase tracking-[0.18em]">Your exports</dt>
+            <dd className="mt-1 text-ink-dim">Return to finished work whenever you need it.</dd>
           </div>
         </dl>
       </div>

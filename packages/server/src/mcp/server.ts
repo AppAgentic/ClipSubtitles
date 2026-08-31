@@ -314,6 +314,6 @@ export function llmInstructions(ctx: AppContext): string {
     'Never rewrite spoken words yourself; use explicit per-word edit ops only when the user asks.',
     'Paid renders: always show the quote (credits, outputs, project version, expiry) and get explicit approval before passing approval.',
     CONTENT_NOTICE,
-    `Web editor: ${ctx.config.webPublicUrl}.`,
+    `ClipSubtitles Library: ${ctx.config.webPublicUrl}/app. Developer guide: ${ctx.config.webPublicUrl}/developers.`,
   ].join(' ');
 }

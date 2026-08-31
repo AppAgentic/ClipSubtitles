@@ -5,7 +5,13 @@ import { OptionSwitcher } from './OptionSwitcher';
 import { EDITED_WORD, GUARANTEES, MCP_TOOLS, OUTPUTS, SAMPLE, shortHash } from './facts';
 import './contract-sheet.css';
 
-type Field = 'quoteId' | 'approvedCreditCost' | 'idempotencyKey' | 'projectVersion' | 'contentHash' | 'expiresAt';
+type Field =
+  | 'quoteId'
+  | 'approvedCreditCost'
+  | 'idempotencyKey'
+  | 'projectVersion'
+  | 'contentHash'
+  | 'expiresAt';
 
 /** A prose term linked to a schema field in Exhibit A; hover/focus highlights the field. */
 function Term({ field, children }: { field: Field; children: ReactNode }) {
@@ -25,18 +31,90 @@ function F({ field, children }: { field: Field; children: ReactNode }) {
 }
 
 const WORKFLOW = [
-  { n: '1.1', title: 'Import', body: <>The agent calls <span className="lo-mono">create_caption_project</span> with an upload target or URL. The clip is probed and hashed by a durable task before anything else runs.</> },
-  { n: '1.2', title: 'Transcribe', body: <>The agent calls <span className="lo-mono">generate_captions</span>. Words arrive with start and end times in a provider-neutral schema. Provider fallback happens only before a transcript exists.</> },
-  { n: '1.3', title: 'Segment', body: <>Pages are cut on pause, punctuation and clause boundaries. No word is rewritten, reordered or dropped by the system.</> },
-  { n: '1.4', title: 'Edit', body: <>Any change is an explicit per-word operation against <Term field="projectVersion">expectedVersion</Term> — for example <span className="lo-mono">replace_word_text</span> “{EDITED_WORD.was}” → “{EDITED_WORD.text}”. Each commit bumps the version and the <Term field="contentHash">contentHash</Term>.</> },
-  { n: '1.5', title: 'Quote', body: <>A render request without approval returns an immutable quote: version, hash, expected outputs, credit cost, price version and an <Term field="expiresAt">expiry</Term>. Editing the project invalidates it.</> },
-  { n: '1.6', title: 'Render', body: <>The same call with <Term field="quoteId">quoteId</Term> and <Term field="approvedCreditCost">approvedCreditCost</Term> reserves credits and starts the render. Retrying with the same <Term field="idempotencyKey">idempotencyKey</Term> returns the same task.</> },
+  {
+    n: '1.1',
+    title: 'Import',
+    body: (
+      <>
+        The agent calls <span className="lo-mono">create_caption_project</span> with an upload
+        target or URL. The clip is probed and hashed by a durable task before anything else runs.
+      </>
+    ),
+  },
+  {
+    n: '1.2',
+    title: 'Transcribe',
+    body: (
+      <>
+        The agent calls <span className="lo-mono">generate_captions</span>. Words arrive with start
+        and end times in a provider-neutral schema. Provider fallback happens only before a
+        transcript exists.
+      </>
+    ),
+  },
+  {
+    n: '1.3',
+    title: 'Segment',
+    body: (
+      <>
+        Pages are cut on pause, punctuation and clause boundaries. No word is rewritten, reordered
+        or dropped by the system.
+      </>
+    ),
+  },
+  {
+    n: '1.4',
+    title: 'Edit',
+    body: (
+      <>
+        Any change is an explicit per-word operation against{' '}
+        <Term field="projectVersion">expectedVersion</Term> — for example{' '}
+        <span className="lo-mono">replace_word_text</span> “{EDITED_WORD.was}” → “{EDITED_WORD.text}
+        ”. Each commit bumps the version and the <Term field="contentHash">contentHash</Term>.
+      </>
+    ),
+  },
+  {
+    n: '1.5',
+    title: 'Quote',
+    body: (
+      <>
+        A render request without approval returns an immutable quote: version, hash, expected
+        outputs, credit cost, price version and an <Term field="expiresAt">expiry</Term>. Editing
+        the project invalidates it.
+      </>
+    ),
+  },
+  {
+    n: '1.6',
+    title: 'Render',
+    body: (
+      <>
+        The same call with <Term field="quoteId">quoteId</Term> and{' '}
+        <Term field="approvedCreditCost">approvedCreditCost</Term> reserves credits and starts the
+        render. Retrying with the same <Term field="idempotencyKey">idempotencyKey</Term> returns
+        the same task.
+      </>
+    ),
+  },
 ];
 
 const RETAINED = [
-  { n: '3.1', title: 'The exact words', body: 'Only a human-authored patch changes a word. The transcript is data, never an instruction, and never rewritten on the system’s initiative.' },
-  { n: '3.2', title: 'The exact cost', body: 'Approval must echo the quoted credits to the unit. A mismatch is QUOTE_MISMATCH; an expired quote is QUOTE_EXPIRED; nothing is charged either way.' },
-  { n: '3.3', title: 'The final outputs', body: 'MP4, transparent overlay, SRT, VTT — the selection is frozen inside the quote you approve, not chosen later.' },
+  {
+    n: '3.1',
+    title: 'The exact words',
+    body: 'Only a human-authored patch changes a word. The transcript is data, never an instruction, and never rewritten on the system’s initiative.',
+  },
+  {
+    n: '3.2',
+    title: 'The exact cost',
+    body: 'Approval must echo the quoted credits to the unit. A mismatch is QUOTE_MISMATCH; an expired quote is QUOTE_EXPIRED; nothing is charged either way.',
+  },
+  {
+    n: '3.3',
+    title: 'The final outputs',
+    body: 'MP4, transparent overlay, SRT, VTT — the selection is frozen inside the quote you approve, not chosen later.',
+  },
 ];
 
 export function ContractSheet() {
@@ -46,9 +124,11 @@ export function ContractSheet() {
         <Link href="/" className="cs-brand">
           ClipSubtitles
         </Link>
-        <span className="lo-mono cs-mast-meta">Terms, as enforced by code · rev. {SAMPLE.priceVersion}</span>
+        <span className="lo-mono cs-mast-meta">
+          Terms, as enforced by code · rev. {SAMPLE.priceVersion}
+        </span>
         <nav aria-label="Primary" className="cs-mast-nav">
-          <Link href="/docs">Agents</Link>
+          <Link href="/developers">Agents</Link>
           <Link href="/sign-in">Studio</Link>
         </nav>
       </header>
@@ -63,14 +143,15 @@ export function ContractSheet() {
             with human approval built in.
           </h1>
           <p className="cs-lede">
-            Send a short video; your agent transcribes, styles, previews and renders it. Exact words, render cost and output formats stay subject to
-            your approval — and the code enforces it.
+            Send a short video; your agent transcribes, styles, previews and renders it. Exact
+            words, render cost and output formats stay subject to your approval — and the code
+            enforces it.
           </p>
           <div className="cs-cta">
             <Link href="/sign-in" className="lo-btn cs-btn-primary">
               Caption a video
             </Link>
-            <Link href="/docs" className="lo-btn cs-btn-ghost">
+            <Link href="/developers" className="lo-btn cs-btn-ghost">
               View agent API
             </Link>
           </div>
@@ -81,29 +162,69 @@ export function ContractSheet() {
             </figcaption>
             <div className="cs-exhibit-grid">
               <pre className="lo-mono" aria-label="Request">
-                <span className="cs-c">// MCP · render_caption_export   ·   REST · POST /v1/projects/{'{id}'}/renders</span>
+                <span className="cs-c">
+                  // MCP · render_caption_export · REST · POST /v1/projects/{'{id}'}/renders
+                </span>
                 {'\n'}
                 {'{\n'}
-                {'  "projectId": "'}{SAMPLE.projectId}{'",\n'}
+                {'  "projectId": "'}
+                {SAMPLE.projectId}
+                {'",\n'}
                 {'  "approval": {\n'}
-                {'    "'}<F field="quoteId">quoteId</F>{'": "'}<F field="quoteId">{SAMPLE.quoteId}</F>{'",\n'}
-                {'    "'}<F field="approvedCreditCost">approvedCreditCost</F>{'": '}<F field="approvedCreditCost">{SAMPLE.creditCost}</F>{'\n'}
+                {'    "'}
+                <F field="quoteId">quoteId</F>
+                {'": "'}
+                <F field="quoteId">{SAMPLE.quoteId}</F>
+                {'",\n'}
+                {'    "'}
+                <F field="approvedCreditCost">approvedCreditCost</F>
+                {'": '}
+                <F field="approvedCreditCost">{SAMPLE.creditCost}</F>
+                {'\n'}
                 {'  },\n'}
-                {'  "'}<F field="idempotencyKey">idempotencyKey</F>{'": "'}<F field="idempotencyKey">{SAMPLE.idempotencyKey}</F>{'"\n'}
+                {'  "'}
+                <F field="idempotencyKey">idempotencyKey</F>
+                {'": "'}
+                <F field="idempotencyKey">{SAMPLE.idempotencyKey}</F>
+                {'"\n'}
                 {'}'}
               </pre>
               <pre className="lo-mono" aria-label="Quote being approved">
                 <span className="cs-c">// the quote being approved · status: open</span>
                 {'\n'}
                 {'{\n'}
-                {'  "id": "'}<F field="quoteId">{SAMPLE.quoteId}</F>{'",\n'}
-                {'  "'}<F field="projectVersion">projectVersion</F>{'": '}<F field="projectVersion">{SAMPLE.version}</F>{',\n'}
-                {'  "'}<F field="contentHash">contentHash</F>{'": "'}<F field="contentHash">{shortHash(SAMPLE.hashV3, 12, 8)}</F>{'",\n'}
-                {'  "expectedOutputs": ['}{SAMPLE.outputs.map((o) => `"${o}"`).join(', ')}{'],\n'}
-                {'  "billableMinutes": '}{SAMPLE.billableMinutes}{',\n'}
-                {'  "'}<F field="approvedCreditCost">creditCost</F>{'": '}<F field="approvedCreditCost">{SAMPLE.creditCost}</F>{',\n'}
-                {'  "priceVersion": "'}{SAMPLE.priceVersion}{'",\n'}
-                {'  "'}<F field="expiresAt">expiresAt</F>{'": "'}<F field="expiresAt">{SAMPLE.quoteExpiresAt}</F>{'"\n'}
+                {'  "id": "'}
+                <F field="quoteId">{SAMPLE.quoteId}</F>
+                {'",\n'}
+                {'  "'}
+                <F field="projectVersion">projectVersion</F>
+                {'": '}
+                <F field="projectVersion">{SAMPLE.version}</F>
+                {',\n'}
+                {'  "'}
+                <F field="contentHash">contentHash</F>
+                {'": "'}
+                <F field="contentHash">{shortHash(SAMPLE.hashV3, 12, 8)}</F>
+                {'",\n'}
+                {'  "expectedOutputs": ['}
+                {SAMPLE.outputs.map((o) => `"${o}"`).join(', ')}
+                {'],\n'}
+                {'  "billableMinutes": '}
+                {SAMPLE.billableMinutes}
+                {',\n'}
+                {'  "'}
+                <F field="approvedCreditCost">creditCost</F>
+                {'": '}
+                <F field="approvedCreditCost">{SAMPLE.creditCost}</F>
+                {',\n'}
+                {'  "priceVersion": "'}
+                {SAMPLE.priceVersion}
+                {'",\n'}
+                {'  "'}
+                <F field="expiresAt">expiresAt</F>
+                {'": "'}
+                <F field="expiresAt">{SAMPLE.quoteExpiresAt}</F>
+                {'"\n'}
                 {'}'}
               </pre>
             </div>
@@ -202,9 +323,12 @@ export function ContractSheet() {
             </table>
           </div>
           <p className="cs-note">
-            Schedule C — style presets <span className="lo-mono">clean · bold-pop · lower-third · karaoke · minimal</span>; motion presets{' '}
-            <span className="lo-mono">none · soft-rise · spring-pop · karaoke-slide</span>. Rendered by a deterministic Skia + FFmpeg pipeline; the same
-            version and hash produce byte-identical files.
+            Schedule C — style presets{' '}
+            <span className="lo-mono">clean · bold-pop · lower-third · karaoke · minimal</span>;
+            motion presets{' '}
+            <span className="lo-mono">none · soft-rise · spring-pop · karaoke-slide</span>. Rendered
+            by a deterministic Skia + FFmpeg pipeline; the same version and hash produce
+            byte-identical files.
           </p>
         </InView>
 
@@ -216,14 +340,16 @@ export function ContractSheet() {
             is checked by the API.
           </h2>
           <p>
-            Every clause above maps to a type in <span className="lo-mono">packages/contracts</span> and a route that validates it. The OpenAPI 3.1
-            document is at <Link href="/openapi.json">/openapi.json</Link>; the MCP endpoint is <span className="lo-mono">/api/mcp</span>.
+            Every clause above maps to a type in <span className="lo-mono">packages/contracts</span>{' '}
+            and a route that validates it. The OpenAPI 3.1 document is at{' '}
+            <Link href="/openapi.json">/openapi.json</Link>; the MCP endpoint is{' '}
+            <span className="lo-mono">/api/mcp</span>.
           </p>
           <div className="cs-cta">
             <Link href="/sign-in" className="lo-btn cs-btn-primary">
               Caption a video
             </Link>
-            <Link href="/docs" className="lo-btn cs-btn-ghost">
+            <Link href="/developers" className="lo-btn cs-btn-ghost">
               View agent API
             </Link>
           </div>

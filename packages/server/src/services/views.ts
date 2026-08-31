@@ -26,10 +26,22 @@ export interface ProjectViewOptions {
   wordsLimit?: number;
 }
 
-function signedFor(ctx: AppContext, kind: 'asset' | 'export', id: string, workspaceId: string): { url: string; expiresAt: string } {
+function signedFor(
+  ctx: AppContext,
+  kind: 'asset' | 'export',
+  id: string,
+  workspaceId: string,
+): { url: string; expiresAt: string } {
   const expiresAt = Math.floor(ctx.clock.now() / 1000) + ctx.config.limits.signedUrlTtlSeconds;
   return {
-    url: signContentUrl({ secret: ctx.config.auth.localSecret, apiPublicUrl: ctx.config.apiPublicUrl, kind, id, workspaceId, expiresAt }),
+    url: signContentUrl({
+      secret: ctx.config.auth.localSecret,
+      apiPublicUrl: ctx.config.apiPublicUrl,
+      kind,
+      id,
+      workspaceId,
+      expiresAt,
+    }),
     expiresAt: new Date(expiresAt * 1000).toISOString(),
   };
 }
@@ -80,26 +92,48 @@ export function transcriptView(revision: RevisionRecord, opts: ProjectViewOption
   if (revision.parentRevisionId) view.parentRevisionId = revision.parentRevisionId;
   if (opts.includeWords) {
     const offset = Math.max(0, opts.wordsOffset ?? 0);
-    const limit = Math.min(LIMITS.maxWordsWindow, Math.max(1, opts.wordsLimit ?? LIMITS.maxWordsWindow));
+    const limit = Math.min(
+      LIMITS.maxWordsWindow,
+      Math.max(1, opts.wordsLimit ?? LIMITS.maxWordsWindow),
+    );
     view.words = revision.words.slice(offset, offset + limit);
     view.wordsWindow = { offset, limit, total: revision.words.length };
   }
   return view;
 }
 
-export async function currentRevision(ctx: AppContext, project: ProjectRecord): Promise<RevisionRecord | null> {
-  return project.currentRevisionId ? ctx.db.getRevision(project.id, project.currentRevisionId) : null;
+export async function currentRevision(
+  ctx: AppContext,
+  project: ProjectRecord,
+): Promise<RevisionRecord | null> {
+  return project.currentRevisionId
+    ? ctx.db.getRevision(project.id, project.currentRevisionId)
+    : null;
 }
 
-export async function projectAsset(ctx: AppContext, project: ProjectRecord): Promise<AssetRecord | null> {
+export async function projectAsset(
+  ctx: AppContext,
+  project: ProjectRecord,
+): Promise<AssetRecord | null> {
   return project.sourceAssetId ? ctx.db.getAssetById(project.sourceAssetId) : null;
 }
 
-export async function buildProjectView(ctx: AppContext, project: ProjectRecord, opts: ProjectViewOptions = {}): Promise<CaptionProject> {
+export async function buildProjectView(
+  ctx: AppContext,
+  project: ProjectRecord,
+  opts: ProjectViewOptions = {},
+): Promise<CaptionProject> {
   const asset = await projectAsset(ctx, project);
   const revision = await currentRevision(ctx, project);
-  const activeTasks = await ctx.db.listTasks(project.workspaceId, { projectId: project.id, activeOnly: true, limit: 20 });
-  const recentExports = await ctx.db.listExports(project.workspaceId, { projectId: project.id, limit: 10 });
+  const activeTasks = await ctx.db.listTasks(project.workspaceId, {
+    projectId: project.id,
+    activeOnly: true,
+    limit: 20,
+  });
+  const recentExports = await ctx.db.listExports(project.workspaceId, {
+    projectId: project.id,
+    limit: 10,
+  });
   const includePages = opts.includePages ?? true;
   const view: CaptionProject = {
     id: project.id,
@@ -117,18 +151,21 @@ export async function buildProjectView(ctx: AppContext, project: ProjectRecord, 
     qa: project.qa,
     activeTasks: activeTasks.map(toPublicTask),
     recentExports: recentExports.map((e) => exportView(ctx, e)),
-    links: { editor: `${ctx.config.webPublicUrl}/projects/${project.id}` },
+    links: { editor: `${ctx.config.webPublicUrl}/studio/${project.id}` },
     contentNotice: CONTENT_NOTICE,
   };
   if (project.language) view.language = project.language;
   if (includePages) view.pages = project.pages;
   if (project.status === 'awaiting_source' || (asset && asset.status !== 'ready')) {
-    view.links.upload = `${ctx.config.webPublicUrl}/projects/${project.id}/upload`;
+    view.links.upload = `${ctx.config.webPublicUrl}/studio/${project.id}/upload`;
   }
   return view;
 }
 
-export async function buildProjectSummary(ctx: AppContext, project: ProjectRecord): Promise<ProjectSummary> {
+export async function buildProjectSummary(
+  ctx: AppContext,
+  project: ProjectRecord,
+): Promise<ProjectSummary> {
   const asset = await projectAsset(ctx, project);
   const summary: ProjectSummary = {
     id: project.id,
@@ -145,7 +182,10 @@ export async function buildProjectSummary(ctx: AppContext, project: ProjectRecor
 }
 
 /** Rebuild the editable caption state for a project from its stored parts. */
-export function loadCaptionState(project: ProjectRecord, revision: RevisionRecord | null): CaptionState {
+export function loadCaptionState(
+  project: ProjectRecord,
+  revision: RevisionRecord | null,
+): CaptionState {
   if (!revision) {
     return createCaptionState({
       title: project.title,

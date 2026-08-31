@@ -1,30 +1,111 @@
 import Link from 'next/link';
 import { OptionSwitcher } from './OptionSwitcher';
-import { EDITED_WORD, MCP_TOOLS, OUTPUTS, SAMPLE, shortHash, timecode, wordsForPage } from './facts';
+import {
+  EDITED_WORD,
+  MCP_TOOLS,
+  OUTPUTS,
+  SAMPLE,
+  shortHash,
+  timecode,
+  wordsForPage,
+} from './facts';
 import './handoff.css';
 
 type Actor = 'agent' | 'you';
 
 const CALLS: Array<{ actor: Actor; tool: string; args?: string; result: string }> = [
-  { actor: 'agent', tool: 'create_caption_project', args: `{ title: "${SAMPLE.title}" }`, result: `→ ${SAMPLE.projectId} · v1` },
-  { actor: 'agent', tool: 'generate_captions', result: `→ task succeeded · ${SAMPLE.words.length} words · ${SAMPLE.pages.length} pages · v2` },
-  { actor: 'you', tool: 'update_caption_project', args: `replace_word_text "${EDITED_WORD.was}" → "${EDITED_WORD.text}"`, result: `→ v3 · ${shortHash(SAMPLE.hashV3)}` },
+  {
+    actor: 'agent',
+    tool: 'create_caption_project',
+    args: `{ title: "${SAMPLE.title}" }`,
+    result: `→ ${SAMPLE.projectId} · v1`,
+  },
+  {
+    actor: 'agent',
+    tool: 'generate_captions',
+    result: `→ task succeeded · ${SAMPLE.words.length} words · ${SAMPLE.pages.length} pages · v2`,
+  },
+  {
+    actor: 'you',
+    tool: 'update_caption_project',
+    args: `replace_word_text "${EDITED_WORD.was}" → "${EDITED_WORD.text}"`,
+    result: `→ v3 · ${shortHash(SAMPLE.hashV3)}`,
+  },
   { actor: 'agent', tool: 'render_caption_preview', result: '→ 480p preview of v3' },
-  { actor: 'agent', tool: 'render_caption_export', args: `outputs [${SAMPLE.outputs.join(', ')}] · 1080p`, result: `→ quote_required · ${SAMPLE.creditCost} credits · v3` },
-  { actor: 'you', tool: 'approve', args: `{ quoteId, approvedCreditCost: ${SAMPLE.creditCost} }`, result: `→ ${SAMPLE.taskId} · reserved ${SAMPLE.creditCost}` },
-  { actor: 'agent', tool: 'get_caption_task', result: `→ succeeded · settled ${SAMPLE.creditCost} · mp4 + srt` },
+  {
+    actor: 'agent',
+    tool: 'render_caption_export',
+    args: `outputs [${SAMPLE.outputs.join(', ')}] · 1080p`,
+    result: `→ quote_required · ${SAMPLE.creditCost} credits · v3`,
+  },
+  {
+    actor: 'you',
+    tool: 'approve',
+    args: `{ quoteId, approvedCreditCost: ${SAMPLE.creditCost} }`,
+    result: `→ ${SAMPLE.taskId} · reserved ${SAMPLE.creditCost}`,
+  },
+  {
+    actor: 'agent',
+    tool: 'get_caption_task',
+    result: `→ succeeded · settled ${SAMPLE.creditCost} · mp4 + srt`,
+  },
 ];
 
 const LEDGER: Array<{ step: string; agent: string; you: string; owner: Actor }> = [
-  { step: 'Import & probe', agent: 'Uploads or fetches the clip, waits for the durable task', you: '—', owner: 'agent' },
-  { step: 'Transcribe', agent: 'Word-level words with timings, provider fallback before any transcript exists', you: '—', owner: 'agent' },
-  { step: 'Segment & style', agent: 'Pages by pause and clause; picks a preset and motion', you: '—', owner: 'agent' },
-  { step: 'Exact words', agent: 'Never rewrites a spoken word', you: 'replace_word_text, set_word_timing, split/merge pages', owner: 'you' },
-  { step: 'Preview', agent: 'Renders the exact current version at 360–720p', you: 'Looks, or doesn’t', owner: 'agent' },
-  { step: 'Quote', agent: 'Requests it; receives version, hash, outputs, credits, expiry', you: '—', owner: 'agent' },
-  { step: 'Exact cost', agent: 'Cannot approve', you: 'Echoes the quoted credits exactly, or nothing happens', owner: 'you' },
-  { step: 'Outputs', agent: 'Proposes', you: 'MP4 · OVERLAY · SRT · VTT — your pick is frozen in the quote', owner: 'you' },
-  { step: 'Render & deliver', agent: 'Polls the task; downloads short-lived export URLs', you: '—', owner: 'agent' },
+  {
+    step: 'Import & probe',
+    agent: 'Uploads or fetches the clip, waits for the durable task',
+    you: '—',
+    owner: 'agent',
+  },
+  {
+    step: 'Transcribe',
+    agent: 'Word-level words with timings, provider fallback before any transcript exists',
+    you: '—',
+    owner: 'agent',
+  },
+  {
+    step: 'Segment & style',
+    agent: 'Pages by pause and clause; picks a preset and motion',
+    you: '—',
+    owner: 'agent',
+  },
+  {
+    step: 'Exact words',
+    agent: 'Never rewrites a spoken word',
+    you: 'replace_word_text, set_word_timing, split/merge pages',
+    owner: 'you',
+  },
+  {
+    step: 'Preview',
+    agent: 'Renders the exact current version at 360–720p',
+    you: 'Looks, or doesn’t',
+    owner: 'agent',
+  },
+  {
+    step: 'Quote',
+    agent: 'Requests it; receives version, hash, outputs, credits, expiry',
+    you: '—',
+    owner: 'agent',
+  },
+  {
+    step: 'Exact cost',
+    agent: 'Cannot approve',
+    you: 'Echoes the quoted credits exactly, or nothing happens',
+    owner: 'you',
+  },
+  {
+    step: 'Outputs',
+    agent: 'Proposes',
+    you: 'MP4 · OVERLAY · SRT · VTT — your pick is frozen in the quote',
+    owner: 'you',
+  },
+  {
+    step: 'Render & deliver',
+    agent: 'Polls the task; downloads short-lived export URLs',
+    you: '—',
+    owner: 'agent',
+  },
 ];
 
 export function Handoff() {
@@ -40,7 +121,7 @@ export function Handoff() {
           ClipSubtitles
         </Link>
         <nav className="ho-nav" aria-label="Primary">
-          <Link href="/docs">Agents</Link>
+          <Link href="/developers">Agents</Link>
           <Link href="/sign-in">Sign in</Link>
         </nav>
       </header>
@@ -51,26 +132,35 @@ export function Handoff() {
           <div className="ho-hero-copy">
             <p className="lo-eyebrow ho-eyebrow">Video captions for AI agents · MCP + REST</p>
             <h1 id="ho-h1">
-              <span className="ho-agent-ink">AI video caption generator</span> for <em>agents</em> and <em>creators.</em>
+              <span className="ho-agent-ink">AI video caption generator</span> for <em>agents</em>{' '}
+              and <em>creators.</em>
             </h1>
             <p className="ho-lede">
-              Upload or import a short video and get word-timed, styled captions as MP4, transparent overlay, SRT or VTT. Work in the studio or
-              automate through MCP and API.
+              Upload or import a short video and get word-timed, styled captions as MP4, transparent
+              overlay, SRT or VTT. Work in the studio or automate through MCP and API.
             </p>
             <div className="ho-cta">
               <Link href="/sign-in" className="lo-btn ho-btn-primary">
                 Caption a video
               </Link>
-              <Link href="/docs" className="lo-btn ho-btn-ghost">
+              <Link href="/developers" className="lo-btn ho-btn-ghost">
                 View agent API
               </Link>
             </div>
           </div>
 
-          <div className="ho-stage" role="group" aria-label="One project, seen by the agent and by you">
+          <div
+            className="ho-stage"
+            role="group"
+            aria-label="One project, seen by the agent and by you"
+          >
             <ol className="ho-calls lo-mono" aria-label="Tool-call sequence">
               {CALLS.map((c, i) => (
-                <li key={c.tool + i} className={`ho-call ho-call-${c.actor}`} style={{ ['--i' as string]: i }}>
+                <li
+                  key={c.tool + i}
+                  className={`ho-call ho-call-${c.actor}`}
+                  style={{ ['--i' as string]: i }}
+                >
                   <span className="ho-call-actor">{c.actor}</span>
                   <span className="ho-call-body">
                     <span className="ho-call-tool">
@@ -83,7 +173,8 @@ export function Handoff() {
                     <span className="ho-boundary" aria-hidden>
                       <span className="ho-boundary-line" />
                       <span className="ho-boundary-tag">
-                        <span className="ho-lock" /> quote boundary · immutable · {shortHash(SAMPLE.hashV3)}
+                        <span className="ho-lock" /> quote boundary · immutable ·{' '}
+                        {shortHash(SAMPLE.hashV3)}
                       </span>
                     </span>
                   ) : null}
@@ -93,7 +184,8 @@ export function Handoff() {
 
             <div className="ho-divider" aria-hidden>
               <span className="ho-divider-text lo-mono">
-                same project · same version · {SAMPLE.projectId} · v{SAMPLE.version} · {shortHash(SAMPLE.hashV3)}
+                same project · same version · {SAMPLE.projectId} · v{SAMPLE.version} ·{' '}
+                {shortHash(SAMPLE.hashV3)}
               </span>
             </div>
 
@@ -103,10 +195,19 @@ export function Handoff() {
                 <span className="ho-clip-readout lo-mono ho-clip-readout-tl">
                   v{SAMPLE.version} · {shortHash(SAMPLE.hashV3, 6, 4)}
                 </span>
-                <span className="ho-clip-readout lo-mono ho-clip-readout-tr">{timecode(SAMPLE.excerptStartMs + (firstPage2Word?.startMs ?? 0))}</span>
-                <p className="ho-caption lo-cap" aria-label={`Caption: ${page2.map((w) => w.text).join(' ')}`}>
+                <span className="ho-clip-readout lo-mono ho-clip-readout-tr">
+                  {timecode(SAMPLE.excerptStartMs + (firstPage2Word?.startMs ?? 0))}
+                </span>
+                <p
+                  className="ho-caption lo-cap"
+                  aria-label={`Caption: ${page2.map((w) => w.text).join(' ')}`}
+                >
                   {page2.map((w, i) => (
-                    <span key={w.id} className={`ho-word${w.was ? ' ho-word-edited' : ''}`} style={{ ['--w' as string]: i }}>
+                    <span
+                      key={w.id}
+                      className={`ho-word${w.was ? ' ho-word-edited' : ''}`}
+                      style={{ ['--w' as string]: i }}
+                    >
                       {w.text}
                     </span>
                   ))}
@@ -170,16 +271,18 @@ export function Handoff() {
           </ol>
           <ul className="ho-guarantees">
             <li>
-              <strong>Versions are exact.</strong> Every edit bumps the project version; previews, quotes and renders pin a version and a content
-              hash. Editing invalidates open quotes.
+              <strong>Versions are exact.</strong> Every edit bumps the project version; previews,
+              quotes and renders pin a version and a content hash. Editing invalidates open quotes.
             </li>
             <li>
-              <strong>Cost is exact.</strong> Approval must echo the quoted credits. Reserve on approval, settle once on success, release on failure
-              or cancel.
+              <strong>Cost is exact.</strong> Approval must echo the quoted credits. Reserve on
+              approval, settle once on success, release on failure or cancel.
             </li>
             <li>
-              <strong>Retries are safe.</strong> The same <span className="lo-mono">idempotencyKey</span> returns the same task. Public errors carry an{' '}
-              <span className="lo-mono">errorRef</span>; audit events never contain transcript text.
+              <strong>Retries are safe.</strong> The same{' '}
+              <span className="lo-mono">idempotencyKey</span> returns the same task. Public errors
+              carry an <span className="lo-mono">errorRef</span>; audit events never contain
+              transcript text.
             </li>
           </ul>
         </section>
@@ -195,12 +298,13 @@ export function Handoff() {
             <Link href="/sign-in" className="lo-btn ho-btn-primary">
               Caption a video
             </Link>
-            <Link href="/docs" className="lo-btn ho-btn-ghost">
+            <Link href="/developers" className="lo-btn ho-btn-ghost">
               View agent API
             </Link>
           </div>
           <p className="ho-foot lo-mono">
-            {MCP_TOOLS.length} MCP tools · 5 presets · 4 motions · {OUTPUTS.map((o) => o.label).join(' / ')} · MCP endpoint /api/mcp
+            {MCP_TOOLS.length} MCP tools · 5 presets · 4 motions ·{' '}
+            {OUTPUTS.map((o) => o.label).join(' / ')} · MCP endpoint /api/mcp
           </p>
         </section>
       </main>

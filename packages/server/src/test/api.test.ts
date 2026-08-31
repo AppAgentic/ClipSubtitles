@@ -26,6 +26,9 @@ async function uploadProject(fileName = 'clip.mp4', seconds = 2): Promise<Captio
   });
   expect(created.status).toBe(201);
   const target = created.body.uploadTarget!;
+  expect(target.webUploadUrl).toBe(
+    `http://127.0.0.1:3100/studio/${created.body.project.id}/upload`,
+  );
   const video = await readFile(await h.makeSourceVideo(fileName, seconds));
   const url = new URL(target.url);
   const put = await h.api<{ asset: { status: string } }>('PUT', `${url.pathname}${url.search}`, {
@@ -37,6 +40,7 @@ async function uploadProject(fileName = 'clip.mp4', seconds = 2): Promise<Captio
   const project = await h.api<CaptionProject>('GET', `/v1/projects/${created.body.project.id}`, {
     token,
   });
+  expect(project.body.links.editor).toBe(`http://127.0.0.1:3100/studio/${created.body.project.id}`);
   return project.body;
 }
 
@@ -74,12 +78,14 @@ describe('auth boundaries', () => {
     expect(res.status).toBe(401);
     expect(res.headers.get('www-authenticate')).toContain('resource_metadata=');
     expect((res.body as { error: { code: string } }).error.code).toBe('UNAUTHENTICATED');
-    const meta = await h.api<{ resource: string; authorization_servers: string[] }>(
-      'GET',
-      '/.well-known/oauth-protected-resource',
-    );
+    const meta = await h.api<{
+      resource: string;
+      authorization_servers: string[];
+      resource_documentation: string;
+    }>('GET', '/.well-known/oauth-protected-resource');
     expect(meta.status).toBe(200);
     expect(meta.body.resource).toContain('/api/mcp');
+    expect(meta.body.resource_documentation).toBe('http://127.0.0.1:3100/developers');
   });
 
   it('derives identity and a personal workspace from the token, never from input', async () => {

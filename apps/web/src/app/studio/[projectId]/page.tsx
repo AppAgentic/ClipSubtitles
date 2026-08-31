@@ -5,7 +5,7 @@ import { Suspense } from 'react';
 import { EditorView } from '@/components/editor/EditorView';
 import { AppShell } from '@/components/shell/AppShell';
 
-export default function ProjectEditorPage() {
+export default function StudioProjectPage() {
   const params = useParams<{ projectId: string }>();
   return (
     <AppShell wide>

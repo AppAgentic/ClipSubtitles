@@ -11,12 +11,14 @@ export function protectedResourceMetadata(ctx: AppContext) {
     scopes_supported: [...SCOPES],
     bearer_methods_supported: ['header'],
     resource_name: MCP_SERVER_INFO.title,
-    resource_documentation: `${ctx.config.webPublicUrl}/docs`,
+    resource_documentation: `${ctx.config.webPublicUrl}/developers`,
   };
 }
 
 export function llmsTxt(ctx: AppContext): string {
-  const tools = MCP_TOOLS.map((t) => `- ${t.name} (${t.scope}${t.cost === 'credits' ? ', paid' : ''}): ${t.description}`).join('\n');
+  const tools = MCP_TOOLS.map(
+    (t) => `- ${t.name} (${t.scope}${t.cost === 'credits' ? ', paid' : ''}): ${t.description}`,
+  ).join('\n');
   return `# ClipSubtitles
 
 > Agent-native captioning studio: import a short video, generate accurate word-timed captions, review/edit, preview, approve the credit cost, and render MP4 / transparent overlay / SRT / VTT.
@@ -42,9 +44,18 @@ ${tools}
 }
 
 export function registerWellKnownRoutes(app: Hono<AppEnv>, ctx: AppContext): void {
-  const metadata = (c: { json: (body: unknown, status?: 200) => Response }) => c.json(protectedResourceMetadata(ctx), 200);
+  const metadata = (c: { json: (body: unknown, status?: 200) => Response }) =>
+    c.json(protectedResourceMetadata(ctx), 200);
   app.get('/.well-known/oauth-protected-resource', metadata);
   app.get('/.well-known/oauth-protected-resource/api/mcp', metadata);
   app.get('/llms.txt', (c) => c.text(llmsTxt(ctx)));
-  app.get('/healthz', (c) => c.json({ ok: true, service: MCP_SERVER_INFO.name, version: MCP_SERVER_INFO.version, authMode: ctx.config.auth.mode, renderer: ctx.renderer.id }));
+  app.get('/healthz', (c) =>
+    c.json({
+      ok: true,
+      service: MCP_SERVER_INFO.name,
+      version: MCP_SERVER_INFO.version,
+      authMode: ctx.config.auth.mode,
+      renderer: ctx.renderer.id,
+    }),
+  );
 }

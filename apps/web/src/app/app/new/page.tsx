@@ -8,7 +8,7 @@ import { useToast } from '@/components/ui/Toast';
 import { UploadZone } from '@/components/upload/UploadZone';
 import { api, directUploadRequest, errorMessage, uploadToTarget } from '@/lib/api';
 
-export default function NewProjectPage() {
+export default function NewVideoPage() {
   return <AppShell render={() => <NewProject />} />;
 }
 
@@ -19,7 +19,9 @@ function NewProject() {
   const [busy, setBusy] = useState(false);
   const [url, setUrl] = useState('');
   const [title, setTitle] = useState('');
-  const [fixtures, setFixtures] = useState<Array<{ id: string; title: string; available: boolean }>>([]);
+  const [fixtures, setFixtures] = useState<
+    Array<{ id: string; title: string; available: boolean }>
+  >([]);
 
   useEffect(() => {
     api
@@ -41,7 +43,7 @@ function NewProject() {
       if (!created.uploadTarget) throw new Error('No upload target returned.');
       await uploadToTarget(created.uploadTarget, file, setProgress);
       toast.push('ok', 'Source stored. Generate captions when ready.');
-      router.push(`/projects/${created.project.id}?generate=1`);
+      router.push(`/studio/${created.project.id}?generate=1`);
     } catch (err) {
       toast.push('error', errorMessage(err));
       setBusy(false);
@@ -55,7 +57,7 @@ function NewProject() {
     try {
       const created = await api.createProject({ ...(title ? { title } : {}), sourceUrl: url });
       toast.push('ok', 'Import started.');
-      router.push(`/projects/${created.project.id}`);
+      router.push(`/studio/${created.project.id}`);
     } catch (err) {
       toast.push('error', errorMessage(err));
       setBusy(false);
@@ -66,7 +68,7 @@ function NewProject() {
     setBusy(true);
     try {
       const res = await api.createFixtureProject(id);
-      router.push(`/projects/${res.project.id}?generate=1`);
+      router.push(`/studio/${res.project.id}?generate=1`);
     } catch (err) {
       toast.push('error', errorMessage(err));
       setBusy(false);
@@ -76,12 +78,19 @@ function NewProject() {
   return (
     <div className="mx-auto max-w-[760px]">
       <div className="rise mb-6">
-        <h1 className="text-[28px] font-semibold tracking-[-0.03em]">New clip</h1>
-        <p className="text-[13px] text-ink-mute">One bounded upload, then a durable generation task. Nothing is transcribed until you or your agent asks.</p>
+        <h1 className="text-[28px] font-semibold tracking-[-0.03em]">Caption a video</h1>
+        <p className="text-[13px] text-ink-mute">
+          Choose a short video. You can review every word before you style or export it.
+        </p>
       </div>
       <div className="rise rise-1 mb-4">
         <Field label="Title (optional)">
-          <TextInput value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Defaults to the file name" maxLength={200} />
+          <TextInput
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Defaults to the file name"
+            maxLength={200}
+          />
         </Field>
       </div>
       <div className="rise rise-2">
@@ -90,17 +99,30 @@ function NewProject() {
       <div className="rise rise-3 mt-4 grid gap-4 md:grid-cols-2">
         <Panel title="Import from a URL" className="p-4">
           <div className="flex gap-2">
-            <TextInput value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…/clip.mp4" inputMode="url" />
-            <Button variant="primary" onClick={() => void importUrl()} disabled={!url || busy} loading={busy && !!url}>
+            <TextInput
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://…/clip.mp4"
+              inputMode="url"
+            />
+            <Button
+              variant="primary"
+              onClick={() => void importUrl()}
+              disabled={!url || busy}
+              loading={busy && !!url}
+            >
               Import
             </Button>
           </div>
-          <p className="mt-2 text-[11px] text-ink-mute">Public http(s) only, size-capped, private hosts rejected.</p>
+          <p className="mt-2 text-[11px] text-ink-mute">
+            Use a direct, publicly accessible video link. Private or sign-in-only links cannot be
+            imported.
+          </p>
         </Panel>
-        <Panel title="Local demo clips" className="p-4">
+        <Panel title="Try an example" className="p-4">
           {fixtures.length === 0 ? (
             <p className="text-[12px] text-ink-mute">
-              Run <code className="mono">pnpm fixtures:build</code> to generate synthetic demo clips (mock mode).
+              Example videos are not available in this environment.
             </p>
           ) : (
             <div className="flex flex-wrap gap-2">

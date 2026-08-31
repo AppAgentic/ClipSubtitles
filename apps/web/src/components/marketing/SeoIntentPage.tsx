@@ -35,12 +35,17 @@ export function SeoIntentPage({ page }: { page: SeoPage }) {
 
   return (
     <div data-lo="three-gates" className="tg si">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <header className="tg-top lo-wrap">
-        <Link href="/ai-video-caption-generator" className="tg-brand">ClipSubtitles</Link>
+        <Link href="/" className="tg-brand">
+          ClipSubtitles
+        </Link>
         <nav aria-label="Primary" className="tg-nav">
           <Link href="/video-caption-api">API</Link>
-          <Link href="/docs">Docs</Link>
+          <Link href="/developers">Developers</Link>
           <Link href="/sign-in">Sign in</Link>
         </nav>
       </header>
@@ -52,8 +57,12 @@ export function SeoIntentPage({ page }: { page: SeoPage }) {
             <h1 id="si-title">{page.headline}</h1>
             <p className="si-lede">{page.lede}</p>
             <div className="tg-cta">
-              <Link href="/sign-in" className="lo-btn tg-btn-primary">Caption a video</Link>
-              <a href="#how" className="lo-btn tg-btn-ghost">See how it works</a>
+              <Link href="/sign-in?returnTo=/app/new" className="lo-btn tg-btn-primary">
+                Caption a video
+              </Link>
+              <a href="#how" className="lo-btn tg-btn-ghost">
+                See how it works
+              </a>
             </div>
           </div>
           <figure className="si-proof">
@@ -80,7 +89,10 @@ export function SeoIntentPage({ page }: { page: SeoPage }) {
             {page.steps.map((step, index) => (
               <li key={step.title}>
                 <span className="lo-mono">{String(index + 1).padStart(2, '0')}</span>
-                <div><h3>{step.title}</h3><p>{step.body}</p></div>
+                <div>
+                  <h3>{step.title}</h3>
+                  <p>{step.body}</p>
+                </div>
               </li>
             ))}
           </ol>
@@ -93,7 +105,10 @@ export function SeoIntentPage({ page }: { page: SeoPage }) {
           </div>
           <ul className="si-benefit-list">
             {page.benefits.map((benefit) => (
-              <li key={benefit.title}><h3>{benefit.title}</h3><p>{benefit.body}</p></li>
+              <li key={benefit.title}>
+                <h3>{benefit.title}</h3>
+                <p>{benefit.body}</p>
+              </li>
             ))}
           </ul>
         </section>
@@ -110,7 +125,10 @@ export function SeoIntentPage({ page }: { page: SeoPage }) {
           <div className="tg-faq-list">
             {page.faqs.map((faq) => (
               <details key={faq.question}>
-                <summary>{faq.question}<span aria-hidden>+</span></summary>
+                <summary>
+                  {faq.question}
+                  <span aria-hidden>+</span>
+                </summary>
                 <p>{faq.answer}</p>
               </details>
             ))}
@@ -121,10 +139,17 @@ export function SeoIntentPage({ page }: { page: SeoPage }) {
           <p className="lo-eyebrow tg-eyebrow">Explore ClipSubtitles</p>
           <h2 id="si-related-title">More caption workflows.</h2>
           <ul>
-            <li><Link href="/ai-video-caption-generator">AI video caption generator<span aria-hidden>↗</span></Link></li>
+            <li>
+              <Link href="/">
+                AI video caption generator<span aria-hidden>↗</span>
+              </Link>
+            </li>
             {related.map((candidate) => (
               <li key={candidate.slug}>
-                <Link href={`/${candidate.slug}`}>{candidate.eyebrow}<span aria-hidden>↗</span></Link>
+                <Link href={`/${candidate.slug}`}>
+                  {candidate.eyebrow}
+                  <span aria-hidden>↗</span>
+                </Link>
               </li>
             ))}
           </ul>
@@ -134,8 +159,12 @@ export function SeoIntentPage({ page }: { page: SeoPage }) {
           <h2 id="si-final-title">{page.finalTitle}</h2>
           <p>{page.finalBody}</p>
           <div className="tg-cta">
-            <Link href="/sign-in" className="lo-btn tg-btn-primary">Caption a video</Link>
-            <Link href="/docs" className="lo-btn tg-btn-ghost">Read the docs</Link>
+            <Link href="/sign-in?returnTo=/app/new" className="lo-btn tg-btn-primary">
+              Caption a video
+            </Link>
+            <Link href="/developers" className="lo-btn tg-btn-ghost">
+              Build with ClipSubtitles
+            </Link>
           </div>
         </section>
       </main>

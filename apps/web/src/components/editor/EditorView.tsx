@@ -3,14 +3,24 @@
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { CaptionPage, CaptionPosition, CaptionProject, GenerateCaptionsRequest, PatchOp, StyleConfig, StylePatch, StylePresetId, TranscriptWord } from '@clipsubtitles/contracts';
+import type {
+  CaptionPage,
+  CaptionPosition,
+  CaptionProject,
+  GenerateCaptionsRequest,
+  PatchOp,
+  StyleConfig,
+  StylePatch,
+  StylePresetId,
+  TranscriptWord,
+} from '@clipsubtitles/contracts';
 import { applyStylePatch } from '@clipsubtitles/core';
 import { Dialog } from '@/components/ui/Dialog';
 import { Button, Chip, LinkButton, Progress, statusTone } from '@/components/ui/primitives';
 import { useToast } from '@/components/ui/Toast';
 import { ApiClientError, api, errorMessage, loadAllWords } from '@/lib/api';
 import { isActiveTask, useTask } from '@/lib/hooks';
-import { shortHash, titleCase } from '@/lib/format';
+import { titleCase } from '@/lib/format';
 import { PatchQueue } from '@/lib/patch-queue';
 import { GenerateDialog } from './GenerateDialog';
 import { PageList } from './PageList';
@@ -20,7 +30,12 @@ import { WordEditor } from './WordEditor';
 
 type SaveState = 'idle' | 'saving' | 'conflict' | 'error';
 
-const WORD_OPS = new Set<PatchOp['op']>(['replace_word_text', 'delete_word', 'insert_word', 'set_word_timing']);
+const WORD_OPS = new Set<PatchOp['op']>([
+  'replace_word_text',
+  'delete_word',
+  'insert_word',
+  'set_word_timing',
+]);
 
 export function EditorView({ projectId }: { projectId: string }) {
   const toast = useToast();
@@ -66,7 +81,11 @@ export function EditorView({ projectId }: { projectId: string }) {
     const q = new PatchQueue(0, {
       send: (expectedVersion, ops, opts) => api.patchProject(projectId, expectedVersion, ops, opts),
       onResult: (res, ops) => {
-        setProject((prev) => (prev ? { ...res.project, transcript: res.project.transcript ?? prev.transcript } : res.project));
+        setProject((prev) =>
+          prev
+            ? { ...res.project, transcript: res.project.transcript ?? prev.transcript }
+            : res.project,
+        );
         if (!q.hasPendingStyle) setStyle(res.project.style);
         if (res.newRevision || ops.some((o) => WORD_OPS.has(o.op))) void reloadWords(res.project);
       },
@@ -92,7 +111,8 @@ export function EditorView({ projectId }: { projectId: string }) {
   useEffect(() => {
     load()
       .then((p) => {
-        if (search.get('generate') === '1' && !p.transcript && p.status === 'ready') setGenerateOpen(true);
+        if (search.get('generate') === '1' && !p.transcript && p.status === 'ready')
+          setGenerateOpen(true);
       })
       .catch((err) => toast.push('error', errorMessage(err)));
   }, [load, search, toast]);
@@ -103,10 +123,17 @@ export function EditorView({ projectId }: { projectId: string }) {
     if (!genTask) return;
     if (genTask.status === 'succeeded') {
       setGenerateTaskId(null);
-      load().then(() => toast.push('ok', 'Captions generated.')).catch(() => undefined);
+      load()
+        .then(() => toast.push('ok', 'Captions generated.'))
+        .catch(() => undefined);
     } else if (genTask.status === 'failed' || genTask.status === 'cancelled') {
       setGenerateTaskId(null);
-      toast.push('error', genTask.error ? `${genTask.error.code}: ${genTask.error.message}` : `Generation ${genTask.status}.`);
+      toast.push(
+        'error',
+        genTask.error
+          ? `${genTask.error.code}: ${genTask.error.message}`
+          : `Generation ${genTask.status}.`,
+      );
       load().catch(() => undefined);
     }
   }, [genTask, load, toast]);
@@ -120,7 +147,12 @@ export function EditorView({ projectId }: { projectId: string }) {
       setPreviewTaskId(null);
     } else if (previewTask.status === 'failed' || previewTask.status === 'cancelled') {
       setPreviewTaskId(null);
-      toast.push('error', previewTask.error ? `${previewTask.error.code}: ${previewTask.error.message}` : 'Preview failed.');
+      toast.push(
+        'error',
+        previewTask.error
+          ? `${previewTask.error.code}: ${previewTask.error.message}`
+          : 'Preview failed.',
+      );
     }
   }, [previewTask, previewExports, toast]);
 
@@ -144,7 +176,10 @@ export function EditorView({ projectId }: { projectId: string }) {
     queue.current?.style(patch);
   }, []);
 
-  const onPreset = useCallback((preset: StylePresetId) => sendOps([{ op: 'set_preset', preset }]), [sendOps]);
+  const onPreset = useCallback(
+    (preset: StylePresetId) => sendOps([{ op: 'set_preset', preset }]),
+    [sendOps],
+  );
   const onPosition = useCallback(
     (position: CaptionPosition) => {
       setStyle((prev) => (prev ? { ...prev, position } : prev));
@@ -161,7 +196,11 @@ export function EditorView({ projectId }: { projectId: string }) {
       const res = await api.generateCaptions(projectId, req);
       setGenerateOpen(false);
       setGenerateTaskId(res.task.id);
-      setProject((prev) => (prev ? { ...res.project, transcript: res.project.transcript ?? prev.transcript } : res.project));
+      setProject((prev) =>
+        prev
+          ? { ...res.project, transcript: res.project.transcript ?? prev.transcript }
+          : res.project,
+      );
       queue.current?.resetVersion(res.project.version, false);
     } catch (err) {
       toast.push('error', errorMessage(err));
@@ -173,7 +212,11 @@ export function EditorView({ projectId }: { projectId: string }) {
   const preview = async () => {
     try {
       await queue.current?.flushStyle();
-      const res = await api.createPreview(projectId, { startMs: Math.max(0, timeMs - 500), durationMs: 8000, resolution: '480p' });
+      const res = await api.createPreview(projectId, {
+        startMs: Math.max(0, timeMs - 500),
+        durationMs: 8000,
+        resolution: '480p',
+      });
       setPreviewTaskId(res.task.id);
     } catch (err) {
       toast.push('error', errorMessage(err));
@@ -181,16 +224,24 @@ export function EditorView({ projectId }: { projectId: string }) {
   };
 
   const commitTitle = () => {
-    if (titleDraft !== null && project && titleDraft.trim() && titleDraft.trim() !== project.title) sendOps([{ op: 'set_title', title: titleDraft.trim() }]);
+    if (titleDraft !== null && project && titleDraft.trim() && titleDraft.trim() !== project.title)
+      sendOps([{ op: 'set_title', title: titleDraft.trim() }]);
     setTitleDraft(null);
   };
 
   const pages = project?.pages ?? [];
-  const activePage = useMemo(() => pages.find((p) => timeMs >= p.startMs && timeMs < p.endMs) ?? null, [pages, timeMs]);
-  const selectedPage: CaptionPage | null = useMemo(() => pages.find((p) => p.id === selectedPageId) ?? activePage, [pages, selectedPageId, activePage]);
+  const activePage = useMemo(
+    () => pages.find((p) => timeMs >= p.startMs && timeMs < p.endMs) ?? null,
+    [pages, timeMs],
+  );
+  const selectedPage: CaptionPage | null = useMemo(
+    () => pages.find((p) => p.id === selectedPageId) ?? activePage,
+    [pages, selectedPageId, activePage],
+  );
   const busy = save === 'saving';
 
-  if (!project || !style) return <div className="p-6 text-[13px] text-ink-mute">Loading project…</div>;
+  if (!project || !style)
+    return <div className="p-6 text-[13px] text-ink-mute">Loading project…</div>;
 
   const qa = project.qa;
   const qaErrors = qa?.issues.filter((i) => i.severity === 'error').length ?? 0;
@@ -205,7 +256,12 @@ export function EditorView({ projectId }: { projectId: string }) {
           ← library
         </Link>
         {titleDraft === null ? (
-          <button type="button" onClick={() => setTitleDraft(project.title)} className="max-w-[40vw] truncate text-[20px] font-semibold tracking-[-0.025em] hover:text-signal-soft" title="Rename">
+          <button
+            type="button"
+            onClick={() => setTitleDraft(project.title)}
+            className="max-w-[40vw] truncate text-[20px] font-semibold tracking-[-0.025em] hover:text-signal-soft"
+            title="Rename"
+          >
             {project.title}
           </button>
         ) : (
@@ -226,41 +282,66 @@ export function EditorView({ projectId }: { projectId: string }) {
         <Chip tone={statusTone(project.status)} dot={generating}>
           {titleCase(project.status)}
         </Chip>
-        <span className="mono text-[11px] text-ink-mute" title={project.contentHash}>
-          v{project.version} · {shortHash(project.contentHash)}
-        </span>
         {qa ? (
-          <Chip tone={qaErrors ? 'danger' : qaWarnings ? 'warn' : 'ok'} className="normal-case tracking-normal">
-            {qaErrors ? `${qaErrors} QA errors` : qaWarnings ? `${qaWarnings} QA warnings` : 'QA clean'}
+          <Chip
+            tone={qaErrors ? 'danger' : qaWarnings ? 'warn' : 'ok'}
+            className="normal-case tracking-normal"
+          >
+            {qaErrors
+              ? `${qaErrors} issues to fix`
+              : qaWarnings
+                ? `${qaWarnings} items to review`
+                : 'Ready to preview'}
           </Chip>
         ) : null}
         <span className="flex-1" />
-        <SaveIndicator state={save} version={project.version} onReload={() => load().catch((err) => toast.push('error', errorMessage(err)))} />
-        <Button size="sm" onClick={() => setGenerateOpen(true)} disabled={generating || project.status === 'awaiting_source' || project.status === 'importing'}>
+        <SaveIndicator
+          state={save}
+          onReload={() => load().catch((err) => toast.push('error', errorMessage(err)))}
+        />
+        <Button
+          size="sm"
+          onClick={() => setGenerateOpen(true)}
+          disabled={
+            generating || project.status === 'awaiting_source' || project.status === 'importing'
+          }
+        >
           {hasTranscript ? 'Regenerate' : 'Generate captions'}
         </Button>
-        <Button size="sm" onClick={() => void preview()} disabled={!hasTranscript || isActiveTask(previewTask)} loading={isActiveTask(previewTask)}>
+        <Button
+          size="sm"
+          onClick={() => void preview()}
+          disabled={!hasTranscript || isActiveTask(previewTask)}
+          loading={isActiveTask(previewTask)}
+        >
           Preview 8s
         </Button>
-        <LinkButton href={`/projects/${project.id}/render`} variant="primary" size="sm">
+        <LinkButton href={`/studio/${project.id}/render`} variant="primary" size="sm">
           Export…
         </LinkButton>
       </header>
 
       {generating && genTask ? (
-        <div className="rise flex items-center gap-3 rounded-lg border border-signal/30 bg-signal/5 px-3 py-2 text-[12px]" role="status">
+        <div
+          className="rise flex items-center gap-3 rounded-lg border border-signal/30 bg-signal/5 px-3 py-2 text-[12px]"
+          role="status"
+        >
           <span className="record-dot h-2 w-2 rounded-full bg-signal" />
           <span className="text-ink">Generating captions</span>
           <span className="mono text-ink-mute">{genTask.stage ?? genTask.status}</span>
           <Progress value={genTask.progress} className="flex-1" />
-          <button type="button" className="text-ink-mute hover:text-danger" onClick={() => api.cancelTask(genTask.id).catch(() => undefined)}>
+          <button
+            type="button"
+            className="text-ink-mute hover:text-danger"
+            onClick={() => api.cancelTask(genTask.id).catch(() => undefined)}
+          >
             cancel
           </button>
         </div>
       ) : project.status === 'awaiting_source' ? (
         <div className="rise flex items-center gap-3 rounded-lg border border-warn/30 bg-warn/5 px-3 py-2 text-[12px] text-ink-dim">
           This project has no source yet.
-          <LinkButton href={`/projects/${project.id}/upload`} size="sm">
+          <LinkButton href={`/studio/${project.id}/upload`} size="sm">
             Upload the clip
           </LinkButton>
         </div>
@@ -269,15 +350,30 @@ export function EditorView({ projectId }: { projectId: string }) {
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[300px_minmax(0,1fr)_340px]">
         <section className="rise rise-2 order-1 min-h-[420px] lg:order-2 lg:min-h-0">
           {project.source ? (
-            <VideoStage source={project.source} words={words} pages={pages} style={style} timeMs={timeMs} onTime={setTimeMs} handleRef={stage} />
+            <VideoStage
+              source={project.source}
+              words={words}
+              pages={pages}
+              style={style}
+              timeMs={timeMs}
+              onTime={setTimeMs}
+              handleRef={stage}
+            />
           ) : (
-            <div className="grid h-full place-items-center rounded-[14px] border border-dashed border-line-strong text-[12px] text-ink-mute">No source media.</div>
+            <div className="grid h-full place-items-center rounded-[14px] border border-dashed border-line-strong text-[12px] text-ink-mute">
+              No source media.
+            </div>
           )}
         </section>
 
-        <section className="rise rise-1 order-2 flex max-h-[420px] min-h-0 flex-col overflow-hidden rounded-[14px] border border-line bg-panel/80 lg:order-1 lg:max-h-none" aria-label="Caption pages">
+        <section
+          className="rise rise-1 order-2 flex max-h-[420px] min-h-0 flex-col overflow-hidden rounded-[14px] border border-line bg-panel/80 lg:order-1 lg:max-h-none"
+          aria-label="Caption pages"
+        >
           <header className="flex items-center justify-between border-b border-line px-4 py-2.5">
-            <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-mute">Pages</h2>
+            <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-mute">
+              Pages
+            </h2>
             <span className="mono text-[11px] text-ink-mute">{pages.length}</span>
           </header>
           <PageList
@@ -295,7 +391,10 @@ export function EditorView({ projectId }: { projectId: string }) {
           />
         </section>
 
-        <section className="rise rise-3 order-3 flex max-h-[560px] min-h-0 flex-col overflow-hidden rounded-[14px] border border-line bg-panel/80 lg:max-h-none" aria-label="Inspector">
+        <section
+          className="rise rise-3 order-3 flex max-h-[560px] min-h-0 flex-col overflow-hidden rounded-[14px] border border-line bg-panel/80 lg:max-h-none"
+          aria-label="Inspector"
+        >
           <header className="flex items-center border-b border-line" role="tablist">
             {(['style', 'words'] as const).map((t) => (
               <button
@@ -311,19 +410,48 @@ export function EditorView({ projectId }: { projectId: string }) {
             ))}
           </header>
           {tab === 'style' ? (
-            <StyleInspector style={style} onStyle={onStyle} onPreset={onPreset} onPosition={onPosition} busy={busy} />
+            <StyleInspector
+              style={style}
+              onStyle={onStyle}
+              onPreset={onPreset}
+              onPosition={onPosition}
+              busy={busy}
+            />
           ) : (
-            <WordEditor page={selectedPage} words={words} onOps={sendOps} onSeek={(ms) => stage.current?.seek(ms)} busy={busy} />
+            <WordEditor
+              page={selectedPage}
+              words={words}
+              onOps={sendOps}
+              onSeek={(ms) => stage.current?.seek(ms)}
+              busy={busy}
+            />
           )}
         </section>
       </div>
 
-      <GenerateDialog open={generateOpen} hasTranscript={hasTranscript} onClose={() => setGenerateOpen(false)} onSubmit={generate} busy={generateBusy} />
+      <GenerateDialog
+        open={generateOpen}
+        hasTranscript={hasTranscript}
+        onClose={() => setGenerateOpen(false)}
+        onSubmit={generate}
+        busy={generateBusy}
+      />
 
-      <Dialog open={Boolean(previewUrl)} onClose={() => setPreviewUrl(null)} title="Rendered preview" description="480p render of the current project version — this is what the export pipeline produces." width={720}>
+      <Dialog
+        open={Boolean(previewUrl)}
+        onClose={() => setPreviewUrl(null)}
+        title="Video preview"
+        description="A quick preview of your current captions, style and motion before export."
+        width={720}
+      >
         {previewUrl ? (
           <div className="mt-3 flex flex-col items-center gap-3">
-            <video src={previewUrl} controls autoPlay className="max-h-[60vh] rounded-xl shadow-2xl" />
+            <video
+              src={previewUrl}
+              controls
+              autoPlay
+              className="max-h-[60vh] rounded-xl shadow-2xl"
+            />
             <div className="flex items-center gap-3 text-[12px] text-ink-mute">
               <a href={`${previewUrl}&download=1`} className="text-signal hover:text-signal-soft">
                 Download preview
@@ -337,27 +465,36 @@ export function EditorView({ projectId }: { projectId: string }) {
       </Dialog>
 
       {previewTaskId && previewTask ? (
-        <div className="fixed bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-3 rounded-full border border-line-strong bg-panel-2/95 px-4 py-2 text-[12px] shadow-xl" role="status">
+        <div
+          className="fixed bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-3 rounded-full border border-line-strong bg-panel-2/95 px-4 py-2 text-[12px] shadow-xl"
+          role="status"
+        >
           <span className="record-dot h-2 w-2 rounded-full bg-signal" />
-          Rendering preview · <span className="mono">{previewTask.stage ?? previewTask.status} {previewTask.progress}%</span>
+          Rendering preview ·{' '}
+          <span className="mono">
+            {previewTask.stage ?? previewTask.status} {previewTask.progress}%
+          </span>
         </div>
       ) : null}
     </div>
   );
 }
 
-function SaveIndicator({ state, version, onReload }: { state: SaveState; version: number; onReload: () => void }) {
+function SaveIndicator({ state, onReload }: { state: SaveState; onReload: () => void }) {
   if (state === 'conflict') {
     return (
-      <span className="flex items-center gap-2 rounded-md border border-warn/40 bg-warn/10 px-2 py-1 text-[11px] text-warn" role="alert">
-        Changed elsewhere (agent edit?)
+      <span
+        className="flex items-center gap-2 rounded-md border border-warn/40 bg-warn/10 px-2 py-1 text-[11px] text-warn"
+        role="alert"
+      >
+        Newer changes are available
         <button type="button" onClick={onReload} className="underline hover:text-ink">
-          reload
+          reload them
         </button>
       </span>
     );
   }
   if (state === 'error') return <span className="text-[11px] text-danger">Save failed</span>;
   if (state === 'saving') return <span className="mono text-[11px] text-ink-mute">saving…</span>;
-  return <span className="mono text-[11px] text-ink-mute">saved v{version}</span>;
+  return <span className="mono text-[11px] text-ink-mute">saved</span>;
 }

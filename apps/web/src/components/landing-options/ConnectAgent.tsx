@@ -6,7 +6,10 @@ import { MCP_CLIENTS, McpClientTiles, McpInstallSlot, useMcpClient } from './Mcp
 
 export function ConnectAgent({ standalone = false }: { standalone?: boolean }) {
   const { activeId, choose } = useMcpClient();
-  const active = MCP_CLIENTS.find((item) => item.id === activeId) ?? { id: 'claude', label: 'Claude Code' };
+  const active = MCP_CLIENTS.find((item) => item.id === activeId) ?? {
+    id: 'claude',
+    label: 'Claude Code',
+  };
   const Heading = standalone ? 'h2' : 'h3';
 
   return (
@@ -18,8 +21,11 @@ export function ConnectAgent({ standalone = false }: { standalone?: boolean }) {
       <div className="tg-connect-copy">
         <p className="lo-eyebrow tg-eyebrow">Works with your agent</p>
         <Heading id="tg-connect-title">Add ClipSubtitles to your agent.</Heading>
-        <p>Choose your client, install the server and sign in through your browser. No API key to manage.</p>
-        <Link href="/docs">Read the MCP docs →</Link>
+        <p>
+          Choose your client, install the server and sign in through your browser. No API key to
+          manage.
+        </p>
+        <Link href="/developers">Read the developer guide →</Link>
       </div>
 
       <div className="tg-connect-board">
@@ -35,7 +41,9 @@ export function ConnectAgent({ standalone = false }: { standalone?: boolean }) {
             </div>
             <div>
               <dt>Endpoint</dt>
-              <dd><code className="lo-mono">{MCP_ENDPOINT}</code></dd>
+              <dd>
+                <code className="lo-mono">{MCP_ENDPOINT}</code>
+              </dd>
             </div>
           </dl>
         </div>
