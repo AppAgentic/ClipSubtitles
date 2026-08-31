@@ -4,11 +4,11 @@
 
 Private staging passes the complete customer workflow and the tested security,
 durability, cancellation, idempotency, retention, and horizontal-scale checks.
-Public production remains a **no-go** until the Cloud Run-only ElevenLabs 401
-is resolved or the provider order is deliberately changed, and the production-only infrastructure,
-identity, billing, DNS, monitoring, quota, and broader media/provider acceptance
-gates in `PARKED_ACTIONS.md` are completed. Production was not mutated by this
-run.
+The Cloud Run-only ElevenLabs 401 was resolved by upgrading the workspace to
+Starter and rerunning the identical diagnostic successfully. Public production
+remains a **no-go** until the production-only infrastructure, identity, billing,
+DNS, monitoring, quota, and broader media/provider acceptance gates in
+`PARKED_ACTIONS.md` are completed. Production was not mutated by this run.
 
 ## Environment and provenance
 
@@ -119,21 +119,27 @@ run.
   body, credential, audio, or transcript, and its temporary Cloud Run job was
   deleted after readback. This confirms ElevenLabs' Free-tier shared/datacenter
   IP abuse detector is the deployed-origin blocker.
+- After the ElevenLabs workspace was upgraded to Starter, the identical
+  isolated Cloud Run request returned HTTP 200 with no provider error (trace
+  `8258fe9e4ce516ad35eb328cb8965534`). The one-second in-memory tone correctly
+  produced zero spoken words; this canary proves authorization and provider
+  reachability, not transcription quality. The temporary job was deleted after
+  readback and all three staging services remained Ready.
 
 ## Transcription provider boundary
 
 - Both the original and replacement ElevenLabs secret versions succeed from
   the operator environment with provider-native timed words.
-- Both explicitly pinned secret versions on Cloud Run return a sanitized HTTP
-  401 in roughly 0.25 seconds. Secret trimming, fingerprint comparison,
+- Before the Starter upgrade, both explicitly pinned secret versions on Cloud
+  Run returned a sanitized HTTP 401 in roughly 0.25 seconds. Secret trimming,
+  fingerprint comparison,
   revision readback, explicit version pinning, and a clean key rotation rule
   out stale secret bytes or a defective individual key.
 - Gemini 3.5 Transcribe fallback is proven through the full deployed browser
   flow and produced the accepted render.
-- Therefore Scribe remains the intended primary based on the audio benchmark,
-  but its deployed authorization is a production blocker rather than a hidden
-  fallback assumption. Provider support/account policy or a deliberate routing
-  decision is required before public traffic.
+- Scribe remains the intended primary based on the audio benchmark. Its Cloud
+  Run authorization is now proven on Starter; the remaining provider acceptance
+  step is a real spoken-clip run through the deployed worker.
 
 ## Automated and infrastructure gates
 
