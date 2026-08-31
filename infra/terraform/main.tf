@@ -1,10 +1,11 @@
 locals {
-  name         = "clipsubtitles-${var.environment}"
-  repository   = "clipsubtitles"
-  labels       = { product = "clipsubtitles", environment = var.environment, managed_by = "terraform" }
-  api_image    = "${var.region}-docker.pkg.dev/${var.project_id}/${local.repository}/api:${var.image_tag}"
-  worker_image = "${var.region}-docker.pkg.dev/${var.project_id}/${local.repository}/worker:${var.image_tag}"
-  web_image    = "${var.region}-docker.pkg.dev/${var.project_id}/${local.repository}/web:${var.image_tag}"
+  name                        = "clipsubtitles-${var.environment}"
+  service_account_environment = var.environment == "production" ? "prod" : var.environment
+  repository                  = "clipsubtitles"
+  labels                      = { product = "clipsubtitles", environment = var.environment, managed_by = "terraform" }
+  api_image                   = "${var.region}-docker.pkg.dev/${var.project_id}/${local.repository}/api:${var.image_tag}"
+  worker_image                = "${var.region}-docker.pkg.dev/${var.project_id}/${local.repository}/worker:${var.image_tag}"
+  web_image                   = "${var.region}-docker.pkg.dev/${var.project_id}/${local.repository}/web:${var.image_tag}"
   api_secret_names = toset([
     "auth-local-secret",
     "workos-api-key",
@@ -139,22 +140,22 @@ resource "google_sql_database" "app" {
 }
 
 resource "google_service_account" "api" {
-  account_id   = "clipsubtitles-api-${var.environment}"
+  account_id   = "clipsubtitles-api-${local.service_account_environment}"
   display_name = "ClipSubtitles API (${var.environment})"
 }
 
 resource "google_service_account" "worker" {
-  account_id   = "clipsubtitles-worker-${var.environment}"
+  account_id   = "clipsubtitles-worker-${local.service_account_environment}"
   display_name = "ClipSubtitles render worker (${var.environment})"
 }
 
 resource "google_service_account" "web" {
-  account_id   = "clipsubtitles-web-${var.environment}"
+  account_id   = "clipsubtitles-web-${local.service_account_environment}"
   display_name = "ClipSubtitles web (${var.environment})"
 }
 
 resource "google_service_account" "build" {
-  account_id   = "clipsubtitles-build-${var.environment}"
+  account_id   = "clipsubtitles-build-${local.service_account_environment}"
   display_name = "ClipSubtitles image builder (${var.environment})"
 }
 
@@ -185,12 +186,12 @@ resource "google_service_account_iam_member" "deployer_can_use_build" {
 }
 
 resource "google_service_account" "task_invoker" {
-  account_id   = "clipsubtitles-tasks-${var.environment}"
+  account_id   = "clipsubtitles-tasks-${local.service_account_environment}"
   display_name = "ClipSubtitles Cloud Tasks invoker (${var.environment})"
 }
 
 resource "google_service_account" "scheduler_invoker" {
-  account_id   = "clipsubtitles-maint-${var.environment}"
+  account_id   = "clipsubtitles-maint-${local.service_account_environment}"
   display_name = "ClipSubtitles maintenance scheduler (${var.environment})"
 }
 
