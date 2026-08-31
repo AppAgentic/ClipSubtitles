@@ -125,6 +125,14 @@ DNS, monitoring, quota, and broader media/provider acceptance gates in
   produced zero spoken words; this canary proves authorization and provider
   reachability, not transcription quality. The temporary job was deleted after
   readback and all three staging services remained Ready.
+- Forced task `task_01m1am1kzyx2t84pymsbb8kzer` then regenerated the retained
+  31.77-second real-user staging clip through the normal private worker. It
+  succeeded in one attempt, selected `elevenlabs` / `scribe_v2`, stored 35
+  provider-native words with valid monotonic start/end timings, recorded no
+  fallback, and measured a 653 ms provider call. The resulting first word began
+  at 119 ms and the final spoken word ended at 13,319 ms, both within the source
+  duration. The temporary database-scoped acceptance job was deleted after
+  readback and all three staging services remained Ready.
 
 ## Transcription provider boundary
 
@@ -138,8 +146,9 @@ DNS, monitoring, quota, and broader media/provider acceptance gates in
 - Gemini 3.5 Transcribe fallback is proven through the full deployed browser
   flow and produced the accepted render.
 - Scribe remains the intended primary based on the audio benchmark. Its Cloud
-  Run authorization is now proven on Starter; the remaining provider acceptance
-  step is a real spoken-clip run through the deployed worker.
+  Run authorization and real spoken-clip execution are now proven on Starter
+  through the deployed worker, with stored provider/model provenance and native
+  word timings.
 
 ## Automated and infrastructure gates
 

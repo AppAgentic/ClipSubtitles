@@ -34,8 +34,12 @@ directory submissions, and billing remain untouched.
   Starter, the identical Cloud Run diagnostic returned HTTP 200 with no
   provider error (trace `8258fe9e4ce516ad35eb328cb8965534`). Both temporary
   diagnostic jobs were deleted immediately after readback. This resolves the
-  deployed Scribe origin gate; a real spoken-clip worker run remains acceptance
-  coverage rather than an external blocker.
+  deployed Scribe origin gate. Forced task
+  `task_01m1am1kzyx2t84pymsbb8kzer` then processed the retained 31.77-second
+  real-user staging clip through the normal private worker in one attempt. It
+  stored 35 native `scribe_v2` words with valid monotonic timings, no fallback,
+  and a 653 ms provider call. The temporary acceptance job was deleted and all
+  three staging services remained Ready.
 - Private staging is operational: API, web, and worker revisions are Ready;
   API/web use the Cloud Run invoker-IAM-check disable supported under the
   organisation's domain-restricted-sharing policy; the worker accepts only the
