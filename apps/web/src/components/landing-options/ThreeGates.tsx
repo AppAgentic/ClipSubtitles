@@ -1,8 +1,8 @@
 import Link from 'next/link';
-import { OUTPUTS, SAMPLE } from './facts';
 import { GatesStory } from './GatesStory';
+import { HeroCaptionVideo } from './HeroCaptionVideo';
 import { OptionSwitcher } from './OptionSwitcher';
-import { CaptionFrame, PAGE_ONE, StyleBoard } from './StyleBoard';
+import { StyleBoard } from './StyleBoard';
 import { SITE_URL } from '@/components/marketing/seo-pages';
 import { FootageReel } from '@/components/marketing/FootageReel';
 import { ConnectAgent } from './ConnectAgent';
@@ -116,32 +116,7 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
           </div>
 
           <div className="tg-hero-proof">
-            <div aria-hidden="true">
-              <CaptionFrame
-                style="bold-pop"
-                motion="none"
-                words={PAGE_ONE}
-                readout={`00:00 · ${SAMPLE.title}`}
-                className="tg-frame-hero"
-                priority
-              />
-            </div>
-            <dl className="tg-hero-meta">
-              <div>
-                <dt className="lo-eyebrow">Sample</dt>
-                <dd>{SAMPLE.title} · 24 s vertical · Bold Pop</dd>
-              </div>
-              <div>
-                <dt className="lo-eyebrow">Exports</dt>
-                <dd>
-                  <ul className="tg-formats lo-mono">
-                    {OUTPUTS.map((o) => (
-                      <li key={o.kind}>{o.label}</li>
-                    ))}
-                  </ul>
-                </dd>
-              </div>
-            </dl>
+            <HeroCaptionVideo />
           </div>
         </section>
 
