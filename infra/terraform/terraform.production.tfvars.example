@@ -1,0 +1,27 @@
+project_id              = "clipsubtitles-production"
+environment             = "production"
+deploy_services         = false
+allow_unauthenticated   = false
+image_tag               = "replace-with-immutable-release-tag"
+runtime_config_revision = "production-initial"
+
+api_public_url = "https://api.clipsubtitles.com"
+web_public_url = "https://clipsubtitles.com"
+
+# Set this to the private Cloud Run worker URI only after the base resources
+# exist and before deploy_services is enabled.
+worker_public_url = ""
+
+transcription_providers = "elevenlabs,gemini"
+elevenlabs_scribe_model = "scribe_v2"
+gemini_transcribe_model = "gemini-3.5-transcribe"
+
+object_store_driver = "r2"
+r2_bucket            = "clipsubtitles-media-production"
+r2_endpoint          = "https://replace-with-account-id.r2.cloudflarestorage.com"
+
+# Conservative launch limits. Increase only from measured queue latency and
+# provider quota, never by changing the application contract.
+database_tier       = "db-g1-small"
+worker_max_instances = 4
+api_max_instances    = 10

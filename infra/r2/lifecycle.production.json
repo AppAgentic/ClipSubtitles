@@ -1,0 +1,17 @@
+{
+  "rules": [
+    {
+      "id": "clipsubtitles-abandoned-production",
+      "enabled": true,
+      "conditions": {
+        "prefix": "staging/"
+      },
+      "deleteObjectsTransition": {
+        "condition": {
+          "type": "Age",
+          "maxAge": 86400
+        }
+      }
+    }
+  ]
+}
