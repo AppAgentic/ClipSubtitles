@@ -9,6 +9,7 @@ import type {
 import { STYLE_PRESETS } from '@clipsubtitles/core';
 import { Dialog } from '@/components/ui/Dialog';
 import { Button, Field, Segmented, TextInput } from '@/components/ui/primitives';
+import { PRESET_BLURBS, StylePresetVideo } from './StylePresetVideo';
 
 function newKey(): string {
   return `web-gen-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -59,24 +60,48 @@ export function GenerateDialog({
     }
   };
 
+  const choosePreset = (next: StylePresetId) => {
+    setPreset(next);
+    setPosition(STYLE_PRESETS[next].position);
+  };
+
   return (
     <Dialog
       open={open}
       onClose={() => !busy && onClose()}
       title={hasTranscript ? 'Regenerate captions' : 'Generate captions'}
       description={`ClipSubtitles creates timed captions from the speech in your video. Add names or specialist terms below to help recognition.${hasTranscript ? ' Creating them again replaces the current captions while keeping the earlier version available for recovery.' : ''}`}
+      width={660}
     >
       <div className="mt-4 flex flex-col gap-4">
         <Field label="Style preset">
-          <Segmented<StylePresetId>
-            value={preset}
-            onChange={setPreset}
-            size="sm"
-            options={(Object.keys(STYLE_PRESETS) as StylePresetId[]).map((id) => ({
-              value: id,
-              label: id.replace('-', ' '),
-            }))}
-          />
+          <div className="flex snap-x gap-2 overflow-x-auto pb-2">
+            {(Object.keys(STYLE_PRESETS) as StylePresetId[]).map((id) => {
+              const active = preset === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  disabled={busy}
+                  aria-pressed={active}
+                  onClick={() => choosePreset(id)}
+                  className={`w-40 shrink-0 snap-start overflow-hidden rounded-[18px] border p-1.5 text-left [corner-shape:squircle] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal ${active ? 'border-signal bg-signal/10' : 'border-line-strong hover:border-ink-mute'}`}
+                >
+                  <StylePresetVideo
+                    preset={id}
+                    active={active}
+                    className="aspect-video rounded-[13px] [corner-shape:squircle]"
+                  />
+                  <strong className="mt-2 block px-1 text-[12px] capitalize text-ink">
+                    {id.replaceAll('-', ' ')}
+                  </strong>
+                  <span className="block px-1 pb-1 text-[10px] text-ink-mute">
+                    {PRESET_BLURBS[id]}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </Field>
         <Field label="Position">
           <Segmented<CaptionPosition>

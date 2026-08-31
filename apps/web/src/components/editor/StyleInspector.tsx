@@ -10,22 +10,7 @@ import type {
 } from '@clipsubtitles/contracts';
 import { STYLE_PRESETS } from '@clipsubtitles/core';
 import { Field, Segmented, Slider, Toggle } from '@/components/ui/primitives';
-
-const PRESET_BLURBS: Record<StylePresetId, string> = {
-  clean: 'Bold, centred, soft shadow',
-  'bold-pop': 'Punchy highlight, lower third',
-  'lower-third': 'Left-aligned on a plate',
-  karaoke: 'Word-by-word highlight',
-  minimal: 'Small, single line, plate',
-  'viral-beast': 'Condensed, fast, high-energy',
-  'submagic-pop': 'Rounded pop with lime focus',
-  'smooth-pill': 'Fluid purple active pill',
-  'editorial-serif': 'Warm premium serif',
-  'neon-box': 'Cyan monospace glow',
-  'kinetic-flow': 'Top-led flowing highlight',
-  'retro-arcade': 'Pixel-like green terminal',
-  documentary: 'Quiet cinematic lower third',
-};
+import { PRESET_BLURBS, StylePresetVideo } from './StylePresetVideo';
 
 function rgb(hex: string): string {
   return hex.slice(0, 7);
@@ -64,7 +49,6 @@ export function StyleInspector({
         </div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {(Object.keys(STYLE_PRESETS) as StylePresetId[]).map((id) => {
-            const p = STYLE_PRESETS[id];
             const active = style.preset === id;
             return (
               <button
@@ -75,21 +59,11 @@ export function StyleInspector({
                 aria-pressed={active}
                 className={`group overflow-hidden rounded-[20px] border p-1.5 text-left transition-[border,background,transform] active:scale-[0.985] [corner-shape:squircle] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal ${active ? 'border-signal bg-signal/10' : 'border-line-strong hover:border-ink-mute'}`}
               >
-                <div
-                  className="grid aspect-[16/9] place-items-end overflow-hidden rounded-[15px] bg-black p-3 text-center [corner-shape:squircle]"
-                  style={{
-                    fontFamily: `"${p.fontFamily}", sans-serif`,
-                    fontWeight: p.fontWeight,
-                    fontSize: 14,
-                    textTransform: p.textTransform === 'uppercase' ? 'uppercase' : 'none',
-                    color: p.textColor,
-                    WebkitTextStroke:
-                      p.stroke.widthPct > 0 ? `0.6px ${rgb(p.stroke.color)}` : undefined,
-                    paintOrder: 'stroke fill',
-                  }}
-                >
-                  A few steps reset the mind
-                </div>
+                <StylePresetVideo
+                  preset={id}
+                  active={active}
+                  className="aspect-video rounded-[15px] [corner-shape:squircle]"
+                />
                 <div className="flex items-start justify-between gap-2 px-1 pb-1 pt-2">
                   <span>
                     <strong className="block text-[12px] capitalize text-ink">

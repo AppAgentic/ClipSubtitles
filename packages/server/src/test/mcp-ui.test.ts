@@ -32,14 +32,17 @@ describe('ChatGPT widget UI', () => {
     expect(html).toContain('Open fullscreen');
   });
 
-  it('compares styles explicitly without custom gradients or automatic preview messages', () => {
+  it('compares styles with bounded real-motion previews', () => {
     const html = widgetHtmlForPreview('styles', 'https://clipsubtitles.com', {
       project,
       presets: [{ preset: 'minimal' }, { preset: 'clean' }],
     });
     expect(html).not.toContain('linear-gradient');
     expect(html).not.toContain('radial-gradient');
-    expect(html).toContain('Preview this style');
+    expect(html).toContain('Preview on my video');
+    expect(html).toContain("document.createElement('video')");
+    expect(html).toContain("media.preload=active?'metadata':'none'");
+    expect(html).toContain('/marketing/style-previews/ui-');
     expect(html).toContain("document.getElementById('preview-style').onclick");
   });
 });

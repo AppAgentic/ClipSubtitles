@@ -1,73 +1,63 @@
 /**
  * Build the landing-page style previews with the production caption renderer.
  *
- * Every output uses the same source frame and word timings so only the selected
- * style/motion changes. The browser loads one compact MP4 at a time; these are
- * deliberately video assets rather than GIFs for smoother playback and much
- * smaller transfers.
+ * Landing outputs use the same genuinely moving source clip and word timings so
+ * only the selected style/motion changes. Product pickers use a second text-only
+ * stage: users can compare typography and animation without a backing video
+ * competing with the treatment. Each UI only plays the selected or hovered MP4;
+ * posters keep the full picker grid cheap to display.
  *
  *   pnpm --filter @clipsubtitles/render previews:styles
  */
 import { copyFile, mkdir, rm } from 'node:fs/promises';
 import path from 'node:path';
+import type { MotionPreset, StylePresetId } from '@clipsubtitles/contracts';
 import {
+  STYLE_PRESETS,
   createCaptionState,
   deterministicId,
   normalizeWords,
   stylePreset,
 } from '@clipsubtitles/core';
-import { resolveRepoRoot, runTool } from '@clipsubtitles/transcription';
+import { probeMedia, resolveRepoRoot, runTool } from '@clipsubtitles/transcription';
 import { FfmpegCompositeRenderer } from '../renderer';
 
-const STYLES = ['clean', 'bold-pop', 'lower-third', 'karaoke', 'minimal'] as const;
-const MOTIONS = ['none', 'soft-rise', 'spring-pop', 'karaoke-slide'] as const;
-const DEFAULT_MOTION = {
-  clean: 'soft-rise',
-  'bold-pop': 'spring-pop',
-  'lower-third': 'soft-rise',
-  karaoke: 'karaoke-slide',
-  minimal: 'soft-rise',
-} as const;
+const STYLES = Object.keys(STYLE_PRESETS) as StylePresetId[];
+const MOTIONS: MotionPreset[] = ['none', 'soft-rise', 'spring-pop', 'karaoke-slide'];
 
 const DURATION_MS = 3_200;
 const FPS = 30;
 
 async function main(): Promise<void> {
   const root = resolveRepoRoot();
-  const sourceImage = path.join(root, 'apps', 'web', 'public', 'marketing', 'creator-studio.webp');
+  const sourcePath = path.join(root, 'fixtures', 'marketing', 'style-preview-master.mp4');
   const publicDir = path.join(root, 'apps', 'web', 'public', 'marketing', 'style-previews');
   const workRoot = path.join(root, '.data', 'style-previews');
-  const sourcePath = path.join(workRoot, 'creator-master.mp4');
+  const uiSourcePath = path.join(workRoot, 'ui-text-stage.mp4');
 
   await rm(workRoot, { recursive: true, force: true });
+  await rm(publicDir, { recursive: true, force: true });
   await mkdir(workRoot, { recursive: true });
   await mkdir(publicDir, { recursive: true });
-
+  const source = await probeMedia(sourcePath);
   await runTool('ffmpeg', [
     '-hide_banner',
     '-nostdin',
     '-y',
-    '-loop',
-    '1',
+    '-f',
+    'lavfi',
     '-i',
-    sourceImage,
-    '-t',
-    String(DURATION_MS / 1000),
-    '-vf',
-    'scale=360:640:force_original_aspect_ratio=increase,crop=360:640,format=yuv420p',
-    '-r',
-    String(FPS),
+    `color=c=0x0A0B0D:s=640x360:r=${FPS}:d=${DURATION_MS / 1000}`,
     '-an',
     '-c:v',
     'libx264',
     '-preset',
-    'medium',
-    '-crf',
-    '25',
-    '-movflags',
-    '+faststart',
-    sourcePath,
+    'veryfast',
+    '-pix_fmt',
+    'yuv420p',
+    uiSourcePath,
   ]);
+  const uiSource = await probeMedia(uiSourcePath);
 
   const words = normalizeWords(
     [
@@ -100,11 +90,11 @@ async function main(): Promise<void> {
       const rendered = await renderer.renderPreview({
         source: {
           path: sourcePath,
-          width: 360,
-          height: 640,
-          durationMs: DURATION_MS,
-          fps: FPS,
-          hasAudio: false,
+          width: source.width ?? 360,
+          height: source.height ?? 640,
+          durationMs: source.durationMs,
+          fps: source.fps ?? FPS,
+          hasAudio: source.hasAudio,
         },
         content: {
           words: state.words,
@@ -124,7 +114,63 @@ async function main(): Promise<void> {
       process.stdout.write(`rendered ${path.relative(root, destination)}\n`);
     }
 
-    const posterSource = path.join(publicDir, `${styleId}--${DEFAULT_MOTION[styleId]}.mp4`);
+    const uiPreset = stylePreset(styleId);
+    const uiState = createCaptionState({
+      title: `${styleId} picker preview`,
+      words,
+      style: {
+        ...uiPreset,
+        fontSizePct: Math.max(uiPreset.fontSizePct, 0.1),
+        maxCharsPerLine: Math.min(uiPreset.maxCharsPerLine, 16),
+      },
+      revisionSeed: `style-picker-preview:${styleId}`,
+      language: 'en',
+    });
+    const uiWorkDir = path.join(workRoot, `ui-${styleId}`);
+    const uiRendered = await renderer.renderPreview({
+      source: {
+        path: uiSourcePath,
+        width: uiSource.width ?? 640,
+        height: uiSource.height ?? 360,
+        durationMs: uiSource.durationMs,
+        fps: uiSource.fps ?? FPS,
+        hasAudio: false,
+      },
+      content: {
+        words: uiState.words,
+        pages: uiState.pages,
+        style: uiState.style,
+        projectVersion: 1,
+        contentHash: `style-picker-preview:${styleId}`,
+      },
+      startMs: 0,
+      durationMs: DURATION_MS,
+      resolution: '360p',
+      workDir: uiWorkDir,
+      baseName: `ui-${styleId}`,
+    });
+    const uiDestination = path.join(publicDir, `ui-${styleId}.mp4`);
+    await copyFile(uiRendered.path, uiDestination);
+    await runTool('ffmpeg', [
+      '-hide_banner',
+      '-nostdin',
+      '-y',
+      '-ss',
+      '1.0',
+      '-i',
+      uiDestination,
+      '-frames:v',
+      '1',
+      '-q:v',
+      '3',
+      path.join(publicDir, `ui-${styleId}.jpg`),
+    ]);
+    process.stdout.write(`rendered ${path.relative(root, uiDestination)}\n`);
+
+    const posterSource = path.join(
+      publicDir,
+      `${styleId}--${STYLE_PRESETS[styleId].motion.preset}.mp4`,
+    );
     await runTool('ffmpeg', [
       '-hide_banner',
       '-nostdin',
