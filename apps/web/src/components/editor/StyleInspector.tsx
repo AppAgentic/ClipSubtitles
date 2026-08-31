@@ -62,7 +62,7 @@ export function StyleInspector({
         <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.12em] text-ink-mute">
           Preset
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {(Object.keys(STYLE_PRESETS) as StylePresetId[]).map((id) => {
             const p = STYLE_PRESETS[id];
             const active = style.preset === id;
@@ -72,14 +72,15 @@ export function StyleInspector({
                 type="button"
                 disabled={busy}
                 onClick={() => onPreset(id)}
-                className={`rounded-lg border px-2.5 py-2 text-left transition-colors ${active ? 'border-signal bg-signal/10' : 'border-line-strong hover:border-ink-mute'}`}
+                aria-pressed={active}
+                className={`group overflow-hidden rounded-xl border p-1.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal ${active ? 'border-signal bg-signal/10' : 'border-line-strong hover:border-ink-mute'}`}
               >
                 <div
-                  className="truncate"
+                  className="grid aspect-[16/9] place-items-end overflow-hidden rounded-lg bg-[#24211f] p-3 text-center"
                   style={{
                     fontFamily: `"${p.fontFamily}", sans-serif`,
                     fontWeight: p.fontWeight,
-                    fontSize: 13,
+                    fontSize: 14,
                     textTransform: p.textTransform === 'uppercase' ? 'uppercase' : 'none',
                     color: p.textColor,
                     WebkitTextStroke:
@@ -87,9 +88,23 @@ export function StyleInspector({
                     paintOrder: 'stroke fill',
                   }}
                 >
-                  {id.replaceAll('-', ' ')}
+                  A few steps reset the mind
                 </div>
-                <div className="mt-0.5 text-[10px] text-ink-mute">{PRESET_BLURBS[id]}</div>
+                <div className="flex items-start justify-between gap-2 px-1 pb-1 pt-2">
+                  <span>
+                    <strong className="block text-[12px] capitalize text-ink">
+                      {id.replaceAll('-', ' ')}
+                    </strong>
+                    <span className="mt-0.5 block text-[10px] text-ink-mute">
+                      {PRESET_BLURBS[id]}
+                    </span>
+                  </span>
+                  {active ? (
+                    <span className="text-[12px] text-signal" aria-hidden>
+                      ✓
+                    </span>
+                  ) : null}
+                </div>
               </button>
             );
           })}

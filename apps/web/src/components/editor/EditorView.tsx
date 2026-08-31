@@ -46,7 +46,7 @@ export function EditorView({ projectId }: { projectId: string }) {
   const [save, setSave] = useState<SaveState>('idle');
   const [timeMs, setTimeMs] = useState(0);
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
-  const [tab, setTab] = useState<'style' | 'words'>('style');
+  const [tab, setTab] = useState<'style' | 'words'>('words');
   const [generateOpen, setGenerateOpen] = useState(false);
   const [generateBusy, setGenerateBusy] = useState(false);
   const [generateTaskId, setGenerateTaskId] = useState<string | null>(null);
@@ -372,7 +372,7 @@ export function EditorView({ projectId }: { projectId: string }) {
         >
           <header className="flex items-center justify-between border-b border-line px-4 py-2.5">
             <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-mute">
-              Pages
+              Caption scenes
             </h2>
             <span className="mono text-[11px] text-ink-mute">{pages.length}</span>
           </header>
@@ -405,7 +405,7 @@ export function EditorView({ projectId }: { projectId: string }) {
                 onClick={() => setTab(t)}
                 className={`flex-1 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] transition-colors ${tab === t ? 'text-ink' : 'text-ink-mute hover:text-ink-dim'}`}
               >
-                {t}
+                {t === 'words' ? 'Correct words' : 'Style'}
               </button>
             ))}
           </header>
