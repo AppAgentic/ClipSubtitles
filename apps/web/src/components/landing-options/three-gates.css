@@ -718,6 +718,41 @@
   justify-items: center;
 }
 
+[data-lo='three-gates'] .tg-board-stage > .tg-style-preview-shell {
+  position: relative;
+  width: min(100%, 250px);
+  aspect-ratio: 9 / 16;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 18px;
+  background: var(--tg-screen);
+  box-shadow: 0 18px 60px rgb(0 0 0 / 0.18);
+}
+
+[data-lo='three-gates'] .tg-style-preview-video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+[data-lo='three-gates'] .tg-style-preview-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 6px 9px;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  border-radius: 999px;
+  background: rgb(8 9 12 / 0.68);
+  color: rgb(255 255 255 / 0.82);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  pointer-events: none;
+}
+
 [data-lo='three-gates'] .tg-replay {
   display: inline-flex;
   align-items: center;
@@ -1574,6 +1609,9 @@
     border-radius: 20px;
   }
   [data-lo='three-gates'] .tg-frame-board {
+    width: min(100%, 200px);
+  }
+  [data-lo='three-gates'] .tg-board-stage > .tg-style-preview-shell {
     width: min(100%, 200px);
   }
   [data-lo='three-gates'] .tg-related ul {

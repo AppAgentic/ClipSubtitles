@@ -14,6 +14,7 @@
     "typecheck": "tsc -p tsconfig.json",
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
+    "previews:styles": "tsx src/bin/style-preview-assets.ts",
     "smoke": "tsx src/bin/smoke.ts"
   },
   "dependencies": {

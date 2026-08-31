@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { MOTION_PRESETS, SAMPLE, STYLE_PRESETS, wordsForPage } from './facts';
 
 export type StyleId = (typeof STYLE_PRESETS)[number];
@@ -75,7 +75,13 @@ export function CaptionFrame({
   return (
     <div className={`tg-frame ${className}`.trim()} data-style={style} data-motion={motion}>
       <div className="tg-frame-video">
-        <Image src={image} alt="" fill sizes="(max-width: 860px) 220px, 300px" priority={priority} />
+        <Image
+          src={image}
+          alt=""
+          fill
+          sizes="(max-width: 860px) 220px, 300px"
+          priority={priority}
+        />
       </div>
       {readout ? <span className="tg-frame-readout lo-mono">{readout}</span> : null}
       <p key={runKey} className="tg-cap lo-cap">
@@ -104,36 +110,65 @@ export function CaptionFrame({
 export function StyleBoard() {
   const [style, setStyle] = useState<StyleId>('bold-pop');
   const [motion, setMotion] = useState<MotionId>('spring-pop');
-  const [run, setRun] = useState(0);
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const previewSrc = `/marketing/style-previews/${style}--${motion}.mp4`;
+  const posterSrc = `/marketing/style-previews/${style}.jpg`;
+
+  useEffect(() => {
+    setReduceMotion(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  }, []);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (reduceMotion) {
+      video.pause();
+      return;
+    }
+    void video.play().catch(() => undefined);
+  }, [previewSrc, reduceMotion]);
 
   const pickStyle = (next: StyleId) => {
     setStyle(next);
     setMotion(DEFAULT_MOTION[next]);
-    setRun((r) => r + 1);
   };
   const pickMotion = (next: MotionId) => {
     setMotion(next);
-    setRun((r) => r + 1);
+  };
+
+  const replay = () => {
+    const video = videoRef.current;
+    if (!video || reduceMotion) return;
+    video.currentTime = 0;
+    void video.play().catch(() => undefined);
   };
 
   return (
     <div className="tg-board">
       <div className="tg-board-stage">
-        <div aria-hidden="true">
-          <CaptionFrame
-            style={style}
-            motion={motion}
-            words={PAGE_ONE}
-            readout="00:00 · preview"
-            runKey={run}
-            className="tg-frame-board"
+        <div className="tg-style-preview-shell">
+          <video
+            key={previewSrc}
+            ref={videoRef}
+            className="tg-style-preview-video"
+            src={previewSrc}
+            poster={posterSrc}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            aria-label={`${STYLE_LABELS[style]} captions with ${MOTION_LABELS[motion]} motion, rendered by ClipSubtitles`}
           />
+          <span className="tg-style-preview-badge lo-mono">Rendered preview</span>
         </div>
         <p className="lo-sr" aria-live="polite">
           Previewing {STYLE_LABELS[style]} with {MOTION_LABELS[motion]} motion.
         </p>
-        <button type="button" className="tg-replay lo-mono" onClick={() => setRun((r) => r + 1)}>
-          ↻ Replay motion
+        <button type="button" className="tg-replay lo-mono" onClick={replay}>
+          ↻ Replay rendered motion
         </button>
         <p className="tg-rm-note">
           Motion is shown at its end state because your system prefers reduced motion.
