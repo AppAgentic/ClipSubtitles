@@ -9,6 +9,7 @@ import {
   type CreateProjectResponse,
   type CreditBalance,
   type BillingOverview,
+  type BillingManagementSession,
   type CheckoutSession,
   type CreateCheckoutRequest,
   type ErrorCode,
@@ -69,6 +70,7 @@ export const api = {
   updateWorkspace: (body: { name?: string; retention?: { sourceDays?: number; exportDays?: number } }) => request<Workspace>('/v1/workspace', { method: 'PATCH', body: JSON.stringify(body) }),
   credits: () => request<CreditBalance>('/v1/credits'),
   billing: () => request<BillingOverview>('/v1/billing'),
+  billingManagement: () => request<BillingManagementSession>('/v1/billing/manage', { method: 'POST' }),
   createCheckout: (body: CreateCheckoutRequest) => request<CheckoutSession>('/v1/billing/checkout', {
     method: 'POST',
     headers: { 'idempotency-key': `web-${Date.now()}-${Math.random().toString(36).slice(2)}` },

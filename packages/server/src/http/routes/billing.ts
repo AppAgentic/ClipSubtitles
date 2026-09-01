@@ -2,13 +2,14 @@ import { createRoute, z } from '@hono/zod-openapi';
 import {
   BILLING_CATALOG,
   BillingCatalogSchema,
+  BillingManagementSessionSchema,
   BillingOverviewSchema,
   CheckoutSessionSchema,
   CreateCheckoutRequestSchema,
 } from '@clipsubtitles/contracts';
 import { authenticate, principalKey, rateLimit, requireScope } from '../../auth/middleware';
 import type { AppContext } from '../../context';
-import { billingOverview, createCheckout, processBillingWebhook } from '../../services/billing';
+import { billingManagementUrl, billingOverview, createCheckout, processBillingWebhook } from '../../services/billing';
 import { SECURITY, errorResponses, jsonBody, jsonResponse, type Api } from '../openapi';
 
 export function registerBillingRoutes(api: Api, ctx: AppContext): void {
@@ -66,6 +67,19 @@ export function registerBillingRoutes(api: Api, ctx: AppContext): void {
         idempotencyKey: headers['idempotency-key'] ?? `${c.get('requestId')}:${body.sku}`,
       }), 200);
     },
+  );
+
+  api.openapi(
+    createRoute({
+      method: 'post',
+      path: '/v1/billing/manage',
+      tags: ['Billing'],
+      summary: 'Open the provider-hosted subscription management portal',
+      security: SECURITY,
+      middleware: [auth, limited, requireScope('captions:write')] as const,
+      responses: { 200: jsonResponse(BillingManagementSessionSchema, 'Subscription management destination'), ...errorResponses('CONFLICT', 'PROVIDER_UNAVAILABLE') },
+    }),
+    async (c) => c.json(await billingManagementUrl(ctx, c.get('principal').workspaceId), 200),
   );
 
   api.post('/v1/billing/webhooks/whop', async (c) => {

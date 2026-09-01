@@ -13,7 +13,7 @@ const FEATURES: Record<string, string[]> = {
 };
 
 export function PricingSection({ compact = false }: { compact?: boolean }) {
-  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('annual');
 
   return (
     <section id="pricing" className={`tg-pricing lo-wrap${compact ? ' is-compact' : ''}`} aria-labelledby="tg-pricing-title">

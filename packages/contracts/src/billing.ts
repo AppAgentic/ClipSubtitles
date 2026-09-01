@@ -234,6 +234,9 @@ export const BillingOverviewSchema = z.object({
 });
 export type BillingOverview = z.infer<typeof BillingOverviewSchema>;
 
+export const BillingManagementSessionSchema = z.object({ url: z.url() });
+export type BillingManagementSession = z.infer<typeof BillingManagementSessionSchema>;
+
 export const CheckoutSourceSchema = z.enum(['web', 'chatgpt', 'claude', 'codex', 'agent']);
 export type CheckoutSource = z.infer<typeof CheckoutSourceSchema>;
 

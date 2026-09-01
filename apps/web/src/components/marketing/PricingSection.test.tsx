@@ -11,12 +11,6 @@ describe('PricingSection', () => {
 
     const monthly = screen.getByRole('button', { name: 'Monthly' });
     const annual = screen.getByRole('button', { name: 'Annual Save up to 20%' });
-    expect(monthly.getAttribute('aria-pressed')).toBe('true');
-    expect(annual.getAttribute('aria-pressed')).toBe('false');
-    expect(screen.getByText('$39')).toBeTruthy();
-
-    fireEvent.click(annual);
-
     expect(monthly.getAttribute('aria-pressed')).toBe('false');
     expect(annual.getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByText('$12')).toBeTruthy();
@@ -26,5 +20,10 @@ describe('PricingSection', () => {
     expect(screen.getByText('Billed $396 annually · Includes 12,000 credits for the year.')).toBeTruthy();
     expect(screen.getByText('Billed $1,008 annually · Includes 36,000 credits for the year.')).toBeTruthy();
     expect(screen.getAllByText('Agent and API access')).toHaveLength(4);
+
+    fireEvent.click(monthly);
+    expect(monthly.getAttribute('aria-pressed')).toBe('true');
+    expect(annual.getAttribute('aria-pressed')).toBe('false');
+    expect(screen.getByText('$39')).toBeTruthy();
   });
 });

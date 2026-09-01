@@ -25,6 +25,10 @@ class FakeBillingProvider implements BillingProvider {
     return { id: 'checkout_test_1', url: 'https://checkout.example.test/session', sku: input.sku };
   }
 
+  async managementUrl(providerSubscriptionId: string): Promise<string> {
+    return `https://whop.com/billing/manage/${providerSubscriptionId}`;
+  }
+
   verifyWebhook(): BillingWebhook {
     return this.event;
   }
@@ -157,5 +161,78 @@ describe('billing checkout and webhook lifecycle', () => {
       expect.objectContaining({ kind: 'subscription', available: 3_600, expiresAt: '2027-11-01T12:01:00.000Z' }),
       expect.objectContaining({ kind: 'free', available: 10 }),
     ]));
+  });
+
+  it('returns a paid workspace membership management destination', async () => {
+    const unavailable = await h.api<{ error: { code: string } }>('POST', '/v1/billing/manage', { token });
+    expect(unavailable).toMatchObject({ status: 409, body: { error: { code: 'CONFLICT' } } });
+
+    billing.event = {
+      id: 'evt_manage_plan_1',
+      type: 'payment.succeeded',
+      occurredAt: '2026-09-01T12:01:00.000Z',
+      data: {
+        metadata: { workspace_id: workspaceId, sku: 'plan_pro_annual' },
+        membership_id: 'membership_manage_test',
+      },
+    };
+    await h.api('POST', '/v1/billing/webhooks/whop', {
+      raw: '{}',
+      headers: {
+        'webhook-id': 'evt_manage_plan_1',
+        'webhook-timestamp': '1788260460',
+        'webhook-signature': 'test-signature',
+      },
+    });
+    const result = await h.api<{ url: string }>('POST', '/v1/billing/manage', { token });
+    expect(result).toMatchObject({
+      status: 200,
+      body: { url: 'https://whop.com/billing/manage/membership_manage_test' },
+    });
+  });
+
+  it('reflects scheduled cancellation and membership deactivation in the dashboard overview', async () => {
+    billing.event = {
+      id: 'evt_membership_active_1',
+      type: 'membership.activated',
+      occurredAt: '2026-09-01T12:01:00.000Z',
+      data: {
+        metadata: { workspace_id: workspaceId, sku: 'plan_creator_annual' },
+        id: 'membership_cancel_test',
+        status: 'active',
+        renewal_period_end: '2027-09-01T12:01:00.000Z',
+        cancel_at_period_end: false,
+      },
+    };
+    await h.api('POST', '/v1/billing/webhooks/whop', {
+      raw: '{}',
+      headers: { 'webhook-id': 'evt_membership_active_1', 'webhook-timestamp': '1788260460', 'webhook-signature': 'test-signature' },
+    });
+
+    billing.event = {
+      ...billing.event,
+      id: 'evt_membership_cancel_1',
+      type: 'membership.cancel_at_period_end_changed',
+      data: { ...billing.event.data, cancel_at_period_end: true },
+    };
+    await h.api('POST', '/v1/billing/webhooks/whop', {
+      raw: '{}',
+      headers: { 'webhook-id': 'evt_membership_cancel_1', 'webhook-timestamp': '1788260520', 'webhook-signature': 'test-signature' },
+    });
+    let overview = await h.api<{ status: string; cancelAtPeriodEnd: boolean }>('GET', '/v1/billing', { token });
+    expect(overview.body).toMatchObject({ status: 'active', cancelAtPeriodEnd: true });
+
+    billing.event = {
+      ...billing.event,
+      id: 'evt_membership_deactivated_1',
+      type: 'membership.deactivated',
+      data: { ...billing.event.data, status: 'canceled' },
+    };
+    await h.api('POST', '/v1/billing/webhooks/whop', {
+      raw: '{}',
+      headers: { 'webhook-id': 'evt_membership_deactivated_1', 'webhook-timestamp': '1788260580', 'webhook-signature': 'test-signature' },
+    });
+    overview = await h.api<{ status: string; cancelAtPeriodEnd: boolean }>('GET', '/v1/billing', { token });
+    expect(overview.body).toMatchObject({ status: 'canceled', cancelAtPeriodEnd: true });
   });
 });

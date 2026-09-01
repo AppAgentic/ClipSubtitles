@@ -12,7 +12,7 @@ export default function AppSettingsPage() {
   return <AppShell render={(me) => <Settings me={me} />} />;
 }
 
-function Settings({ me }: { me: Me }) {
+export function Settings({ me }: { me: Me }) {
   const toast = useToast();
   const [name, setName] = useState(me.workspace.name);
   const [sourceDays, setSourceDays] = useState(me.workspace.retention.sourceDays);
@@ -21,6 +21,9 @@ function Settings({ me }: { me: Me }) {
   const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const [billing, setBilling] = useState<BillingOverview | null>(null);
   const [checkoutSku, setCheckoutSku] = useState<BillingSku | null>(null);
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('annual');
+  const [managingBilling, setManagingBilling] = useState(false);
+  const [checkoutComplete, setCheckoutComplete] = useState(false);
 
   const load = () => {
     api
@@ -29,7 +32,13 @@ function Settings({ me }: { me: Me }) {
       .catch(() => undefined);
     api.billing().then(setBilling).catch(() => undefined);
   };
-  useEffect(load, []);
+  useEffect(() => {
+    load();
+    if (new URLSearchParams(window.location.search).get('checkout') === 'complete') {
+      setCheckoutComplete(true);
+      window.history.replaceState({}, '', '/app/settings#billing');
+    }
+  }, []);
 
   const save = async () => {
     setSaving(true);
@@ -51,6 +60,17 @@ function Settings({ me }: { me: Me }) {
     } catch (err) {
       toast.push('error', errorMessage(err));
       setCheckoutSku(null);
+    }
+  };
+
+  const manageBilling = async () => {
+    setManagingBilling(true);
+    try {
+      const session = await api.billingManagement();
+      window.location.assign(session.url);
+    } catch (err) {
+      toast.push('error', errorMessage(err));
+      setManagingBilling(false);
     }
   };
 
@@ -114,15 +134,40 @@ function Settings({ me }: { me: Me }) {
           aside={<a href="/pricing" className="text-[11px] text-signal hover:underline">Compare plans</a>}
         >
           <div id="billing" className="flex flex-col gap-4 p-4">
+            {checkoutComplete ? (
+              <div role="status" className="rounded-2xl border border-phosphor/25 bg-phosphor/10 px-4 py-3 text-[12px] text-ink">
+                Checkout complete. Your plan and credits will update here as soon as payment is confirmed.
+              </div>
+            ) : null}
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div><p className="text-[11px] uppercase tracking-[.12em] text-ink-mute">Current plan</p><p className="mt-1 text-xl font-semibold">{BILLING_PLANS.find((plan) => plan.id === (billing?.planId ?? 'free'))?.name ?? 'Free'}</p></div>
               <div className="text-right"><p className="text-[11px] uppercase tracking-[.12em] text-ink-mute">Available</p><p className="mono mt-1 text-xl">{billing?.credits.available ?? me.credits.available} credits</p></div>
             </div>
             {billing?.pools?.length ? <ul className="grid gap-2 sm:grid-cols-2">{billing.pools.map((pool, index) => <li key={`${pool.kind}-${index}`} className="rounded-xl border border-line bg-panel-2 px-3 py-2 text-[12px]"><span className="capitalize text-ink-dim">{pool.kind}</span><strong className="mono float-right">{pool.available}</strong>{pool.expiresAt ? <p className="mt-1 text-[10px] text-ink-mute">Rolls off {new Date(pool.expiresAt).toLocaleDateString()}</p> : null}</li>)}</ul> : null}
             {billing?.planId === 'free' || !billing ? (
-              <div className="flex flex-wrap gap-2">{BILLING_PLANS.filter((plan) => plan.id !== 'free' && 'sku' in plan).map((plan) => <Button key={plan.id} variant={plan.id === 'pro' ? 'primary' : 'ghost'} onClick={() => void checkout(plan.sku)} loading={checkoutSku === plan.sku}>{plan.name} · ${plan.monthlyPriceCents / 100}/mo</Button>)}</div>
+              <div className="flex flex-col gap-3">
+                <div className="inline-flex w-fit rounded-full border border-line bg-panel-2 p-1" role="group" aria-label="Billing period">
+                  <button type="button" className={`rounded-full px-3 py-1.5 text-[12px] ${billingPeriod === 'monthly' ? 'bg-panel text-ink shadow-sm' : 'text-ink-dim'}`} aria-pressed={billingPeriod === 'monthly'} onClick={() => setBillingPeriod('monthly')}>Monthly</button>
+                  <button type="button" className={`rounded-full px-3 py-1.5 text-[12px] ${billingPeriod === 'annual' ? 'bg-panel text-ink shadow-sm' : 'text-ink-dim'}`} aria-pressed={billingPeriod === 'annual'} onClick={() => setBillingPeriod('annual')}>Annual · save up to 20%</button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {BILLING_PLANS.filter((plan) => plan.id !== 'free' && 'sku' in plan).map((plan) => {
+                    const annual = billingPeriod === 'annual';
+                    const sku = annual ? plan.annualSku : plan.sku;
+                    const price = annual ? Math.round(plan.annualPriceCents / 12) : plan.monthlyPriceCents;
+                    return <Button key={plan.id} variant={plan.id === 'pro' ? 'primary' : 'ghost'} onClick={() => void checkout(sku)} loading={checkoutSku === sku}>{plan.name} · ${price / 100}/mo{annual ? ' billed annually' : ''}</Button>;
+                  })}
+                </div>
+              </div>
             ) : (
-              <div><p className="mb-2 text-[12px] text-ink-dim">Need more render capacity this month?</p><div className="flex flex-wrap gap-2">{BILLING_TOP_UPS.map((topUp) => <Button key={topUp.sku} variant="ghost" onClick={() => void checkout(topUp.sku)} loading={checkoutSku === topUp.sku}>+{topUp.credits} · ${topUp.priceCents / 100}</Button>)}</div></div>
+              <div className="flex flex-col gap-4">
+                <div className="rounded-2xl border border-line bg-panel-2 p-3">
+                  <p className="text-[12px] text-ink-dim">Upgrade, downgrade, change payment method, view invoices, or cancel through the secure billing portal.</p>
+                  {billing.currentPeriodEnd ? <p className="mt-1 text-[11px] text-ink-mute">{billing.cancelAtPeriodEnd ? 'Access ends' : 'Next renewal'} {new Date(billing.currentPeriodEnd).toLocaleDateString()}.</p> : null}
+                  <Button className="mt-3" variant="primary" onClick={() => void manageBilling()} loading={managingBilling}>Manage subscription</Button>
+                </div>
+                <div><p className="mb-2 text-[12px] text-ink-dim">Need more render capacity this month?</p><div className="flex flex-wrap gap-2">{BILLING_TOP_UPS.map((topUp) => <Button key={topUp.sku} variant="ghost" onClick={() => void checkout(topUp.sku)} loading={checkoutSku === topUp.sku}>+{topUp.credits} · ${topUp.priceCents / 100}</Button>)}</div></div>
+              </div>
             )}
           </div>
         </Panel>

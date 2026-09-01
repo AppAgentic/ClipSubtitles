@@ -22,6 +22,12 @@ become the source of product entitlements or displayed allowances.
   workspace, and carry catalog version, SKU, source and resume metadata.
 - Whop webhooks are signature verified and event IDs are recorded before an
   entitlement or credit grant can be applied again.
+- Paid workspaces can open Whop's membership-specific billing portal from the
+  dashboard to upgrade, downgrade, update payment details, view invoices or
+  cancel without creating a second subscription. The portal destination is
+  resolved server-side and restricted to `https://whop.com`.
+- Membership activation, scheduled-cancellation changes and deactivation
+  webhooks update the dashboard plan status without granting credits.
 - Active export admission is serialized per workspace and enforced against the
   current plan, so simultaneous requests cannot exceed the included capacity.
 - Agents receive `checkout_required` with the exact balance, shortfall, quote
@@ -58,15 +64,18 @@ fails closed if any required value is missing.
    interval and currency matches `BILLING_CATALOG` exactly.
 2. Register the production webhook URL at
    `https://api.clipsubtitles.com/v1/billing/webhooks/whop` and store its secret
-   without printing it.
+   without printing it. Subscribe it to `payment.succeeded`,
+   `membership.activated`, `membership.deactivated`, and
+   `membership.cancel_at_period_end_changed`.
 3. Deploy with pinned Secret Manager versions, then read back only non-secret
    configuration and service readiness.
 4. Complete a real low-value top-up and a paid-plan checkout from an
    authenticated test workspace.
 5. Confirm one verified event creates one billing-event row and one credit
    grant; replay the same signed event and confirm it is a no-op.
-6. Confirm cancellation and failed-payment events do not grant credits. Verify
-   the provider's exact live event shapes before expanding status handling.
+6. Open *Manage subscription* from a paid test workspace and verify upgrade,
+   downgrade, payment-method, invoice and cancellation controls. Confirm the
+   membership status webhooks update the dashboard without granting credits.
 7. Exhaust a test workspace, trigger `checkout_required` from an agent, pay on
    the app-owned URL, and resume the same quote when valid.
 8. Review `/terms` and `/privacy` with counsel before public payment traffic.

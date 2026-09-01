@@ -21,6 +21,7 @@ export interface BillingProvider {
     resume?: string;
     idempotencyKey: string;
   }): Promise<CheckoutSession>;
+  managementUrl(providerSubscriptionId: string): Promise<string>;
   verifyWebhook(rawBody: string, headers: Record<string, string>): BillingWebhook;
 }
 
@@ -28,6 +29,9 @@ class DisabledBillingProvider implements BillingProvider {
   readonly name = 'none' as const;
   async createCheckout(): Promise<CheckoutSession> {
     throw new ApiError('PROVIDER_UNAVAILABLE', 'Checkout is not configured yet.');
+  }
+  async managementUrl(): Promise<string> {
+    throw new ApiError('PROVIDER_UNAVAILABLE', 'Subscription management is not configured yet.');
   }
   verifyWebhook(): BillingWebhook {
     throw new ApiError('NOT_FOUND');
@@ -67,6 +71,26 @@ class WhopBillingProvider implements BillingProvider {
     );
     if (!result.purchase_url) throw new ApiError('PROVIDER_UNAVAILABLE', 'Checkout could not be created.');
     return { id: result.id, url: result.purchase_url, sku: input.sku };
+  }
+
+  async managementUrl(providerSubscriptionId: string): Promise<string> {
+    const memberships = await this.client.memberships.list({ account_id: this.config.accountId, first: 100 });
+    let manageUrl: string | null = null;
+    for await (const membership of memberships) {
+      if (membership.id === providerSubscriptionId) {
+        const raw = membership as unknown;
+        manageUrl = isRecord(raw) && typeof raw.manage_url === 'string' ? raw.manage_url : null;
+        break;
+      }
+    }
+    if (!manageUrl) {
+      throw new ApiError('PROVIDER_UNAVAILABLE', 'Subscription management is not available yet.');
+    }
+    const url = new URL(manageUrl);
+    if (url.protocol !== 'https:' || url.hostname !== 'whop.com') {
+      throw new ApiError('PROVIDER_UNAVAILABLE', 'Subscription management returned an invalid destination.');
+    }
+    return url.toString();
   }
 
   verifyWebhook(rawBody: string, headers: Record<string, string>): BillingWebhook {

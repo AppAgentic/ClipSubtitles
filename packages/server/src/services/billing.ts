@@ -13,6 +13,7 @@ import {
 } from '@clipsubtitles/contracts';
 import type { ReservationRecord } from '@clipsubtitles/storage';
 import type { AppContext } from '../context';
+import { ApiError } from '../errors';
 
 export async function creditBalance(ctx: AppContext, workspaceId: string): Promise<CreditBalance> {
   const b = await ctx.db.getBalance(workspaceId);
@@ -76,6 +77,14 @@ export async function createCheckout(
   });
 }
 
+export async function billingManagementUrl(ctx: AppContext, workspaceId: string): Promise<{ url: string }> {
+  const account = await ctx.db.getBillingAccount(workspaceId);
+  if (!account?.providerSubscriptionId || account.status === 'free') {
+    throw new ApiError('CONFLICT', 'There is no paid subscription to manage.');
+  }
+  return { url: await ctx.billing.managementUrl(account.providerSubscriptionId) };
+}
+
 export async function processBillingWebhook(
   ctx: AppContext,
   rawBody: string,
@@ -86,7 +95,7 @@ export async function processBillingWebhook(
   return ctx.db.transaction(async () => {
     const metadata = eventMetadata(event.data);
     const workspaceId = typeof metadata.workspace_id === 'string' ? metadata.workspace_id : undefined;
-    const sku = typeof metadata.sku === 'string' ? metadata.sku as BillingSku : undefined;
+    const sku = eventSku(ctx, event.data, metadata);
     const recorded = await ctx.db.recordBillingEvent({
       provider: ctx.billing.name,
       eventId: event.id,
@@ -97,9 +106,34 @@ export async function processBillingWebhook(
       processedAt: ctx.clock.iso(),
     });
     if (!recorded.created) return { received: true, duplicate: true };
-    if (!workspaceId || !sku || !isSuccessfulPayment(event.type, event.data)) {
+    if (!workspaceId || !sku) {
       return { received: true, duplicate: false };
     }
+    if (event.type.toLowerCase().startsWith('membership.')) {
+      const plan = BILLING_PLANS.find(
+        (candidate) => 'sku' in candidate && (candidate.sku === sku || candidate.annualSku === sku),
+      );
+      if (!plan || plan.id === 'free') return { received: true, duplicate: false };
+      const previous = await ctx.db.getBillingAccount(workspaceId);
+      const status = membershipStatus(event.type, event.data);
+      const periodEnd = stringField(event.data, ['current_period_end', 'renewal_period_end', 'expires_at']);
+      const resolvedPeriodEnd = periodEnd ?? previous?.currentPeriodEnd;
+      const providerCustomerId = stringField(event.data, ['customer_id', 'user_id']) ?? previous?.providerCustomerId;
+      const providerSubscriptionId = stringField(event.data, ['id', 'membership_id', 'subscription_id']) ?? previous?.providerSubscriptionId;
+      await ctx.db.upsertBillingAccount({
+        workspaceId,
+        planId: plan.id as BillingPlanId,
+        status,
+        ...(resolvedPeriodEnd ? { currentPeriodEnd: resolvedPeriodEnd } : {}),
+        cancelAtPeriodEnd: booleanField(event.data, 'cancel_at_period_end') ?? previous?.cancelAtPeriodEnd ?? false,
+        provider: ctx.billing.name,
+        ...(providerCustomerId ? { providerCustomerId } : {}),
+        ...(providerSubscriptionId ? { providerSubscriptionId } : {}),
+        now: ctx.clock.iso(),
+      });
+      return { received: true, duplicate: false };
+    }
+    if (!isSuccessfulPayment(event.type, event.data)) return { received: true, duplicate: false };
     const topUp = BILLING_TOP_UPS.find((candidate) => candidate.sku === sku);
     if (topUp) {
       await ctx.db.grantCredits({
@@ -118,8 +152,8 @@ export async function processBillingWebhook(
     if (!plan || plan.id === 'free') return { received: true, duplicate: false };
     const annual = plan.annualSku === sku;
     const periodEnd = stringField(event.data, ['current_period_end', 'renewal_period_end', 'expires_at']);
-    const providerCustomerId = stringField(event.data, ['customer_id', 'user_id']);
-    const providerSubscriptionId = stringField(event.data, ['membership_id', 'subscription_id']);
+    const providerCustomerId = stringField(event.data, ['customer_id', 'user_id']) ?? nestedStringField(event.data, 'user', 'id');
+    const providerSubscriptionId = stringField(event.data, ['membership_id', 'subscription_id']) ?? nestedStringField(event.data, 'membership', 'id');
     await ctx.db.upsertBillingAccount({
       workspaceId,
       planId: plan.id as BillingPlanId,
@@ -162,6 +196,30 @@ function isSuccessfulPayment(type: string, data: Record<string, unknown>): boole
   const normalized = type.toLowerCase();
   if (normalized.includes('payment') && (normalized.includes('succeed') || normalized.includes('paid'))) return true;
   return data.status === 'paid' || data.status === 'succeeded';
+}
+
+function eventSku(ctx: AppContext, data: Record<string, unknown>, metadata: Record<string, unknown>): BillingSku | undefined {
+  if (typeof metadata.sku === 'string') return metadata.sku as BillingSku;
+  const planId = stringField(data, ['plan_id']) ?? nestedStringField(data, 'plan', 'id');
+  if (!planId || ctx.config.billing.provider !== 'whop') return undefined;
+  const match = Object.entries(ctx.config.billing.planIds).find(([, providerPlanId]) => providerPlanId === planId);
+  return match?.[0] as BillingSku | undefined;
+}
+
+function membershipStatus(type: string, data: Record<string, unknown>): 'active' | 'past_due' | 'canceled' {
+  const status = typeof data.status === 'string' ? data.status.toLowerCase() : '';
+  if (status === 'past_due') return 'past_due';
+  if (type.toLowerCase() === 'membership.deactivated' || ['canceled', 'expired', 'completed'].includes(status)) return 'canceled';
+  return 'active';
+}
+
+function booleanField(data: Record<string, unknown>, key: string): boolean | undefined {
+  return typeof data[key] === 'boolean' ? data[key] : undefined;
+}
+
+function nestedStringField(data: Record<string, unknown>, parent: string, key: string): string | undefined {
+  const value = data[parent];
+  return isRecord(value) && typeof value[key] === 'string' ? value[key] : undefined;
 }
 
 function stringField(data: Record<string, unknown>, keys: string[]): string | undefined {
