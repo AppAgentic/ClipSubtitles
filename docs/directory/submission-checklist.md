@@ -12,14 +12,6 @@ checklist is what "ready" means. Nothing here has been done yet unless marked.
 - [ ] Gate 2: production WorkOS AuthKit client created; `AUTH_MODE=workos`;
       RS256 verification pinned to the WorkOS JWKS (already implemented, config-gated).
 - [ ] Gate 3: DCR (or CIMD) enabled on the WorkOS client — see `cimd-dcr-notes.md`.
-- [ ] Ask OpenAI whether ClipSubtitles can be enabled for **Sign in with ChatGPT**
-      as part of partner/directory onboarding. Do not expose a ChatGPT sign-in
-      button until OpenAI has issued a production client and the provider is
-      connected through WorkOS/AuthKit with verified-email identity linking.
-- [ ] If Sign in with ChatGPT is enabled, test new-account creation, linking to an
-      existing account with the same verified email, organisation-policy denial,
-      logout/revocation, and the distinction between identity sign-in and MCP tool
-      authorization. The login must request only the approved basic profile data.
 - [ ] `https://api.clipsubtitles.com/.well-known/oauth-protected-resource` returns the
       resource metadata with `authorization_servers` = the WorkOS issuer and
       `scopes_supported` = `captions:read`, `captions:write`.
