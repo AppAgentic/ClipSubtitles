@@ -1323,7 +1323,7 @@
   border-radius: 9px;
   background: transparent;
   color: var(--dim);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
 }
@@ -1525,7 +1525,13 @@
   min-height: 52px;
   padding-inline: 18px;
   border-radius: 16px;
+  font-size: 14px;
   text-align: left;
+}
+
+[data-lo='three-gates'] .tg-client-rail .tg-client-icon {
+  width: 17px;
+  height: 17px;
 }
 
 [data-lo='three-gates'] .tg-client-rail button[aria-checked='true'] {
