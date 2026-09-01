@@ -41,6 +41,12 @@ variable "deploy_public_edge" {
   default     = false
 }
 
+variable "enable_billing" {
+  description = "Bind the verified Whop account, webhook, and catalog secrets to the API. Keep false until the live billing acceptance gate is authorized."
+  type        = bool
+  default     = false
+}
+
 variable "web_domain" {
   type    = string
   default = "clipsubtitles.com"
@@ -151,4 +157,16 @@ variable "worker_max_instances" {
 variable "api_max_instances" {
   type    = number
   default = 10
+}
+
+variable "enable_monitoring" {
+  description = "Create public uptime checks and paid-traffic alert policies. Enable for production only after notification channels are verified."
+  type        = bool
+  default     = false
+}
+
+variable "alert_notification_channel_ids" {
+  description = "Existing Cloud Monitoring notification-channel resource names. Production monitoring must never be enabled without at least one verified destination."
+  type        = list(string)
+  default     = []
 }

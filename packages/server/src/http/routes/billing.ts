@@ -7,7 +7,7 @@ import {
   CheckoutSessionSchema,
   CreateCheckoutRequestSchema,
 } from '@clipsubtitles/contracts';
-import { authenticate, principalKey, rateLimit, requireScope } from '../../auth/middleware';
+import { authenticate, clientIp, principalKey, rateLimit, requireScope } from '../../auth/middleware';
 import type { AppContext } from '../../context';
 import { billingManagementUrl, billingOverview, createCheckout, processBillingWebhook } from '../../services/billing';
 import { SECURITY, errorResponses, jsonBody, jsonResponse, type Api } from '../openapi';
@@ -15,6 +15,7 @@ import { SECURITY, errorResponses, jsonBody, jsonResponse, type Api } from '../o
 export function registerBillingRoutes(api: Api, ctx: AppContext): void {
   const auth = authenticate(ctx, { modes: ['bearer', 'session'] });
   const limited = rateLimit(ctx, 'api', principalKey);
+  const anonymous = rateLimit(ctx, 'anonymous', (c) => `ip:${clientIp(c, ctx.config.trustedProxies)}`);
 
   api.openapi(
     createRoute({
@@ -82,7 +83,7 @@ export function registerBillingRoutes(api: Api, ctx: AppContext): void {
     async (c) => c.json(await billingManagementUrl(ctx, c.get('principal').workspaceId), 200),
   );
 
-  api.post('/v1/billing/webhooks/whop', async (c) => {
+  api.post('/v1/billing/webhooks/whop', anonymous, async (c) => {
     const rawBody = await c.req.text();
     const headers: Record<string, string> = {};
     for (const name of ['webhook-id', 'webhook-timestamp', 'webhook-signature']) {

@@ -102,10 +102,16 @@ class WhopBillingProvider implements BillingProvider {
     return {
       id: headers['webhook-id'] ?? '',
       type: String(payload.type ?? payload.action ?? 'unknown'),
-      occurredAt: typeof payload.created_at === 'string' ? payload.created_at : new Date().toISOString(),
+      occurredAt: webhookTimestamp(payload.created_at) ?? new Date().toISOString(),
       data,
     };
   }
+}
+
+function webhookTimestamp(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? date.toISOString() : undefined;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

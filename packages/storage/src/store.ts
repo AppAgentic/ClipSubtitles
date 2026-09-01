@@ -331,6 +331,7 @@ export interface DataStore {
     provider?: string;
     providerCustomerId?: string;
     providerSubscriptionId?: string;
+    providerEventAt?: string;
     now: string;
   }): Promise<BillingAccountRecord>;
   listCreditPools(workspaceId: string, now: string): Promise<CreditPoolRecord[]>;

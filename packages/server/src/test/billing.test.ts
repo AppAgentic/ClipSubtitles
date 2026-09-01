@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { BillingSku, CheckoutSession, CheckoutSource } from '@clipsubtitles/contracts';
 import type { BillingProvider, BillingWebhook } from '../billing/provider';
+import { TokenBucketLimiter } from '../auth/ratelimit';
 import { createHarness, type Harness } from './harness';
 
 class FakeBillingProvider implements BillingProvider {
@@ -72,6 +73,40 @@ describe('billing checkout and webhook lifecycle', () => {
       resume: 'render:project:quote',
       idempotencyKey: 'checkout-test-1',
     });
+  });
+
+  it('rate limits unauthenticated webhook floods before provider verification', async () => {
+    h.ctx.limiters.anonymous = new TokenBucketLimiter(1, 1 / 60_000);
+    const headers = {
+      'webhook-id': 'evt_flood_1',
+      'webhook-timestamp': '1788177600',
+      'webhook-signature': 'invalid-but-provider-is-faked',
+    };
+    const first = await h.api('POST', '/v1/billing/webhooks/whop', { raw: '{}', headers });
+    const blocked = await h.api<{ error: { code: string } }>('POST', '/v1/billing/webhooks/whop', {
+      raw: '{}',
+      headers: { ...headers, 'webhook-id': 'evt_flood_2' },
+    });
+    expect(first.status).toBe(200);
+    expect(blocked).toMatchObject({ status: 429, body: { error: { code: 'RATE_LIMITED' } } });
+  });
+
+  it('acknowledges but ignores a signed event for an unknown workspace', async () => {
+    billing.event = {
+      id: 'evt_unknown_workspace',
+      type: 'payment.succeeded',
+      occurredAt: '2026-09-01T12:00:00.000Z',
+      data: { metadata: { workspace_id: 'ws_does_not_exist', sku: 'topup_small' } },
+    };
+    const result = await h.api<{ received: boolean; duplicate: boolean }>('POST', '/v1/billing/webhooks/whop', {
+      raw: '{}',
+      headers: {
+        'webhook-id': billing.event.id,
+        'webhook-timestamp': '1788177600',
+        'webhook-signature': 'test-signature',
+      },
+    });
+    expect(result).toMatchObject({ status: 200, body: { received: true, duplicate: false } });
   });
 
   it('grants a verified top-up exactly once and activates a paid plan', async () => {
@@ -234,5 +269,54 @@ describe('billing checkout and webhook lifecycle', () => {
     });
     overview = await h.api<{ status: string; cancelAtPeriodEnd: boolean }>('GET', '/v1/billing', { token });
     expect(overview.body).toMatchObject({ status: 'canceled', cancelAtPeriodEnd: true });
+  });
+
+  it('does not let delayed provider events overwrite a newer canceled state', async () => {
+    billing.event = {
+      id: 'evt_membership_canceled_newer',
+      type: 'membership.deactivated',
+      occurredAt: '2026-10-01T12:00:00.000Z',
+      data: {
+        metadata: { workspace_id: workspaceId, sku: 'plan_creator_monthly' },
+        id: 'membership_ordering_test',
+        status: 'canceled',
+      },
+    };
+    await h.api('POST', '/v1/billing/webhooks/whop', {
+      raw: '{}',
+      headers: { 'webhook-id': billing.event.id, 'webhook-timestamp': '1788260580', 'webhook-signature': 'test-signature' },
+    });
+
+    billing.event = {
+      id: 'evt_membership_active_older',
+      type: 'membership.activated',
+      occurredAt: '2026-09-01T12:00:00.000Z',
+      data: {
+        metadata: { workspace_id: workspaceId, sku: 'plan_creator_monthly' },
+        id: 'membership_ordering_test',
+        status: 'active',
+      },
+    };
+    await h.api('POST', '/v1/billing/webhooks/whop', {
+      raw: '{}',
+      headers: { 'webhook-id': billing.event.id, 'webhook-timestamp': '1788260581', 'webhook-signature': 'test-signature' },
+    });
+
+    billing.event = {
+      id: 'evt_payment_older_but_valid',
+      type: 'payment.succeeded',
+      occurredAt: '2026-09-01T12:01:00.000Z',
+      data: {
+        metadata: { workspace_id: workspaceId, sku: 'plan_creator_monthly' },
+        membership_id: 'membership_ordering_test',
+      },
+    };
+    await h.api('POST', '/v1/billing/webhooks/whop', {
+      raw: '{}',
+      headers: { 'webhook-id': billing.event.id, 'webhook-timestamp': '1788260582', 'webhook-signature': 'test-signature' },
+    });
+
+    const overview = await h.api<{ status: string; planId: string; credits: { available: number } }>('GET', '/v1/billing', { token });
+    expect(overview.body).toMatchObject({ status: 'canceled', planId: 'creator', credits: { available: 310 } });
   });
 });

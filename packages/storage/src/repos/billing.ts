@@ -16,6 +16,7 @@ export interface BillingAccountRecord {
   provider?: string;
   providerCustomerId?: string;
   providerSubscriptionId?: string;
+  providerEventAt?: string;
   updatedAt: string;
 }
 
@@ -54,11 +55,13 @@ export function toBillingAccount(row: Row): BillingAccountRecord {
   const provider = text(row.provider);
   const providerCustomerId = text(row.provider_customer_id);
   const providerSubscriptionId = text(row.provider_subscription_id);
+  const providerEventAt = text(row.provider_event_at);
   if (currentPeriodStart) record.currentPeriodStart = currentPeriodStart;
   if (currentPeriodEnd) record.currentPeriodEnd = currentPeriodEnd;
   if (provider) record.provider = provider;
   if (providerCustomerId) record.providerCustomerId = providerCustomerId;
   if (providerSubscriptionId) record.providerSubscriptionId = providerSubscriptionId;
+  if (providerEventAt) record.providerEventAt = providerEventAt;
   return record;
 }
 
@@ -110,18 +113,21 @@ export function upsertBillingAccount(
     provider?: string;
     providerCustomerId?: string;
     providerSubscriptionId?: string;
+    providerEventAt?: string;
     now: string;
   },
 ): BillingAccountRecord {
   run(
     db,
-    `INSERT INTO billing_accounts (workspace_id, plan_id, status, current_period_start, current_period_end, cancel_at_period_end, provider, provider_customer_id, provider_subscription_id, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `INSERT INTO billing_accounts (workspace_id, plan_id, status, current_period_start, current_period_end, cancel_at_period_end, provider, provider_customer_id, provider_subscription_id, provider_event_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(workspace_id) DO UPDATE SET plan_id = excluded.plan_id, status = excluded.status,
        current_period_start = excluded.current_period_start, current_period_end = excluded.current_period_end,
        cancel_at_period_end = excluded.cancel_at_period_end, provider = excluded.provider,
        provider_customer_id = excluded.provider_customer_id, provider_subscription_id = excluded.provider_subscription_id,
-       updated_at = excluded.updated_at`,
+       provider_event_at = excluded.provider_event_at, updated_at = excluded.updated_at
+     WHERE excluded.provider_event_at IS NULL OR billing_accounts.provider_event_at IS NULL
+       OR excluded.provider_event_at >= billing_accounts.provider_event_at`,
     input.workspaceId,
     input.planId,
     input.status,
@@ -131,6 +137,7 @@ export function upsertBillingAccount(
     input.provider ?? null,
     input.providerCustomerId ?? null,
     input.providerSubscriptionId ?? null,
+    input.providerEventAt ?? null,
     input.now,
   );
   const record = getBillingAccount(db, input.workspaceId);

@@ -22,6 +22,12 @@ become the source of product entitlements or displayed allowances.
   workspace, and carry catalog version, SKU, source and resume metadata.
 - Whop webhooks are signature verified and event IDs are recorded before an
   entitlement or credit grant can be applied again.
+- Provider event time is stored on the billing account. A delayed older event
+  may grant a legitimate payment once, but cannot reactivate or otherwise
+  overwrite a newer cancellation state.
+- The webhook is bounded by both the application anonymous limiter and the
+  shared Cloud Armor API policy before signature verification work reaches a
+  horizontally scaled instance.
 - Paid workspaces can open Whop's membership-specific billing portal from the
   dashboard to upgrade, downgrade, update payment details, view invoices or
   cancel without creating a second subscription. The portal destination is
@@ -33,6 +39,9 @@ become the source of product entitlements or displayed allowances.
 - Agents receive `checkout_required` with the exact balance, shortfall, quote
   expiry and an app-owned pricing URL. The payment provider URL is never
   returned directly from an MCP tool.
+- Agent source/resume context survives sign-in and checkout. The completion
+  page tells the customer to return to ChatGPT, Claude, or their agent and
+  continue the same still-valid quote.
 
 ## Safe local configuration
 
@@ -54,6 +63,11 @@ Production requires these Secret Manager/process bindings:
 - `WHOP_PLAN_TOPUP_SMALL`
 - `WHOP_PLAN_TOPUP_MEDIUM`
 - `WHOP_PLAN_TOPUP_LARGE`
+
+Terraform creates isolated production secret containers for these values and
+grants access only to the API service account. Set `enable_billing = true` only
+after every secret has a verified version and the provider catalog readback
+matches the code-owned catalog.
 
 Set `BILLING_PROVIDER=whop` only after every binding exists. Configuration
 fails closed if any required value is missing.

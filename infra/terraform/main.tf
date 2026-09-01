@@ -6,7 +6,21 @@ locals {
   api_image                   = "${var.region}-docker.pkg.dev/${var.project_id}/${local.repository}/api:${var.image_tag}"
   worker_image                = "${var.region}-docker.pkg.dev/${var.project_id}/${local.repository}/worker:${var.image_tag}"
   web_image                   = "${var.region}-docker.pkg.dev/${var.project_id}/${local.repository}/web:${var.image_tag}"
-  api_secret_names = toset([
+  billing_secret_env = {
+    WHOP_API_KEY              = "whop-api-key"
+    WHOP_ACCOUNT_ID           = "whop-account-id"
+    WHOP_WEBHOOK_SECRET       = "whop-webhook-secret"
+    WHOP_PLAN_CREATOR_MONTHLY = "whop-plan-creator-monthly"
+    WHOP_PLAN_CREATOR_ANNUAL  = "whop-plan-creator-annual"
+    WHOP_PLAN_PRO_MONTHLY     = "whop-plan-pro-monthly"
+    WHOP_PLAN_PRO_ANNUAL      = "whop-plan-pro-annual"
+    WHOP_PLAN_STUDIO_MONTHLY  = "whop-plan-studio-monthly"
+    WHOP_PLAN_STUDIO_ANNUAL   = "whop-plan-studio-annual"
+    WHOP_PLAN_TOPUP_SMALL     = "whop-plan-topup-small"
+    WHOP_PLAN_TOPUP_MEDIUM    = "whop-plan-topup-medium"
+    WHOP_PLAN_TOPUP_LARGE     = "whop-plan-topup-large"
+  }
+  shared_secret_names = toset([
     "auth-local-secret",
     "workos-api-key",
     "workos-client-id",
@@ -16,10 +30,12 @@ locals {
     "r2-access-key-id",
     "r2-secret-access-key",
   ])
-  worker_secret_names = setunion(local.api_secret_names, toset([
+  api_secret_names = setunion(local.shared_secret_names, toset(values(local.billing_secret_env)))
+  worker_secret_names = setunion(local.shared_secret_names, toset([
     "elevenlabs-api-key",
     "gemini-api-key",
   ]))
+  runtime_secret_names = setunion(local.worker_secret_names, toset(values(local.billing_secret_env)))
 }
 
 resource "google_project_service" "required" {
@@ -35,6 +51,8 @@ resource "google_project_service" "required" {
     "generativelanguage.googleapis.com",
     "iam.googleapis.com",
     "iamcredentials.googleapis.com",
+    "logging.googleapis.com",
+    "monitoring.googleapis.com",
     "secretmanager.googleapis.com",
     "sqladmin.googleapis.com",
     "storage.googleapis.com",
@@ -245,7 +263,7 @@ resource "google_service_account_iam_member" "worker_can_mint_task_oidc" {
 }
 
 resource "google_secret_manager_secret" "runtime" {
-  for_each  = local.worker_secret_names
+  for_each  = local.runtime_secret_names
   secret_id = "clipsubtitles-${var.environment}-${each.value}"
   replication {
     auto {}
@@ -265,7 +283,10 @@ resource "google_secret_manager_secret_iam_member" "api" {
 }
 
 resource "google_secret_manager_secret_iam_member" "worker" {
-  for_each  = google_secret_manager_secret.runtime
+  for_each = {
+    for name, secret in google_secret_manager_secret.runtime : name => secret
+    if contains(local.worker_secret_names, name)
+  }
   secret_id = each.value.id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.worker.email}"
@@ -275,7 +296,7 @@ resource "google_cloud_run_v2_service" "api" {
   count                = var.deploy_services ? 1 : 0
   name                 = "${local.name}-api"
   location             = var.region
-  ingress              = "INGRESS_TRAFFIC_ALL"
+  ingress              = var.deploy_public_edge ? "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER" : "INGRESS_TRAFFIC_ALL"
   invoker_iam_disabled = var.allow_unauthenticated
   deletion_protection  = true
   template {
@@ -326,6 +347,23 @@ resource "google_cloud_run_v2_service" "api" {
       env {
         name  = "AUTH_MODE"
         value = "workos"
+      }
+      env {
+        name  = "BILLING_PROVIDER"
+        value = var.enable_billing ? "whop" : "none"
+      }
+      dynamic "env" {
+        for_each = var.enable_billing ? local.billing_secret_env : {}
+        iterator = billing
+        content {
+          name = billing.key
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.runtime[billing.value].secret_id
+              version = "latest"
+            }
+          }
+        }
       }
       env {
         name  = "TRANSCRIPTION_PROVIDERS"
@@ -501,6 +539,10 @@ resource "google_cloud_run_v2_service" "api" {
       condition     = var.object_store_driver != "r2" || can(regex("^https://", var.r2_endpoint))
       error_message = "r2_endpoint must be the account-specific HTTPS endpoint when object_store_driver=r2."
     }
+    precondition {
+      condition     = !var.enable_billing || var.environment == "production"
+      error_message = "Live Whop billing can only be enabled in the isolated production environment."
+    }
   }
   depends_on = [google_artifact_registry_repository.images]
 }
@@ -509,7 +551,7 @@ resource "google_cloud_run_v2_service" "web" {
   count                = var.deploy_services ? 1 : 0
   name                 = "${local.name}-web"
   location             = var.region
-  ingress              = "INGRESS_TRAFFIC_ALL"
+  ingress              = var.deploy_public_edge ? "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER" : "INGRESS_TRAFFIC_ALL"
   invoker_iam_disabled = var.allow_unauthenticated
   deletion_protection  = true
   template {
@@ -823,8 +865,65 @@ resource "google_compute_backend_service" "api" {
   name                  = "${local.name}-api"
   protocol              = "HTTP"
   load_balancing_scheme = "EXTERNAL_MANAGED"
+  security_policy       = google_compute_security_policy.api[0].id
   backend {
     group = google_compute_region_network_endpoint_group.api[0].id
+  }
+}
+
+# A single edge policy provides the distributed/IP layer that process-local
+# token buckets cannot provide once Cloud Run scales horizontally. Database
+# credit reservations and plan concurrency remain the source of truth for paid
+# work; these rules bound anonymous abuse before it reaches an API instance.
+resource "google_compute_security_policy" "api" {
+  count = var.deploy_public_edge ? 1 : 0
+  name  = "${local.name}-api-edge"
+
+  rule {
+    action   = "throttle"
+    priority = 1000
+    match {
+      expr { expression = "request.path == '/v1/billing/webhooks/whop'" }
+    }
+    rate_limit_options {
+      conform_action = "allow"
+      exceed_action  = "deny(429)"
+      enforce_on_key = "IP"
+      rate_limit_threshold {
+        count        = 60
+        interval_sec = 60
+      }
+    }
+    description = "Bound signed billing-webhook verification work per source IP."
+  }
+
+  rule {
+    action   = "throttle"
+    priority = 1100
+    match {
+      versioned_expr = "SRC_IPS_V1"
+      config { src_ip_ranges = ["*"] }
+    }
+    rate_limit_options {
+      conform_action = "allow"
+      exceed_action  = "deny(429)"
+      enforce_on_key = "IP"
+      rate_limit_threshold {
+        count        = 600
+        interval_sec = 60
+      }
+    }
+    description = "Distributed API abuse ceiling; application limits remain more specific."
+  }
+
+  rule {
+    action   = "allow"
+    priority = 2147483647
+    match {
+      versioned_expr = "SRC_IPS_V1"
+      config { src_ip_ranges = ["*"] }
+    }
+    description = "Default allow after the paid-traffic rate limits."
   }
 }
 
@@ -966,4 +1065,212 @@ resource "google_cloud_scheduler_job" "maintenance" {
   }
 
   depends_on = [google_cloud_run_v2_service_iam_member.scheduler_invoker]
+}
+
+# Public checks deliberately use real customer/agent routes instead of
+# /healthz, whose Cloud Run startup-probe handling is not a reliable edge smoke.
+resource "google_monitoring_uptime_check_config" "public" {
+  for_each = var.enable_monitoring ? {
+    web = {
+      host    = var.web_domain
+      path    = "/"
+      content = "Clip Subtitles"
+    }
+    api = {
+      host    = var.api_domain
+      path    = "/llms.txt"
+      content = "ClipSubtitles"
+    }
+  } : {}
+
+  project            = var.project_id
+  display_name       = "${local.name}-${each.key}-public"
+  checker_type       = "STATIC_IP_CHECKERS"
+  period             = "60s"
+  timeout            = "10s"
+  selected_regions   = ["USA", "EUROPE", "ASIA_PACIFIC"]
+  log_check_failures = true
+  user_labels        = local.labels
+
+  monitored_resource {
+    type = "uptime_url"
+    labels = {
+      host       = each.value.host
+      project_id = var.project_id
+    }
+  }
+
+  http_check {
+    path           = each.value.path
+    port           = 443
+    request_method = "GET"
+    use_ssl        = true
+    validate_ssl   = true
+  }
+
+  content_matchers {
+    content = each.value.content
+    matcher = "CONTAINS_STRING"
+  }
+
+  lifecycle {
+    precondition {
+      condition     = var.environment != "production" || length(var.alert_notification_channel_ids) > 0
+      error_message = "Production monitoring requires at least one verified alert_notification_channel_id."
+    }
+  }
+
+  depends_on = [google_project_service.required]
+}
+
+resource "google_monitoring_alert_policy" "public_uptime" {
+  for_each = google_monitoring_uptime_check_config.public
+
+  project               = var.project_id
+  display_name          = "${local.name}: ${each.key} public route unavailable"
+  combiner              = "OR"
+  enabled               = true
+  notification_channels = var.alert_notification_channel_ids
+  user_labels           = local.labels
+
+  conditions {
+    display_name = "Fewer than half of regional checks pass for two minutes"
+    condition_threshold {
+      filter          = "metric.type=\"monitoring.googleapis.com/uptime_check/check_passed\" AND resource.type=\"uptime_url\" AND metric.label.check_id=\"${each.value.uptime_check_id}\""
+      comparison      = "COMPARISON_LT"
+      threshold_value = 0.5
+      duration        = "120s"
+
+      aggregations {
+        alignment_period     = "120s"
+        per_series_aligner   = "ALIGN_FRACTION_TRUE"
+        cross_series_reducer = "REDUCE_FRACTION_TRUE"
+      }
+    }
+  }
+
+  alert_strategy {
+    auto_close = "1800s"
+  }
+
+  documentation {
+    content   = "Customer-facing ${each.key} availability is below the launch threshold. Check Cloud Run revisions, load-balancer routing, provider health and recent deploys; roll back to the recorded known-good revision if the candidate caused the incident."
+    mime_type = "text/markdown"
+  }
+}
+
+resource "google_logging_metric" "cloud_run_5xx" {
+  count = var.enable_monitoring ? 1 : 0
+
+  project = var.project_id
+  name    = "${local.name}-cloud-run-5xx"
+  filter  = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=~\"${local.name}-(api|web|worker)\" AND httpRequest.status>=500"
+
+  metric_descriptor {
+    metric_kind = "DELTA"
+    value_type  = "INT64"
+    unit        = "1"
+  }
+
+  depends_on = [google_project_service.required]
+}
+
+resource "google_logging_metric" "worker_task_failure" {
+  count = var.enable_monitoring ? 1 : 0
+
+  project = var.project_id
+  name    = "${local.name}-worker-task-failure"
+  filter  = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"${local.name}-worker\" AND jsonPayload.msg=\"task failed\""
+
+  metric_descriptor {
+    metric_kind = "DELTA"
+    value_type  = "INT64"
+    unit        = "1"
+  }
+
+  depends_on = [google_project_service.required]
+}
+
+resource "google_monitoring_alert_policy" "cloud_run_5xx" {
+  count = var.enable_monitoring ? 1 : 0
+
+  project               = var.project_id
+  display_name          = "${local.name}: Cloud Run 5xx responses"
+  combiner              = "OR"
+  enabled               = true
+  notification_channels = var.alert_notification_channel_ids
+  user_labels           = local.labels
+
+  conditions {
+    display_name = "At least one 5xx in five minutes"
+    condition_threshold {
+      filter          = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.cloud_run_5xx[0].name}\" AND resource.type=\"cloud_run_revision\""
+      comparison      = "COMPARISON_GT"
+      threshold_value = 0
+      duration        = "0s"
+
+      aggregations {
+        alignment_period   = "300s"
+        per_series_aligner = "ALIGN_SUM"
+      }
+    }
+  }
+
+  alert_strategy { auto_close = "1800s" }
+}
+
+resource "google_monitoring_alert_policy" "worker_task_failure" {
+  count = var.enable_monitoring ? 1 : 0
+
+  project               = var.project_id
+  display_name          = "${local.name}: paid task failure"
+  combiner              = "OR"
+  enabled               = true
+  notification_channels = var.alert_notification_channel_ids
+  user_labels           = local.labels
+
+  conditions {
+    display_name = "At least one worker task failed in five minutes"
+    condition_threshold {
+      filter          = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.worker_task_failure[0].name}\" AND resource.type=\"cloud_run_revision\""
+      comparison      = "COMPARISON_GT"
+      threshold_value = 0
+      duration        = "0s"
+
+      aggregations {
+        alignment_period   = "300s"
+        per_series_aligner = "ALIGN_SUM"
+      }
+    }
+  }
+
+  alert_strategy { auto_close = "1800s" }
+}
+
+resource "google_monitoring_alert_policy" "render_queue_depth" {
+  count = var.enable_monitoring ? 1 : 0
+
+  project               = var.project_id
+  display_name          = "${local.name}: render queue backlog"
+  combiner              = "OR"
+  enabled               = true
+  notification_channels = var.alert_notification_channel_ids
+  user_labels           = local.labels
+
+  conditions {
+    display_name = "More than 20 queued tasks for five minutes"
+    condition_threshold {
+      filter          = "metric.type=\"cloudtasks.googleapis.com/queue/depth\" AND resource.type=\"cloud_tasks_queue\" AND resource.label.queue_id=\"${google_cloud_tasks_queue.renders.name}\""
+      comparison      = "COMPARISON_GT"
+      threshold_value = 20
+      duration        = "300s"
+
+      aggregations {
+        alignment_period   = "60s"
+        per_series_aligner = "ALIGN_MAX"
+      }
+    }
+  }
+
+  alert_strategy { auto_close = "1800s" }
 }

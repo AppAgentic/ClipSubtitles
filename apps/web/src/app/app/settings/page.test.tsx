@@ -41,6 +41,13 @@ function renderSettings(billing: BillingOverview) {
 }
 
 describe('dashboard billing controls', () => {
+  it('tells an agent-originated customer how to resume after checkout', async () => {
+    window.history.replaceState({}, '', '/app/settings?checkout=complete&source=chatgpt&resume=render%3Aproject%3Aquote');
+    renderSettings(freeBilling);
+    expect(await screen.findByText(/Return to ChatGPT and ask it to continue the caption export/)).toBeTruthy();
+    expect(window.location.pathname + window.location.search + window.location.hash).toBe('/app/settings#billing');
+  });
+
   it('defaults a free workspace upgrade chooser to annual pricing', async () => {
     renderSettings(freeBilling);
     const annual = await screen.findByRole('button', { name: 'Annual · save up to 20%' });

@@ -86,13 +86,16 @@ test('library, editor, and render routes stay within the viewport and the captio
   await page.getByRole('radio', { name: 'Top' }).click();
   await expect(page.getByText('saved', { exact: true })).toBeVisible();
   await page.reload();
+  // The inspector intentionally defaults to word correction after a reload;
+  // reopen Style before asserting the saved project-level setting.
+  await page.getByRole('tab', { name: 'Style' }).click();
   await expect(page.getByRole('radio', { name: 'Top' })).toBeChecked();
 
   // Render flow: quote → approve → task → downloads, credits refreshed in the header without a reload.
   const creditsBefore = Number(
     (
       await page
-        .locator('header span[aria-label*="credits available"]')
+        .getByRole('link', { name: /credits available/ })
         .first()
         .getAttribute('aria-label')
     )?.match(/(\d+) credits/)?.[1],
@@ -129,7 +132,7 @@ test('library, editor, and render routes stay within the viewport and the captio
   const creditsAfter = Number(
     (
       await page
-        .locator('header span[aria-label*="credits available"]')
+        .getByRole('link', { name: /credits available/ })
         .first()
         .getAttribute('aria-label')
     )?.match(/(\d+) credits/)?.[1],

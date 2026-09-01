@@ -24,6 +24,7 @@ export function Settings({ me }: { me: Me }) {
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('annual');
   const [managingBilling, setManagingBilling] = useState(false);
   const [checkoutComplete, setCheckoutComplete] = useState(false);
+  const [checkoutSource, setCheckoutSource] = useState('');
 
   const load = () => {
     api
@@ -34,8 +35,11 @@ export function Settings({ me }: { me: Me }) {
   };
   useEffect(() => {
     load();
-    if (new URLSearchParams(window.location.search).get('checkout') === 'complete') {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('checkout') === 'complete') {
       setCheckoutComplete(true);
+      const source = params.get('source');
+      if (params.get('resume') && source && source !== 'web') setCheckoutSource(agentName(source));
       window.history.replaceState({}, '', '/app/settings#billing');
     }
   }, []);
@@ -137,6 +141,7 @@ export function Settings({ me }: { me: Me }) {
             {checkoutComplete ? (
               <div role="status" className="rounded-2xl border border-phosphor/25 bg-phosphor/10 px-4 py-3 text-[12px] text-ink">
                 Checkout complete. Your plan and credits will update here as soon as payment is confirmed.
+                {checkoutSource ? ` Return to ${checkoutSource} and ask it to continue the caption export.` : ''}
               </div>
             ) : null}
             <div className="flex flex-wrap items-end justify-between gap-3">
@@ -197,6 +202,13 @@ export function Settings({ me }: { me: Me }) {
       </div>
     </div>
   );
+}
+
+function agentName(source: string): string {
+  if (source === 'chatgpt') return 'ChatGPT';
+  if (source === 'claude') return 'Claude';
+  if (source === 'codex') return 'ChatGPT';
+  return 'your agent';
 }
 
 function creditActivityLabel(kind: LedgerEntry['kind']): string {

@@ -1514,15 +1514,20 @@ export class PostgresStore implements DataStore {
   }
 
   async upsertBillingAccount(input: Parameters<DataStore['upsertBillingAccount']>[0]): Promise<BillingAccountRecord> {
-    const row = await this.one<Sql>(
-      `INSERT INTO billing_accounts (workspace_id, plan_id, status, current_period_start, current_period_end, cancel_at_period_end, provider, provider_customer_id, provider_subscription_id, updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+    const changed = await this.one<Sql>(
+      `INSERT INTO billing_accounts (workspace_id, plan_id, status, current_period_start, current_period_end, cancel_at_period_end, provider, provider_customer_id, provider_subscription_id, provider_event_at, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
        ON CONFLICT(workspace_id) DO UPDATE SET plan_id=EXCLUDED.plan_id,status=EXCLUDED.status,current_period_start=EXCLUDED.current_period_start,
        current_period_end=EXCLUDED.current_period_end,cancel_at_period_end=EXCLUDED.cancel_at_period_end,provider=EXCLUDED.provider,
-       provider_customer_id=EXCLUDED.provider_customer_id,provider_subscription_id=EXCLUDED.provider_subscription_id,updated_at=EXCLUDED.updated_at RETURNING *`,
-      [input.workspaceId,input.planId,input.status,input.currentPeriodStart ?? null,input.currentPeriodEnd ?? null,input.cancelAtPeriodEnd ? 1 : 0,input.provider ?? null,input.providerCustomerId ?? null,input.providerSubscriptionId ?? null,input.now],
+       provider_customer_id=EXCLUDED.provider_customer_id,provider_subscription_id=EXCLUDED.provider_subscription_id,
+       provider_event_at=EXCLUDED.provider_event_at,updated_at=EXCLUDED.updated_at
+       WHERE EXCLUDED.provider_event_at IS NULL OR billing_accounts.provider_event_at IS NULL
+         OR EXCLUDED.provider_event_at >= billing_accounts.provider_event_at RETURNING *`,
+      [input.workspaceId,input.planId,input.status,input.currentPeriodStart ?? null,input.currentPeriodEnd ?? null,input.cancelAtPeriodEnd ? 1 : 0,input.provider ?? null,input.providerCustomerId ?? null,input.providerSubscriptionId ?? null,input.providerEventAt ?? null,input.now],
     );
-    return toBillingAccount(pgRow(row as Sql));
+    const row = changed ?? await this.one<Sql>('SELECT * FROM billing_accounts WHERE workspace_id=$1', [input.workspaceId]);
+    if (!row) throw new StorageError('INVALID_STATE', 'Billing account was not saved.');
+    return toBillingAccount(pgRow(row));
   }
 
   async listCreditPools(workspaceId: string, now: string): Promise<CreditPoolRecord[]> {

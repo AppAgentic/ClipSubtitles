@@ -96,17 +96,19 @@ export async function processBillingWebhook(
     const metadata = eventMetadata(event.data);
     const workspaceId = typeof metadata.workspace_id === 'string' ? metadata.workspace_id : undefined;
     const sku = eventSku(ctx, event.data, metadata);
+    const billingAccount = workspaceId ? await ctx.db.getBillingAccount(workspaceId) : null;
+    const actionable = Boolean(workspaceId && sku && billingAccount);
     const recorded = await ctx.db.recordBillingEvent({
       provider: ctx.billing.name,
       eventId: event.id,
       eventType: event.type,
       ...(workspaceId ? { workspaceId } : {}),
-      status: workspaceId && sku ? 'processed' : 'ignored',
+      status: actionable ? 'processed' : 'ignored',
       occurredAt: event.occurredAt,
       processedAt: ctx.clock.iso(),
     });
     if (!recorded.created) return { received: true, duplicate: true };
-    if (!workspaceId || !sku) {
+    if (!workspaceId || !sku || !billingAccount) {
       return { received: true, duplicate: false };
     }
     if (event.type.toLowerCase().startsWith('membership.')) {
@@ -114,7 +116,7 @@ export async function processBillingWebhook(
         (candidate) => 'sku' in candidate && (candidate.sku === sku || candidate.annualSku === sku),
       );
       if (!plan || plan.id === 'free') return { received: true, duplicate: false };
-      const previous = await ctx.db.getBillingAccount(workspaceId);
+      const previous = billingAccount;
       const status = membershipStatus(event.type, event.data);
       const periodEnd = stringField(event.data, ['current_period_end', 'renewal_period_end', 'expires_at']);
       const resolvedPeriodEnd = periodEnd ?? previous?.currentPeriodEnd;
@@ -129,6 +131,7 @@ export async function processBillingWebhook(
         provider: ctx.billing.name,
         ...(providerCustomerId ? { providerCustomerId } : {}),
         ...(providerSubscriptionId ? { providerSubscriptionId } : {}),
+        providerEventAt: event.occurredAt,
         now: ctx.clock.iso(),
       });
       return { received: true, duplicate: false };
@@ -162,6 +165,7 @@ export async function processBillingWebhook(
       provider: ctx.billing.name,
       ...(providerCustomerId ? { providerCustomerId } : {}),
       ...(providerSubscriptionId ? { providerSubscriptionId } : {}),
+      providerEventAt: event.occurredAt,
       now: ctx.clock.iso(),
     });
     const rolloverEnd = periodEnd ? addMonths(periodEnd, BILLING_CATALOG.subscriptionRolloverMonths) : undefined;

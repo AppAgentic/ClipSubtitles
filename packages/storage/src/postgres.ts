@@ -325,4 +325,11 @@ INSERT INTO credit_pools (id, workspace_id, kind, original_amount, available, re
   FROM credit_accounts WHERE available + reserved > 0;
 `,
   },
+  {
+    version: 4,
+    name: 'billing_provider_event_ordering',
+    sql: `
+ALTER TABLE billing_accounts ADD COLUMN provider_event_at TEXT;
+`,
+  },
 ];

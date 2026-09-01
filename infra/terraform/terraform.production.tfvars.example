@@ -3,6 +3,7 @@ environment             = "production"
 deploy_services         = false
 allow_unauthenticated   = false
 deploy_public_edge      = false
+enable_billing          = false
 image_tag               = "replace-with-immutable-release-tag"
 runtime_config_revision = "production-initial"
 
@@ -26,3 +27,10 @@ r2_endpoint          = "https://replace-with-account-id.r2.cloudflarestorage.com
 database_tier       = "db-g1-small"
 worker_max_instances = 4
 api_max_instances    = 10
+
+# Paid-traffic gate. Create and verify at least one operator notification
+# channel first, then supply its full resource name here.
+enable_monitoring = true
+alert_notification_channel_ids = [
+  "projects/clipsubtitles-production/notificationChannels/replace-with-verified-channel-id",
+]

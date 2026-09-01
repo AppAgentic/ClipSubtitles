@@ -13,7 +13,17 @@ steps:
         corepack enable
         corepack prepare pnpm@10.33.1 --activate
         pnpm install --frozen-lockfile
-        pnpm check
+        pnpm --filter @clipsubtitles/web exec playwright install --with-deps chromium
+        REQUIRE_CLEAN_GIT=1 pnpm release:gate
+  - name: hashicorp/terraform:1.13.2
+    entrypoint: sh
+    args:
+      - -ceu
+      - |
+        terraform -chdir=infra/terraform fmt -check
+        terraform -chdir=infra/terraform init -backend=false
+        terraform -chdir=infra/terraform validate
+        terraform -chdir=infra/terraform test
   - name: gcr.io/cloud-builders/docker
     env: ['DOCKER_BUILDKIT=1']
     args:
