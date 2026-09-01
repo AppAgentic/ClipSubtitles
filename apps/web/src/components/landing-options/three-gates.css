@@ -630,15 +630,45 @@
 [data-lo='three-gates'] .tg-steps {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(24px, 4vw, 40px);
+  gap: clamp(12px, 1.6vw, 20px);
 }
 
 [data-lo='three-gates'] .tg-step {
+  position: relative;
   display: grid;
+  grid-template-rows: 156px auto minmax(0, 1fr) auto;
   align-content: start;
-  gap: 10px;
-  padding-top: 18px;
-  border-top: 2px solid var(--line);
+  gap: 14px;
+  min-width: 0;
+  min-height: 390px;
+  padding: clamp(18px, 2vw, 24px);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: var(--ink-2);
+}
+
+[data-lo='three-gates'] .tg-step-visual {
+  position: relative;
+  min-width: 0;
+  min-height: 156px;
+}
+
+[data-lo='three-gates'] .tg-step-visual img {
+  object-fit: contain;
+  padding: 2px clamp(10px, 2vw, 22px);
+  filter: var(--tg-audience-art-filter);
+  transition: transform 220ms ease;
+}
+
+[data-lo='three-gates'] .tg-step:hover .tg-step-visual img {
+  transform: translateY(-3px);
+}
+
+[data-lo='three-gates'] .tg-step-title {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
 }
 
 [data-lo='three-gates'] .tg-step-n {
@@ -649,20 +679,23 @@
 }
 
 [data-lo='three-gates'] .tg-step h3 {
-  font-size: clamp(22px, 2.4vw, 30px);
+  font-size: clamp(22px, 2.2vw, 28px);
   line-height: 1.05;
   letter-spacing: -0.02em;
 }
 
 [data-lo='three-gates'] .tg-step p {
+  margin: 0;
   max-width: 34ch;
   font-size: 15px;
+  line-height: 1.55;
   color: var(--dim);
 }
 
 [data-lo='three-gates'] .tg-step .tg-outputs {
   justify-content: flex-start;
-  margin-top: 2px;
+  align-self: end;
+  margin-top: 0;
 }
 
 /* ------------------------------------------------------- Sections */
@@ -1750,7 +1783,14 @@
   /* Words → Look → Download: row becomes a stack. */
   [data-lo='three-gates'] .tg-steps {
     grid-template-columns: minmax(0, 1fr);
-    gap: 28px;
+    gap: 16px;
+  }
+  [data-lo='three-gates'] .tg-step {
+    grid-template-rows: 170px auto auto auto;
+    min-height: 0;
+  }
+  [data-lo='three-gates'] .tg-step-visual {
+    min-height: 170px;
   }
   [data-lo='three-gates'] .tg-outputs {
     justify-content: flex-start;
@@ -1843,6 +1883,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  [data-lo='three-gates'] .tg-step-visual img {
+    transition: none;
+  }
   [data-lo='three-gates'] .tg-replay {
     display: none;
   }
