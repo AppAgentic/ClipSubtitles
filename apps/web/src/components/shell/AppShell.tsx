@@ -7,6 +7,11 @@ import type { Me } from '@clipsubtitles/contracts';
 import { useMe } from '@/lib/hooks';
 import { Spinner } from '@/components/ui/primitives';
 import { ClipSubtitlesWordmark } from '@/components/brand/ClipSubtitlesWordmark';
+import {
+  clearSupportUser,
+  identifySupportUser,
+  SupportButton,
+} from '@/components/support/GleapSupport';
 
 type NavIconName = 'home' | 'plus' | 'film' | 'spark' | 'settings' | 'help' | 'code';
 
@@ -76,6 +81,10 @@ export function AppShell({
       router.replace(`/sign-in?returnTo=${encodeURIComponent(pathname)}`);
   }, [loading, unauthenticated, router, pathname]);
 
+  useEffect(() => {
+    if (me) identifySupportUser(me);
+  }, [me]);
+
   if (loading || (!me && !error)) {
     return (
       <div className="grid min-h-screen place-items-center text-ink-mute">
@@ -117,9 +126,13 @@ export function AppShell({
           </div>
           <div className="ml-auto flex shrink-0 items-center gap-3 sm:gap-4">
             <CreditsPill available={me.credits.available} />
-            <Link href="/help" className="hidden text-[12px] text-ink-dim hover:text-ink sm:inline">
-              Help
-            </Link>
+            <SupportButton className="grid h-8 w-8 place-items-center rounded-full border border-line-strong bg-panel-2 text-ink-dim transition-colors hover:text-ink sm:hidden">
+              <span className="sr-only">Contact support</span>
+              <NavIcon name="help" className="h-4 w-4" />
+            </SupportButton>
+            <SupportButton className="hidden text-[12px] text-ink-dim hover:text-ink sm:inline">
+              Support
+            </SupportButton>
             <Link
               href="/developers"
               className="hidden text-[12px] text-ink-dim hover:text-ink md:inline"
@@ -138,6 +151,7 @@ export function AppShell({
               action="/auth/logout"
               onSubmit={(e) => {
                 e.preventDefault();
+                clearSupportUser();
                 void fetch('/auth/logout', { method: 'POST', credentials: 'include' }).then(() =>
                   router.replace('/sign-in'),
                 );

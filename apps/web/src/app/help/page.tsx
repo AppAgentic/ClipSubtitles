@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ClipSubtitlesWordmark } from '@/components/brand/ClipSubtitlesWordmark';
+import { SupportButton } from '@/components/support/GleapSupport';
 
 export const metadata: Metadata = {
   title: 'Help',
@@ -83,6 +84,17 @@ export default function HelpPage() {
               Read the developer guide →
             </Link>
           </div>
+        </section>
+        <section className="mt-16 rounded-[28px] border border-line bg-panel p-7 sm:flex sm:items-center sm:justify-between sm:gap-8 sm:p-10">
+          <div>
+            <h2 className="text-[24px] font-semibold">Still need a hand?</h2>
+            <p className="mt-2 max-w-[560px] text-[14px] leading-6 text-ink-dim">
+              Send us a question, report a problem, or tell us what would make ClipSubtitles better.
+            </p>
+          </div>
+          <SupportButton className="mt-6 inline-flex h-11 shrink-0 items-center rounded-full bg-signal px-5 text-[13px] font-semibold text-white transition-opacity hover:opacity-90 sm:mt-0">
+            Contact support
+          </SupportButton>
         </section>
       </div>
     </main>

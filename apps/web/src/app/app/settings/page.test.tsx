@@ -37,22 +37,37 @@ afterEach(() => {
 function renderSettings(billing: BillingOverview) {
   vi.spyOn(api, 'ledger').mockResolvedValue({ entries: [] });
   vi.spyOn(api, 'billing').mockResolvedValue(billing);
-  return render(<ToastProvider><Settings me={me} /></ToastProvider>);
+  return render(
+    <ToastProvider>
+      <Settings me={me} />
+    </ToastProvider>,
+  );
 }
 
 describe('dashboard billing controls', () => {
   it('tells an agent-originated customer how to resume after checkout', async () => {
-    window.history.replaceState({}, '', '/app/settings?checkout=complete&source=chatgpt&resume=render%3Aproject%3Aquote');
+    window.history.replaceState(
+      {},
+      '',
+      '/app/settings?checkout=complete&source=chatgpt&resume=render%3Aproject%3Aquote',
+    );
     renderSettings(freeBilling);
-    expect(await screen.findByText(/Return to ChatGPT and ask it to continue the caption export/)).toBeTruthy();
-    expect(window.location.pathname + window.location.search + window.location.hash).toBe('/app/settings#billing');
+    expect(
+      await screen.findByText(/Return to ChatGPT and ask it to continue the caption export/),
+    ).toBeTruthy();
+    expect(window.location.pathname + window.location.search + window.location.hash).toBe(
+      '/app/settings#billing',
+    );
   });
 
   it('defaults a free workspace upgrade chooser to annual pricing', async () => {
     renderSettings(freeBilling);
+    expect(screen.getByRole('button', { name: 'Contact support' })).toBeTruthy();
     const annual = await screen.findByRole('button', { name: 'Annual · save up to 20%' });
     expect(annual.getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByRole('button', { name: 'Monthly' }).getAttribute('aria-pressed')).toBe('false');
+    expect(screen.getByRole('button', { name: 'Monthly' }).getAttribute('aria-pressed')).toBe(
+      'false',
+    );
     expect(screen.getByRole('button', { name: 'Creator · $12/mo billed annually' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Pro · $33/mo billed annually' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Studio · $84/mo billed annually' })).toBeTruthy();
@@ -67,7 +82,9 @@ describe('dashboard billing controls', () => {
       credits: { ...me.credits, available: 12_000, total: 12_000 },
     });
     expect(await screen.findByRole('button', { name: 'Manage subscription' })).toBeTruthy();
-    expect(screen.getByText(/Upgrade, downgrade, change payment method, view invoices, or cancel/)).toBeTruthy();
+    expect(
+      screen.getByText(/Upgrade, downgrade, change payment method, view invoices, or cancel/),
+    ).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Annual · save up to 20%' })).toBeNull();
   });
 });

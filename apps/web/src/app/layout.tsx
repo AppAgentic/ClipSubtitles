@@ -5,6 +5,7 @@ import '@fontsource/ibm-plex-mono/500.css';
 import './globals.css';
 import { ToastProvider } from '@/components/ui/Toast';
 import { THEME_BOOT_SCRIPT } from '@/lib/theme';
+import { GleapSupportProvider } from '@/components/support/GleapSupport';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://clipsubtitles.com'),
@@ -33,7 +34,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <div id="app">
-          <ToastProvider>{children}</ToastProvider>
+          <GleapSupportProvider>
+            <ToastProvider>{children}</ToastProvider>
+          </GleapSupportProvider>
         </div>
       </body>
     </html>
