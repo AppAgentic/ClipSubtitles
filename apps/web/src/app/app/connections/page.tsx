@@ -176,7 +176,7 @@ function Connections() {
               <h2 className="editorial-serif mt-1 text-[23px] font-semibold">Also works with</h2>
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {['Codex', 'Claude Code', 'Gemini CLI', 'Other MCP clients'].map((client) => (
+              {['Claude', 'Gemini', 'Cursor', 'Other AI tools'].map((client) => (
                 <Link
                   key={client}
                   href="/developers"

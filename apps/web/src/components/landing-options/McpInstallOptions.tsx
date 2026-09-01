@@ -95,6 +95,18 @@ function InstallAction({ active, compact = false }: { active: InstallId; compact
     timer.current = setTimeout(() => setCopied(false), 1600);
   }
 
+  if (active === 'codex') {
+    return (
+      <div className={`mio-action mio-action-link${compact ? ' is-compact' : ''}`}>
+        <span>Use ClipSubtitles in ChatGPT</span>
+        <a href="/app/connections">
+          Connect ChatGPT
+          <span aria-hidden> →</span>
+        </a>
+      </div>
+    );
+  }
+
   if (oneClick) {
     return (
       <div className={`mio-action mio-action-link${compact ? ' is-compact' : ''}`}>
@@ -202,7 +214,7 @@ function HeroInstaller({
           aria-expanded={menuOpen}
           onClick={() => setMenuOpen(!menuOpen)}
         >
-          Other clients <span aria-hidden>↓</span>
+          Other AI tools <span aria-hidden>↓</span>
         </button>
         {menuOpen && (
           <div className="mio-menu">

@@ -89,7 +89,7 @@ export function McpClientTiles({ activeId, choose, scope, rail = false }: {
       : event.key === 'End'
         ? MCP_CLIENTS.length - 1
         : (index + delta + MCP_CLIENTS.length) % MCP_CLIENTS.length;
-    const next = MCP_CLIENTS[nextIndex] ?? { id: 'claude', label: 'Claude Code' };
+    const next = MCP_CLIENTS[nextIndex] ?? { id: 'claude', label: 'Claude' };
     choose(next.id);
     document.querySelector<HTMLButtonElement>(`[data-mcp-scope="${scope}"][data-mcp-client="${next.id}"]`)?.focus();
   }
@@ -132,6 +132,15 @@ export function McpInstallSlot({ activeId, large = false }: { activeId: McpClien
     } catch {
       document.getElementById('connect')?.scrollIntoView({ behavior: 'smooth' });
     }
+  }
+
+  if (activeId === 'codex') {
+    return (
+      <div className={`tg-install-slot tg-install-link${large ? ' is-large' : ''}`} role="region" aria-live="polite">
+        <span>Use ClipSubtitles in ChatGPT</span>
+        <a href="/app/connections">Connect ChatGPT<span aria-hidden> →</span></a>
+      </div>
+    );
   }
 
   if (oneClick) {

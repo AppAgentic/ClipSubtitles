@@ -28,7 +28,7 @@ const AUDIENCES = [
   },
   {
     title: 'Agents & automation teams',
-    body: 'Let ChatGPT, Claude, Codex or your own workflow prepare captioned videos while you keep approval over the final export.',
+    body: 'Let ChatGPT, Claude, Gemini or your own workflow prepare captioned videos while you keep approval over the final export.',
     image: '/marketing/audience-agents-automation.webp',
     alt: 'A builder connecting an AI workflow to a human-approved captioned video.',
   },

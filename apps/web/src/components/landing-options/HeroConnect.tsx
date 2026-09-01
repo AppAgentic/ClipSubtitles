@@ -10,7 +10,10 @@ export function HeroConnect() {
       <McpClientTiles activeId={activeId} choose={choose} scope="hero" />
       <McpInstallSlot activeId={activeId} />
       <p className="tg-connect-first-use">
-        First use opens a browser tab to sign in. <a href="#connect">Full guide ↓</a>
+        {activeId === 'codex'
+          ? 'Connect your account, then choose ClipSubtitles in ChatGPT. '
+          : 'First use opens a browser tab to sign in. '}
+        <a href="#connect">Full guide ↓</a>
       </p>
     </section>
   );

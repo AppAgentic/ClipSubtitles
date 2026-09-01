@@ -17,7 +17,7 @@ describe('PathChooser', () => {
     expect(screen.getByRole('tab', { name: 'Use in browser' }).getAttribute('aria-selected')).toBe(
       'false',
     );
-    expect(screen.getByRole('radio', { name: 'Claude Code' })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: 'Claude' })).toBeTruthy();
     expect(screen.getByText(/claude mcp add --transport http/)).toBeTruthy();
   });
 
@@ -30,7 +30,7 @@ describe('PathChooser', () => {
     expect(screen.getByRole('link', { name: /Continue in browser/ }).getAttribute('href')).toBe(
       '/sign-in?returnTo=/app/new',
     );
-    expect(screen.queryByRole('radio', { name: 'Claude Code' })).toBeNull();
+    expect(screen.queryByRole('radio', { name: 'Claude' })).toBeNull();
   });
 
   it('moves tab focus with the arrow keys and never traps focus', () => {

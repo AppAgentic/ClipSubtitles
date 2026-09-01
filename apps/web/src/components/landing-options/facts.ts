@@ -32,25 +32,25 @@ export const MCP_ENDPOINT = 'https://api.clipsubtitles.com/api/mcp';
 export const MCP_INSTALL = [
   {
     id: 'claude',
-    label: 'Claude Code',
+    label: 'Claude',
     instruction: 'Paste into your terminal',
     command: `claude mcp add --transport http clipsubtitles ${MCP_ENDPOINT}`,
   },
   {
     id: 'codex',
-    label: 'Codex',
+    label: 'ChatGPT',
     instruction: 'Add the server, then sign in',
     command: `codex mcp add clipsubtitles --url ${MCP_ENDPOINT}\ncodex mcp login clipsubtitles`,
   },
   {
     id: 'gemini',
-    label: 'Gemini CLI',
+    label: 'Gemini',
     instruction: 'Paste into your terminal',
     command: `gemini mcp add clipsubtitles ${MCP_ENDPOINT} --transport http`,
   },
   {
     id: 'other',
-    label: 'Other clients',
+    label: 'Other AI tools',
     instruction: "Add this to your client's MCP config",
     command: `{
   "mcpServers": {

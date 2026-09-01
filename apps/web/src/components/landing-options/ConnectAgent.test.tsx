@@ -13,11 +13,12 @@ afterEach(() => {
 describe('HeroConnect', () => {
   it('keeps the primary client commands and one-click links above the fold', () => {
     render(<HeroConnect />);
-    expect(screen.getByRole('radio', { name: 'Claude Code' }).getAttribute('aria-checked')).toBe('true');
+    expect(screen.getByRole('radio', { name: 'Claude' }).getAttribute('aria-checked')).toBe('true');
     expect(screen.getByText(/claude mcp add --transport http/)).toBeTruthy();
     expect(screen.getByRole('link', { name: /Full guide/ }).getAttribute('href')).toBe('#connect');
-    fireEvent.keyDown(screen.getByRole('radio', { name: 'Claude Code' }), { key: 'ArrowRight' });
-    expect(screen.getByRole('radio', { name: 'Codex' }).getAttribute('aria-checked')).toBe('true');
+    fireEvent.keyDown(screen.getByRole('radio', { name: 'Claude' }), { key: 'ArrowRight' });
+    expect(screen.getByRole('radio', { name: 'ChatGPT' }).getAttribute('aria-checked')).toBe('true');
+    expect(screen.getByRole('link', { name: /Connect ChatGPT/ }).getAttribute('href')).toBe('/app/connections');
     fireEvent.click(screen.getByRole('radio', { name: 'Cursor' }));
     expect(screen.getByRole('link', { name: /Add to Cursor/ })).toBeTruthy();
   });
@@ -37,11 +38,12 @@ describe('ConnectAgent', () => {
   it('exposes an accessible client board and changes commands', () => {
     const { container } = render(<ConnectAgent />);
     expect(container.querySelectorAll('.tg-client-icon[aria-hidden="true"]')).toHaveLength(6);
-    expect(screen.getByRole('radio', { name: 'Claude Code' }).getAttribute('aria-checked')).toBe('true');
-    fireEvent.click(screen.getByRole('radio', { name: 'Codex' }));
-    expect(screen.getByRole('radio', { name: 'Codex' }).getAttribute('aria-checked')).toBe('true');
-    expect(screen.getByText(/codex mcp login clipsubtitles/)).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Copy' })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: 'Claude' }).getAttribute('aria-checked')).toBe('true');
+    fireEvent.click(screen.getByRole('radio', { name: 'ChatGPT' }));
+    expect(screen.getByRole('radio', { name: 'ChatGPT' }).getAttribute('aria-checked')).toBe('true');
+    expect(screen.getByRole('link', { name: /Connect ChatGPT/ }).getAttribute('href')).toBe('/app/connections');
+    expect(screen.getByText('Choose ClipSubtitles in ChatGPT')).toBeTruthy();
+    expect(screen.queryByText('https://api.clipsubtitles.com/api/mcp')).toBeNull();
   });
 
   it('copies the complete active setup and announces success', async () => {
@@ -50,7 +52,7 @@ describe('ConnectAgent', () => {
     render(<ConnectAgent />);
     fireEvent.click(screen.getByRole('button', { name: 'Copy' }));
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining('claude mcp add --transport http'));
-    expect(await screen.findByText('Claude Code setup copied.')).toBeTruthy();
+    expect(await screen.findByText('Claude setup copied.')).toBeTruthy();
   });
 
   it('offers verified one-click install links for compatible editors', () => {
@@ -63,8 +65,8 @@ describe('ConnectAgent', () => {
 
   it('synchronizes the hero and guide client choice', () => {
     render(<><HeroConnect /><ConnectAgent /></>);
-    const codexChoices = screen.getAllByRole('radio', { name: 'Codex' });
-    fireEvent.click(codexChoices[0]!);
-    expect(codexChoices.every((choice) => choice.getAttribute('aria-checked') === 'true')).toBe(true);
+    const chatGptChoices = screen.getAllByRole('radio', { name: 'ChatGPT' });
+    fireEvent.click(chatGptChoices[0]!);
+    expect(chatGptChoices.every((choice) => choice.getAttribute('aria-checked') === 'true')).toBe(true);
   });
 });

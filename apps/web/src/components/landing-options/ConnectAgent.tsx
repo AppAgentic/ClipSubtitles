@@ -14,9 +14,9 @@ const AUTOMATION_PATHS = [
     alt: 'Conversation bubbles flowing into a captioned video.',
   },
   {
-    label: 'Codex & Claude Code',
+    label: 'ChatGPT, Claude & Gemini',
     title: 'From your workspace',
-    body: 'Use Codex, Cursor or Claude Code to turn the videos already in your workflow into captioned deliverables.',
+    body: 'Use your preferred AI assistant to turn videos already in your workflow into captioned deliverables.',
     image: '/marketing/automation-workspace.webp',
     alt: 'A workspace document flowing into a captioned video.',
   },
@@ -33,7 +33,7 @@ export function ConnectAgent({ standalone = false }: { standalone?: boolean }) {
   const { activeId, choose } = useMcpClient();
   const active = MCP_CLIENTS.find((item) => item.id === activeId) ?? {
     id: 'claude',
-    label: 'Claude Code',
+    label: 'Claude',
   };
   const Heading = standalone ? 'h2' : 'h3';
 
@@ -78,20 +78,22 @@ export function ConnectAgent({ standalone = false }: { standalone?: boolean }) {
       <div className="tg-connect-board">
         <McpClientTiles activeId={activeId} choose={choose} scope="guide" rail />
         <div className="tg-connect-page">
-          <p className="lo-eyebrow tg-eyebrow">Install</p>
+          <p className="lo-eyebrow tg-eyebrow">{activeId === 'codex' ? 'Connect' : 'Install'}</p>
           <h3>{active.label}</h3>
           <McpInstallSlot activeId={activeId} large />
           <dl className="tg-connect-checks">
             <div>
               <dt>First use</dt>
-              <dd>Sign in through your browser</dd>
+              <dd>{activeId === 'codex' ? 'Choose ClipSubtitles in ChatGPT' : 'Sign in through your browser'}</dd>
             </div>
-            <div>
-              <dt>Endpoint</dt>
-              <dd>
-                <code className="lo-mono">{MCP_ENDPOINT}</code>
-              </dd>
-            </div>
+            {activeId !== 'codex' ? (
+              <div>
+                <dt>Endpoint</dt>
+                <dd>
+                  <code className="lo-mono">{MCP_ENDPOINT}</code>
+                </dd>
+              </div>
+            ) : null}
           </dl>
         </div>
       </div>
