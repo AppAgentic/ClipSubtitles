@@ -987,24 +987,97 @@
 
 /* Mid-page CTA */
 [data-lo='three-gates'] .tg-mid {
+  position: relative;
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  padding-block: clamp(28px, 4vw, 44px);
-  border-top: 1px solid var(--line);
+  gap: clamp(28px, 4vw, 56px);
+  margin-block: clamp(48px, 7vw, 84px);
+  padding: clamp(30px, 4vw, 52px);
+  overflow: hidden;
+  border-radius: 30px;
+  background: var(--warm);
+  color: white;
+}
+
+[data-lo='three-gates'] .tg-mid::after {
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  right: 18%;
+  bottom: -210px;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  border-radius: 50%;
+  content: '';
+}
+
+[data-lo='three-gates'] .tg-mid-copy {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 10px;
+  max-width: 620px;
+}
+
+[data-lo='three-gates'] .tg-mid .lo-eyebrow,
+[data-lo='three-gates'] .tg-mid-copy > p:last-child {
+  color: rgb(255 255 255 / 0.78);
 }
 
 [data-lo='three-gates'] .tg-mid h2 {
-  font-size: clamp(22px, 2.6vw, 30px);
+  font-size: clamp(30px, 3.8vw, 48px);
+  line-height: 1;
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.035em;
 }
 
-[data-lo='three-gates'] .tg-audience,
+[data-lo='three-gates'] .tg-mid-copy > p:last-child {
+  max-width: 46ch;
+  font-size: clamp(15px, 1.4vw, 18px);
+}
+
+[data-lo='three-gates'] .tg-mid-arrow {
+  z-index: 1;
+  flex: 0 0 clamp(82px, 9vw, 128px);
+  width: clamp(82px, 9vw, 128px);
+  fill: none;
+  stroke: white;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+[data-lo='three-gates'] .tg-mid .tg-btn-primary {
+  z-index: 1;
+  flex: none;
+  min-width: 132px;
+  background: white;
+  color: #075cad;
+}
+
 [data-lo='three-gates'] .tg-faq {
   grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+}
+
+[data-lo='three-gates'] .tg-audience {
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(30px, 4vw, 52px);
+}
+
+[data-lo='three-gates'] .tg-audience .tg-section-copy {
+  grid-template-columns: minmax(0, 0.82fr) minmax(280px, 0.7fr);
+  align-items: end;
+  gap: clamp(36px, 9vw, 140px);
+}
+
+[data-lo='three-gates'] .tg-audience-heading {
+  display: grid;
+  gap: 20px;
+}
+
+[data-lo='three-gates'] .tg-audience .tg-section-copy > p:last-child {
+  max-width: 48ch;
+  padding-bottom: 6px;
 }
 
 [data-lo='three-gates'] .tg-audience-grid h3 {
@@ -1586,9 +1659,12 @@
 [data-lo='three-gates'] .tg-audience-grid li,
 [data-lo='three-gates'] .tg-audience-grid li + li {
   display: grid;
+  grid-template-rows: 184px auto minmax(0, 1fr);
   align-content: start;
   gap: 14px;
-  padding: 16px;
+  min-width: 0;
+  min-height: 390px;
+  padding: 20px;
   border: 1px solid var(--line);
   border-radius: 24px;
   background: var(--ink-2);
@@ -1596,7 +1672,7 @@
 
 [data-lo='three-gates'] .tg-audience-visual {
   position: relative;
-  min-height: 166px;
+  min-height: 184px;
 }
 
 [data-lo='three-gates'] .tg-audience-visual img {
@@ -1738,7 +1814,13 @@
   [data-lo='three-gates'] .tg-audience-grid,
   [data-lo='three-gates'] .tg-price-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   [data-lo='three-gates'] .tg-pricing-head { grid-template-columns: 1fr; align-items: start; }
-  [data-lo='three-gates'] .tg-bottom-cta { align-items: start; flex-direction: column; }
+  [data-lo='three-gates'] .tg-bottom-cta,
+  [data-lo='three-gates'] .tg-mid { align-items: start; flex-direction: column; }
+  [data-lo='three-gates'] .tg-mid-arrow { display: none; }
+  [data-lo='three-gates'] .tg-audience .tg-section-copy {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
   [data-lo='three-gates'] .tg-footer { grid-template-columns: 1fr; }
 }
 
@@ -1754,9 +1836,17 @@
 @media (max-width: 620px) {
   [data-lo='three-gates'] .tg-audience-grid,
   [data-lo='three-gates'] .tg-price-grid { grid-template-columns: 1fr; }
+  [data-lo='three-gates'] .tg-audience-grid li,
+  [data-lo='three-gates'] .tg-audience-grid li + li { min-height: 0; }
   [data-lo='three-gates'] .tg-price-grid article { min-height: 0; }
   [data-lo='three-gates'] .tg-footer-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   [data-lo='three-gates'] .tg-bottom-cta { margin-inline: 16px; width: auto; border-radius: 28px; }
+  [data-lo='three-gates'] .tg-mid {
+    margin-inline: 16px;
+    width: auto;
+    padding: 28px 24px;
+    border-radius: 26px;
+  }
   [data-lo='three-gates'] .tg-audience-visual { min-height: 196px; }
 }
 

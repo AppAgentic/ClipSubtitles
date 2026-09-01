@@ -160,7 +160,15 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
 
         {/* Mid-page CTA */}
         <section className="tg-mid lo-wrap" aria-labelledby="tg-mid-title">
-          <h2 id="tg-mid-title">Try it on your own clip.</h2>
+          <div className="tg-mid-copy">
+            <p className="lo-eyebrow">Your first clip is on us</p>
+            <h2 id="tg-mid-title">Try it on your own clip.</h2>
+            <p>Upload, review and style it in the browser before you export.</p>
+          </div>
+          <svg className="tg-mid-arrow" viewBox="0 0 128 82" aria-hidden="true">
+            <path d="M8 14c19 2 37 15 42 32 4 14-3 24-15 21-10-3-11-14-4-23 7-19 33-22 71-4" />
+            <path d="m91 28 14 13-17 8" />
+          </svg>
           <Link href="/sign-in?returnTo=/app/new" className="lo-btn tg-btn-primary">
             Try for $0
           </Link>
@@ -169,8 +177,10 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
         {/* 4 · Audience: concrete self-selection before the automation path. */}
         <section className="tg-section tg-audience lo-wrap" aria-labelledby="tg-audience-title">
           <div className="tg-section-copy">
-            <p className="lo-eyebrow tg-eyebrow">Made for the way you work</p>
-            <h2 id="tg-audience-title">Who is ClipSubtitles for?</h2>
+            <div className="tg-audience-heading">
+              <p className="lo-eyebrow tg-eyebrow">Made for the way you work</p>
+              <h2 id="tg-audience-title">Who is ClipSubtitles for?</h2>
+            </div>
             <p>
               Start with one clip in the browser, repeat a look across client work, or connect the
               same workflow to an AI agent.
@@ -185,7 +195,7 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
                       src={audience.image}
                       alt={audience.alt}
                       fill
-                      sizes="(max-width: 620px) calc(100vw - 72px), (max-width: 900px) 36vw, 220px"
+                      sizes="(max-width: 620px) calc(100vw - 72px), 30vw"
                     />
                   </div>
                   <h3>{audience.title}</h3>
