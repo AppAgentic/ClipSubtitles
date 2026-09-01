@@ -1474,13 +1474,19 @@
   position: sticky;
   top: 88px;
   grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
   align-self: start;
 }
 
 [data-lo='three-gates'] .tg-client-rail button {
-  min-height: 48px;
-  padding-inline: 15px;
+  min-height: 52px;
+  padding-inline: 18px;
+  border-radius: 16px;
   text-align: left;
+}
+
+[data-lo='three-gates'] .tg-client-rail button[aria-checked='true'] {
+  background: rgb(var(--warm-rgb) / 0.07);
 }
 
 [data-lo='three-gates'] .tg-connect-page {
@@ -1922,7 +1928,8 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   [data-lo='three-gates'] .tg-client-rail button {
-    min-height: 44px;
+    min-height: 48px;
+    border-radius: 15px;
     text-align: center;
   }
   [data-lo='three-gates'] .tg-connect-page {
