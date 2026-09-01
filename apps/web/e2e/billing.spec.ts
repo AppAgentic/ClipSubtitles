@@ -39,3 +39,34 @@ test('agent checkout preserves context and returns the customer to a clear resum
   await expect(page.locator('html')).toHaveJSProperty('scrollWidth', await page.evaluate(() => window.innerWidth));
 });
 
+test('signed-out paid-plan choice resumes checkout automatically after sign-in', async ({ page }) => {
+  let checkoutAttempts = 0;
+  await page.route('**/v1/billing/checkout', async (route) => {
+    checkoutAttempts += 1;
+    if (checkoutAttempts === 1) {
+      await route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: { code: 'UNAUTHENTICATED', message: 'Sign in required.', retryable: false } }),
+      });
+      return;
+    }
+    const body = route.request().postDataJSON() as Record<string, unknown>;
+    expect(body).toMatchObject({ sku: 'plan_creator_monthly', source: 'chatgpt', resume: 'render:after:signin' });
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ id: 'checkout_after_signin', url: '/app/settings?checkout=complete', sku: body.sku }),
+    });
+  });
+
+  await page.goto('/pricing?source=chatgpt&resume=render%3Aafter%3Asignin');
+  await page.getByRole('button', { name: 'Monthly' }).click();
+  await page.getByRole('button', { name: 'Choose Creator' }).click();
+  await expect(page).toHaveURL(/\/sign-in\?returnTo=/);
+  await page.getByRole('link', { name: /Continue to sign in/ }).click();
+  await page.getByRole('button', { name: /Joe \(mock\)/ }).click();
+
+  await expect(page).toHaveURL(/\/app\/settings\?checkout=complete/);
+  expect(checkoutAttempts).toBe(2);
+});

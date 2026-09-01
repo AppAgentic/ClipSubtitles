@@ -39,7 +39,8 @@ become the source of product entitlements or displayed allowances.
 - Agents receive `checkout_required` with the exact balance, shortfall, quote
   expiry and an app-owned pricing URL. The payment provider URL is never
   returned directly from an MCP tool.
-- Agent source/resume context survives sign-in and checkout. The completion
+- Agent source/resume context and the chosen monthly or annual plan survive
+  sign-in; checkout resumes automatically after authentication. The completion
   page tells the customer to return to ChatGPT, Claude, or their agent and
   continue the same still-valid quote.
 

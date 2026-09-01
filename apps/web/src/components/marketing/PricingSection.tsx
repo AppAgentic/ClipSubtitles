@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { BILLING_CATALOG, type BillingSku, type CheckoutSource } from '@clipsubtitles/contracts';
 import { api, isUnauthenticated } from '@/lib/api';
@@ -15,12 +15,16 @@ const FEATURES: Record<string, string[]> = {
 export function PricingSection({ compact = false }: { compact?: boolean }) {
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('annual');
   const [checkoutContext, setCheckoutContext] = useState<{ source: CheckoutSource; resume?: string }>({ source: 'web' });
+  const [resumeSku, setResumeSku] = useState<BillingSku>();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const source = checkoutSource(params.get('source'));
     const resume = params.get('resume')?.slice(0, 500);
+    const requestedSku = billingSku(params.get('plan'));
     setCheckoutContext({ source, ...(resume ? { resume } : {}) });
+    setResumeSku(requestedSku);
+    if (requestedSku) setBillingPeriod(requestedSku.endsWith('_annual') ? 'annual' : 'monthly');
   }, []);
 
   return (
@@ -67,7 +71,12 @@ export function PricingSection({ compact = false }: { compact?: boolean }) {
                 {plan.id === 'free' || !('sku' in plan) ? (
                   <Link href="/sign-in?returnTo=/app/new" className="lo-btn tg-price-action">Try for $0</Link>
                 ) : (
-                  <CheckoutButton sku={annual ? plan.annualSku : plan.sku} label={`Choose ${plan.name}`} context={checkoutContext} />
+                  <CheckoutButton
+                    sku={annual ? plan.annualSku : plan.sku}
+                    label={`Choose ${plan.name}`}
+                    context={checkoutContext}
+                    autoStart={resumeSku === (annual ? plan.annualSku : plan.sku)}
+                  />
                 )}
               </article>
             );
@@ -87,10 +96,21 @@ function formatPrice(cents: number): string {
   });
 }
 
-function CheckoutButton({ sku, label, context }: { sku: BillingSku; label: string; context: { source: CheckoutSource; resume?: string } }) {
+function CheckoutButton({
+  sku,
+  label,
+  context,
+  autoStart = false,
+}: {
+  sku: BillingSku;
+  label: string;
+  context: { source: CheckoutSource; resume?: string };
+  autoStart?: boolean;
+}) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const start = async () => {
+  const autoStarted = useRef(false);
+  const start = useCallback(async (resumingAfterSignIn = false) => {
     setBusy(true);
     setError('');
     try {
@@ -105,6 +125,10 @@ function CheckoutButton({ sku, label, context }: { sku: BillingSku; label: strin
       window.location.assign(checkout.url);
     } catch (err) {
       if (isUnauthenticated(err)) {
+        if (resumingAfterSignIn) {
+          setError('Your sign-in did not complete. Sign in again, then choose this plan.');
+          return;
+        }
         const returnParams = new URLSearchParams(window.location.search);
         returnParams.set('plan', sku);
         window.location.assign(`/sign-in?returnTo=${encodeURIComponent(`/pricing?${returnParams.toString()}`)}`);
@@ -114,10 +138,17 @@ function CheckoutButton({ sku, label, context }: { sku: BillingSku; label: strin
     } finally {
       setBusy(false);
     }
-  };
+  }, [context.resume, context.source, sku]);
+
+  useEffect(() => {
+    if (!autoStart || autoStarted.current) return;
+    autoStarted.current = true;
+    void start(true);
+  }, [autoStart, start]);
+
   return (
     <>
-      <button type="button" className="lo-btn tg-price-action" onClick={() => void start()} disabled={busy}>
+      <button type="button" className="lo-btn tg-price-action" onClick={() => void start(false)} disabled={busy}>
         {busy ? 'Opening…' : label}
       </button>
       {error ? <p className="tg-price-error" role="status">{error}</p> : null}
@@ -127,4 +158,13 @@ function CheckoutButton({ sku, label, context }: { sku: BillingSku; label: strin
 
 function checkoutSource(value: string | null): CheckoutSource {
   return value === 'chatgpt' || value === 'claude' || value === 'codex' || value === 'agent' ? value : 'web';
+}
+
+function billingSku(value: string | null): BillingSku | undefined {
+  if (!value) return undefined;
+  for (const plan of BILLING_CATALOG.plans) {
+    if (!('sku' in plan)) continue;
+    if (value === plan.sku || ('annualSku' in plan && value === plan.annualSku)) return value as BillingSku;
+  }
+  return undefined;
 }

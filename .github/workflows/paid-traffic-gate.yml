@@ -1,6 +1,7 @@
 name: Paid traffic gate
 
 on:
+  workflow_dispatch:
   pull_request:
   push:
     branches: [main]
@@ -42,4 +43,3 @@ jobs:
       - run: terraform -chdir=infra/terraform init -backend=false
       - run: terraform -chdir=infra/terraform validate
       - run: terraform -chdir=infra/terraform test
-
