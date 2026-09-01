@@ -8,7 +8,12 @@ become the source of product entitlements or displayed allowances.
 ## Implemented boundary
 
 - Free grants 10 lifetime credits in a dedicated `free` pool.
+- Every plan, including Free, includes browser, agent, MCP and API access;
+  tiers differ by credits, render concurrency and team controls.
 - Creator, Pro and Studio use expiring `subscription` pools.
+- Monthly purchases grant one monthly allowance; annual purchases grant the
+  full prepaid annual allowance. Both use the provider period end plus the
+  configured two-month grace window as their expiry.
 - Top-ups use non-expiring `purchased` pools.
 - Existing/manual grants use an isolated `admin` pool.
 - Reservations spend subscription, free and admin credits before purchased
@@ -35,8 +40,11 @@ Production requires these Secret Manager/process bindings:
 - `WHOP_ACCOUNT_ID`
 - `WHOP_WEBHOOK_SECRET`
 - `WHOP_PLAN_CREATOR_MONTHLY`
+- `WHOP_PLAN_CREATOR_ANNUAL`
 - `WHOP_PLAN_PRO_MONTHLY`
+- `WHOP_PLAN_PRO_ANNUAL`
 - `WHOP_PLAN_STUDIO_MONTHLY`
+- `WHOP_PLAN_STUDIO_ANNUAL`
 - `WHOP_PLAN_TOPUP_SMALL`
 - `WHOP_PLAN_TOPUP_MEDIUM`
 - `WHOP_PLAN_TOPUP_LARGE`

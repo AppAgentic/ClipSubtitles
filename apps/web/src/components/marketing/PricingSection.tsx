@@ -6,13 +6,15 @@ import { BILLING_CATALOG, type BillingSku } from '@clipsubtitles/contracts';
 import { api, isUnauthenticated } from '@/lib/api';
 
 const FEATURES: Record<string, string[]> = {
-  free: ['A complete first captioned clip', 'Caption styles and motion', 'Video and subtitle exports'],
-  creator: ['For a steady creator workflow', 'Monthly credits that can roll over', 'Buy extra credits when needed'],
-  pro: ['For higher-volume publishing', 'API and agent access', 'More simultaneous renders'],
-  studio: ['For teams and client delivery', 'Team controls', 'Highest included render capacity'],
+  free: ['A complete first captioned clip', 'Agent and API access', 'Caption styles and exports'],
+  creator: ['Agent and API access', 'Credits with a rollover grace period', 'Buy extra credits when needed'],
+  pro: ['Agent and API access', 'Higher monthly capacity', 'More simultaneous renders'],
+  studio: ['Agent and API access', 'Team controls', 'Highest included render capacity'],
 };
 
 export function PricingSection({ compact = false }: { compact?: boolean }) {
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
+
   return (
     <section id="pricing" className={`tg-pricing lo-wrap${compact ? ' is-compact' : ''}`} aria-labelledby="tg-pricing-title">
       <div className="tg-pricing-head">
@@ -20,36 +22,59 @@ export function PricingSection({ compact = false }: { compact?: boolean }) {
           <p className="lo-eyebrow tg-eyebrow">Simple pricing</p>
           <h2 id="tg-pricing-title">Start free. Pay when captions become part of your workflow.</h2>
         </div>
-        <p>No card for your first clip. Paid plans include monthly credits; add more only when you need them.</p>
+        <p>No card for your first clip. Choose monthly flexibility or save 15% annually; add credits only when you need them.</p>
       </div>
-      <div className="tg-price-grid">
-        {BILLING_CATALOG.plans.map((plan) => (
-          <article key={plan.id} className={plan.id === 'pro' ? 'is-featured' : ''}>
-            {plan.id === 'pro' ? <span className="tg-price-badge">Most popular</span> : null}
-            <p className="tg-price-name">{plan.name}</p>
-            <p className="tg-price-value">
-              <strong>${plan.monthlyPriceCents / 100}</strong>
-              <span>{plan.id === 'free' ? 'to start' : '/ month'}</span>
-            </p>
-            <p className="tg-price-summary">
-              {plan.id === 'free'
-                ? 'Try the full workflow on your own video.'
-                : `Includes ${plan.monthlyCredits.toLocaleString()} credits for repeat captioning.`}
-            </p>
-            <ul>
-              {FEATURES[plan.id]?.map((feature) => <li key={feature}>{feature}</li>)}
-            </ul>
-            {plan.id === 'free' || !('sku' in plan) ? (
-              <Link href="/sign-in?returnTo=/app/new" className="lo-btn tg-price-action">Try for $0</Link>
-            ) : (
-              <CheckoutButton sku={plan.sku} label={`Choose ${plan.name}`} />
-            )}
-          </article>
-        ))}
+      <div className="tg-price-body">
+        <div className="tg-billing-toggle" role="group" aria-label="Billing period">
+          <button type="button" aria-pressed={billingPeriod === 'monthly'} onClick={() => setBillingPeriod('monthly')}>
+            Monthly
+          </button>
+          <button type="button" aria-pressed={billingPeriod === 'annual'} onClick={() => setBillingPeriod('annual')}>
+            Annual <span>Save 15%</span>
+          </button>
+        </div>
+        <div className="tg-price-grid">
+          {BILLING_CATALOG.plans.map((plan) => {
+            const annual = billingPeriod === 'annual' && 'annualSku' in plan;
+            const priceCents = annual ? plan.annualPriceCents : plan.monthlyPriceCents;
+            const credits = annual ? plan.annualCredits : plan.monthlyCredits;
+            return (
+              <article key={plan.id} className={plan.id === 'pro' ? 'is-featured' : ''}>
+                {plan.id === 'pro' ? <span className="tg-price-badge">Most popular</span> : null}
+                <p className="tg-price-name">{plan.name}</p>
+                <p className="tg-price-value">
+                  <strong>${formatPrice(priceCents)}</strong>
+                  <span>{plan.id === 'free' ? 'to start' : annual ? '/ year' : '/ month'}</span>
+                </p>
+                <p className="tg-price-summary">
+                  {plan.id === 'free'
+                    ? 'Try the full workflow on your own video.'
+                    : `Includes ${credits.toLocaleString()} credits ${annual ? 'for the year' : 'each month'}.`}
+                </p>
+                <ul>
+                  {FEATURES[plan.id]?.map((feature) => <li key={feature}>{feature}</li>)}
+                </ul>
+                {plan.id === 'free' || !('sku' in plan) ? (
+                  <Link href="/sign-in?returnTo=/app/new" className="lo-btn tg-price-action">Try for $0</Link>
+                ) : (
+                  <CheckoutButton sku={annual ? plan.annualSku : plan.sku} label={`Choose ${plan.name}`} />
+                )}
+              </article>
+            );
+          })}
+        </div>
       </div>
       <p className="tg-pricing-note">Credits are used for finished video renders. Previewing, editing, and subtitle files do not use credits.</p>
     </section>
   );
+}
+
+function formatPrice(cents: number): string {
+  const value = cents / 100;
+  return value.toLocaleString('en-US', {
+    minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
+    maximumFractionDigits: cents % 100 === 0 ? 0 : 2,
+  });
 }
 
 function CheckoutButton({ sku, label }: { sku: BillingSku; label: string }) {

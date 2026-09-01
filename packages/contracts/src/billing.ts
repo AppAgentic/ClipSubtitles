@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { OutputKindSchema, ResolutionSchema } from './render';
 
 export const PRICE_VERSION = '2026-08-v1';
-export const BILLING_CATALOG_VERSION = '2026-08-launch-v2';
+export const BILLING_CATALOG_VERSION = '2026-09-launch-v3';
 
 /**
  * Credit price table. Credits per billable output minute; subtitle files are
@@ -65,8 +65,11 @@ export type PaidBillingPlanId = z.infer<typeof PaidBillingPlanIdSchema>;
 
 export const BillingSkuSchema = z.enum([
   'plan_creator_monthly',
+  'plan_creator_annual',
   'plan_pro_monthly',
+  'plan_pro_annual',
   'plan_studio_monthly',
+  'plan_studio_annual',
   'topup_small',
   'topup_medium',
   'topup_large',
@@ -81,11 +84,14 @@ export const BillingPlanSchema = z.object({
   name: z.string(),
   monthlyPriceCents: z.number().int().nonnegative(),
   monthlyCredits: z.number().int().nonnegative(),
+  annualPriceCents: z.number().int().nonnegative().optional(),
+  annualCredits: z.number().int().nonnegative().optional(),
   approximateMp4Minutes: z.number().int().nonnegative(),
   activeRenderLimit: z.number().int().positive(),
   apiAccess: z.boolean(),
   teamControls: z.boolean(),
   sku: BillingSkuSchema.optional(),
+  annualSku: BillingSkuSchema.optional(),
 });
 export type BillingPlan = z.infer<typeof BillingPlanSchema>;
 
@@ -106,7 +112,7 @@ export const BILLING_PLANS = [
     monthlyCredits: 0,
     approximateMp4Minutes: 1,
     activeRenderLimit: 1,
-    apiAccess: false,
+    apiAccess: true,
     teamControls: false,
   },
   {
@@ -114,33 +120,42 @@ export const BILLING_PLANS = [
     name: 'Creator',
     monthlyPriceCents: 1_500,
     monthlyCredits: 300,
+    annualPriceCents: 15_300,
+    annualCredits: 3_600,
     approximateMp4Minutes: 30,
     activeRenderLimit: 1,
-    apiAccess: false,
+    apiAccess: true,
     teamControls: false,
     sku: 'plan_creator_monthly',
+    annualSku: 'plan_creator_annual',
   },
   {
     id: 'pro',
     name: 'Pro',
     monthlyPriceCents: 3_900,
     monthlyCredits: 1_000,
+    annualPriceCents: 39_800,
+    annualCredits: 12_000,
     approximateMp4Minutes: 100,
     activeRenderLimit: 2,
     apiAccess: true,
     teamControls: false,
     sku: 'plan_pro_monthly',
+    annualSku: 'plan_pro_annual',
   },
   {
     id: 'studio',
     name: 'Studio',
     monthlyPriceCents: 9_900,
     monthlyCredits: 3_000,
+    annualPriceCents: 101_000,
+    annualCredits: 36_000,
     approximateMp4Minutes: 300,
     activeRenderLimit: 4,
     apiAccess: true,
     teamControls: true,
     sku: 'plan_studio_monthly',
+    annualSku: 'plan_studio_annual',
   },
 ] as const satisfies readonly BillingPlan[];
 

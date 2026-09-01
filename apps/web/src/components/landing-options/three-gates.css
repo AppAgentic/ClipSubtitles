@@ -1779,6 +1779,11 @@
 [data-lo='three-gates'] .tg-pricing-head > div { display: grid; gap: 16px; }
 [data-lo='three-gates'] .tg-pricing-head h2 { max-width: 16ch; font-size: clamp(38px, 5.2vw, 68px); line-height: .98; letter-spacing: -.035em; }
 [data-lo='three-gates'] .tg-pricing-head > p { max-width: 42ch; color: var(--dim); font-size: 17px; }
+[data-lo='three-gates'] .tg-price-body { display: grid; gap: 22px; }
+[data-lo='three-gates'] .tg-billing-toggle { display: inline-flex; justify-self: center; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 999px; background: var(--ink-2); }
+[data-lo='three-gates'] .tg-billing-toggle button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 18px; border: 0; border-radius: 999px; background: transparent; color: var(--dim); font-size: 13px; font-weight: 700; cursor: pointer; }
+[data-lo='three-gates'] .tg-billing-toggle button[aria-pressed='true'] { background: var(--ink); color: var(--text); box-shadow: 0 1px 2px rgb(0 0 0 / .08); }
+[data-lo='three-gates'] .tg-billing-toggle span { padding: 4px 7px; border-radius: 999px; background: color-mix(in srgb, var(--warm) 13%, transparent); color: var(--warm); font-size: 10px; }
 [data-lo='three-gates'] .tg-price-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 [data-lo='three-gates'] .tg-price-grid article { position: relative; display: flex; min-width: 0; min-height: 430px; flex-direction: column; padding: 24px; border: 1px solid var(--line); border-radius: 26px; background: var(--ink-2); }
 [data-lo='three-gates'] .tg-price-grid article.is-featured { border-color: rgb(var(--warm-rgb) / .58); box-shadow: 0 24px 70px -52px rgb(var(--warm-rgb) / .8); }
@@ -1842,6 +1847,8 @@
 @media (max-width: 620px) {
   [data-lo='three-gates'] .tg-audience-grid,
   [data-lo='three-gates'] .tg-price-grid { grid-template-columns: 1fr; }
+  [data-lo='three-gates'] .tg-billing-toggle { width: 100%; }
+  [data-lo='three-gates'] .tg-billing-toggle button { flex: 1; padding-inline: 12px; }
   [data-lo='three-gates'] .tg-audience-grid li,
   [data-lo='three-gates'] .tg-audience-grid li + li { min-height: 0; }
   [data-lo='three-gates'] .tg-price-grid article { min-height: 0; }

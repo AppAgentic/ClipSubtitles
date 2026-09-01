@@ -60,8 +60,11 @@ const EnvSchema = z.object({
   WHOP_ACCOUNT_ID: z.string().optional(),
   WHOP_WEBHOOK_SECRET: z.string().optional(),
   WHOP_PLAN_CREATOR_MONTHLY: z.string().optional(),
+  WHOP_PLAN_CREATOR_ANNUAL: z.string().optional(),
   WHOP_PLAN_PRO_MONTHLY: z.string().optional(),
+  WHOP_PLAN_PRO_ANNUAL: z.string().optional(),
   WHOP_PLAN_STUDIO_MONTHLY: z.string().optional(),
+  WHOP_PLAN_STUDIO_ANNUAL: z.string().optional(),
   WHOP_PLAN_TOPUP_SMALL: z.string().optional(),
   WHOP_PLAN_TOPUP_MEDIUM: z.string().optional(),
   WHOP_PLAN_TOPUP_LARGE: z.string().optional(),
@@ -273,14 +276,17 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   if (e.BILLING_PROVIDER === 'whop') {
     const planIds = {
       plan_creator_monthly: e.WHOP_PLAN_CREATOR_MONTHLY,
+      plan_creator_annual: e.WHOP_PLAN_CREATOR_ANNUAL,
       plan_pro_monthly: e.WHOP_PLAN_PRO_MONTHLY,
+      plan_pro_annual: e.WHOP_PLAN_PRO_ANNUAL,
       plan_studio_monthly: e.WHOP_PLAN_STUDIO_MONTHLY,
+      plan_studio_annual: e.WHOP_PLAN_STUDIO_ANNUAL,
       topup_small: e.WHOP_PLAN_TOPUP_SMALL,
       topup_medium: e.WHOP_PLAN_TOPUP_MEDIUM,
       topup_large: e.WHOP_PLAN_TOPUP_LARGE,
     };
     if (!e.WHOP_API_KEY || !e.WHOP_ACCOUNT_ID || !e.WHOP_WEBHOOK_SECRET || Object.values(planIds).some((value) => !value)) {
-      throw new ConfigError('BILLING_PROVIDER=whop requires the Whop API key, account ID, webhook secret, and all six plan IDs.');
+      throw new ConfigError('BILLING_PROVIDER=whop requires the Whop API key, account ID, webhook secret, and all nine plan IDs.');
     }
     billing = {
       provider: 'whop',

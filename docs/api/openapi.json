@@ -6700,6 +6700,14 @@
                             "type": "integer",
                             "minimum": 0
                           },
+                          "annualPriceCents": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "annualCredits": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
                           "approximateMp4Minutes": {
                             "type": "integer",
                             "minimum": 0
@@ -6718,8 +6726,25 @@
                             "type": "string",
                             "enum": [
                               "plan_creator_monthly",
+                              "plan_creator_annual",
                               "plan_pro_monthly",
+                              "plan_pro_annual",
                               "plan_studio_monthly",
+                              "plan_studio_annual",
+                              "topup_small",
+                              "topup_medium",
+                              "topup_large"
+                            ]
+                          },
+                          "annualSku": {
+                            "type": "string",
+                            "enum": [
+                              "plan_creator_monthly",
+                              "plan_creator_annual",
+                              "plan_pro_monthly",
+                              "plan_pro_annual",
+                              "plan_studio_monthly",
+                              "plan_studio_annual",
                               "topup_small",
                               "topup_medium",
                               "topup_large"
@@ -6747,8 +6772,11 @@
                             "type": "string",
                             "enum": [
                               "plan_creator_monthly",
+                              "plan_creator_annual",
                               "plan_pro_monthly",
+                              "plan_pro_annual",
                               "plan_studio_monthly",
+                              "plan_studio_annual",
                               "topup_small",
                               "topup_medium",
                               "topup_large"
@@ -7017,8 +7045,11 @@
                     "type": "string",
                     "enum": [
                       "plan_creator_monthly",
+                      "plan_creator_annual",
                       "plan_pro_monthly",
+                      "plan_pro_annual",
                       "plan_studio_monthly",
+                      "plan_studio_annual",
                       "topup_small",
                       "topup_medium",
                       "topup_large"
@@ -7072,8 +7103,11 @@
                       "type": "string",
                       "enum": [
                         "plan_creator_monthly",
+                        "plan_creator_annual",
                         "plan_pro_monthly",
+                        "plan_pro_annual",
                         "plan_studio_monthly",
+                        "plan_studio_annual",
                         "topup_small",
                         "topup_medium",
                         "topup_large"

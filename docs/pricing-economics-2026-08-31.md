@@ -76,15 +76,19 @@ with a separate price.
 
 | Plan | Price | Included credits | Plain-language equivalent | Product boundary |
 | --- | ---: | ---: | --- | --- |
-| Free | $0 | 10 lifetime | about 1 minute of standard 1080p MP4 | One real end-to-end proof, free previews and editing; hard cap before provider work |
-| Creator | $15/month | 300/month | up to 30 standard MP4 minutes | Browser + connected agents, all core styles/exports, one active render |
-| Pro | $39/month | 1,000/month | up to 100 standard MP4 minutes | Creator plus API keys/webhooks, higher concurrency and priority processing |
-| Studio | $99/month | 3,000/month | up to 300 standard MP4 minutes | Pro plus team/brand controls and four active renders when those capabilities ship |
+| Free | $0 | 10 lifetime | about 1 minute of standard 1080p MP4 | One real end-to-end proof through web, agent or API; free previews and editing; hard cap before provider work |
+| Creator | $15/month | 300/month | up to 30 standard MP4 minutes | Web, agent and API access, all core styles/exports, one active render |
+| Pro | $39/month | 1,000/month | up to 100 standard MP4 minutes | The same interfaces with higher capacity, concurrency and priority processing |
+| Studio | $99/month | 3,000/month | up to 300 standard MP4 minutes | The same interfaces plus team/brand controls and four active renders when those capabilities ship |
 
-Offer annual billing at roughly 15% off after monthly conversion is understood.
-Do not launch an unlimited plan. Cap subscription-credit rollover at 2× the
-monthly allowance; keep purchased credits in a separate non-expiring pool and
-spend expiring subscription credits first.
+The catalog also includes annual billing at roughly 15% off: Creator is $153/year
+with 3,600 credits, Pro is $398/year with 12,000 credits, and Studio is
+$1,010/year with 36,000 credits. Annual credits are granted as one prepaid pool
+and expire at the annual period end plus the same two-month grace window.
+Do not launch an unlimited plan. Monthly subscription credits retain the
+two-month rollover policy; the prepaid annual pool lasts through the annual
+period plus the same two-month grace window. Keep purchased credits in a
+separate non-expiring pool and spend expiring subscription credits first.
 
 Recommended top-ups:
 

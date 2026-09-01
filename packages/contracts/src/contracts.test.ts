@@ -24,7 +24,7 @@ describe('billing catalog', () => {
     expect(BillingCatalogSchema.parse(BILLING_CATALOG)).toEqual(BILLING_CATALOG);
     expect(BILLING_CATALOG.version).toMatch(/^2026-/);
     const skus = [
-      ...BILLING_CATALOG.plans.flatMap((plan) => ('sku' in plan ? [plan.sku] : [])),
+      ...BILLING_CATALOG.plans.flatMap((plan) => ('sku' in plan ? [plan.sku, plan.annualSku] : [])),
       ...BILLING_CATALOG.topUps.map((topUp) => topUp.sku),
     ];
     expect(new Set(skus).size).toBe(skus.length);
@@ -48,6 +48,24 @@ describe('billing catalog', () => {
       { id: 'creator', monthlyPriceCents: 1_500, monthlyCredits: 300 },
       { id: 'pro', monthlyPriceCents: 3_900, monthlyCredits: 1_000 },
       { id: 'studio', monthlyPriceCents: 9_900, monthlyCredits: 3_000 },
+    ]);
+  });
+
+  it('includes agent and API access on every plan', () => {
+    expect(BILLING_CATALOG.plans.every((plan) => plan.apiAccess)).toBe(true);
+  });
+
+  it('offers annual paid plans at approximately fifteen percent off', () => {
+    expect(
+      BILLING_CATALOG.plans.flatMap((plan) =>
+        'annualSku' in plan
+          ? [{ id: plan.id, annualPriceCents: plan.annualPriceCents, annualCredits: plan.annualCredits }]
+          : [],
+      ),
+    ).toEqual([
+      { id: 'creator', annualPriceCents: 15_300, annualCredits: 3_600 },
+      { id: 'pro', annualPriceCents: 39_800, annualCredits: 12_000 },
+      { id: 'studio', annualPriceCents: 101_000, annualCredits: 36_000 },
     ]);
   });
 });

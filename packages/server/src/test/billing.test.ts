@@ -124,4 +124,38 @@ describe('billing checkout and webhook lifecycle', () => {
       expect.objectContaining({ kind: 'purchased', available: 200 }),
     ]));
   });
+
+  it('grants the full prepaid credit allowance for an annual plan', async () => {
+    billing.event = {
+      id: 'evt_creator_annual_1',
+      type: 'payment.succeeded',
+      occurredAt: '2026-09-01T12:01:00.000Z',
+      data: {
+        metadata: { workspace_id: workspaceId, sku: 'plan_creator_annual' },
+        current_period_end: '2027-09-01T12:01:00.000Z',
+        customer_id: 'customer_annual',
+        membership_id: 'membership_annual',
+      },
+    };
+    const result = await h.api<{ received: boolean; duplicate: boolean }>('POST', '/v1/billing/webhooks/whop', {
+      raw: '{}',
+      headers: {
+        'webhook-id': 'evt_creator_annual_1',
+        'webhook-timestamp': '1788260460',
+        'webhook-signature': 'test-signature',
+      },
+    });
+    expect(result).toMatchObject({ status: 200, body: { received: true, duplicate: false } });
+
+    const overview = await h.api<{
+      planId: string;
+      credits: { available: number };
+      pools: Array<{ kind: string; available: number; expiresAt?: string }>;
+    }>('GET', '/v1/billing', { token });
+    expect(overview.body).toMatchObject({ planId: 'creator', credits: { available: 3_610 } });
+    expect(overview.body.pools).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: 'subscription', available: 3_600, expiresAt: '2027-11-01T12:01:00.000Z' }),
+      expect.objectContaining({ kind: 'free', available: 10 }),
+    ]));
+  });
 });

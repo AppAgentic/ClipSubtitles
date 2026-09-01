@@ -116,7 +116,7 @@ describe('auth boundaries', () => {
     ]);
     const overview = await h.api<{ planId: string; credits: { available: number }; pools: Array<{ kind: string; available: number }>; entitlements: { apiAccess: boolean } }>('GET', '/v1/billing', { token });
     expect(overview.status).toBe(200);
-    expect(overview.body).toMatchObject({ planId: 'free', credits: { available: 10 }, entitlements: { apiAccess: false } });
+    expect(overview.body).toMatchObject({ planId: 'free', credits: { available: 10 }, entitlements: { apiAccess: true } });
     expect(overview.body.pools).toEqual([{ kind: 'free', available: 10, reserved: 0 }]);
   });
 

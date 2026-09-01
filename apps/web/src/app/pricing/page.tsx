@@ -8,7 +8,7 @@ import '@/components/landing-options/three-gates.css';
 
 export const metadata: Metadata = {
   title: 'Pricing | ClipSubtitles',
-  description: 'Start captioning for $0, then choose a flexible monthly plan for creators, professionals, or studios.',
+  description: 'Start captioning for $0, then choose flexible monthly or annual pricing for creators, professionals, or studios.',
   alternates: { canonical: '/pricing' },
 };
 

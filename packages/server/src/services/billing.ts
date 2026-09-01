@@ -112,8 +112,11 @@ export async function processBillingWebhook(
       });
       return { received: true, duplicate: false };
     }
-    const plan = BILLING_PLANS.find((candidate) => 'sku' in candidate && candidate.sku === sku);
+    const plan = BILLING_PLANS.find(
+      (candidate) => 'sku' in candidate && (candidate.sku === sku || candidate.annualSku === sku),
+    );
     if (!plan || plan.id === 'free') return { received: true, duplicate: false };
+    const annual = plan.annualSku === sku;
     const periodEnd = stringField(event.data, ['current_period_end', 'renewal_period_end', 'expires_at']);
     const providerCustomerId = stringField(event.data, ['customer_id', 'user_id']);
     const providerSubscriptionId = stringField(event.data, ['membership_id', 'subscription_id']);
@@ -130,11 +133,11 @@ export async function processBillingWebhook(
     const rolloverEnd = periodEnd ? addMonths(periodEnd, BILLING_CATALOG.subscriptionRolloverMonths) : undefined;
     await ctx.db.grantCredits({
       workspaceId,
-      amount: plan.monthlyCredits,
+      amount: annual ? plan.annualCredits : plan.monthlyCredits,
       poolKind: 'subscription',
       ...(rolloverEnd ? { expiresAt: rolloverEnd } : {}),
       idempotencyKey: `billing:${ctx.billing.name}:${event.id}`,
-      note: `${plan.name} monthly credits`,
+      note: `${plan.name} ${annual ? 'annual' : 'monthly'} credits`,
       now: ctx.clock.iso(),
     });
     return { received: true, duplicate: false };
