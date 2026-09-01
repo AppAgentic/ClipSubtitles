@@ -40,6 +40,7 @@
     "smoke:render:remotion": "pnpm --filter @clipsubtitles/render-remotion smoke",
     "smoke:e2e": "pnpm --filter @clipsubtitles/server smoke:e2e",
     "mcp:conformance": "pnpm --filter @clipsubtitles/server mcp:conformance",
+    "whop:catalog": "pnpm --filter @clipsubtitles/server whop:catalog",
     "release:gate": "bash scripts/paid-traffic-gate.sh",
     "openapi:emit": "pnpm --filter @clipsubtitles/server openapi:emit",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"

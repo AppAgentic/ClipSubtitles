@@ -5,6 +5,10 @@ connected-agent surface. The launch catalog is defined in
 `packages/contracts/src/billing.ts`; provider products mirror it but never
 become the source of product entitlements or displayed allowances.
 
+The provider catalog is reconciled by `pnpm whop:catalog`. It uses Whop CLI
+`0.16.0`, derives every provider plan from the shared catalog, and is read-only
+unless the sole mutation flag `--apply` is supplied.
+
 ## Implemented boundary
 
 - Free grants 10 lifetime credits in a dedicated `free` pool.
@@ -72,6 +76,35 @@ matches the code-owned catalog.
 
 Set `BILLING_PROVIDER=whop` only after every binding exists. Configuration
 fails closed if any required value is missing.
+
+## Catalog provisioning contract
+
+1. Select the verified AppAgentic Whop business and make its non-secret
+   `biz_...` identifier available as `WHOP_ACCOUNT_ID`. Never trust an account
+   selected only by the current CLI profile name.
+2. Authenticate the pinned official Whop CLI through the account workflow; do
+   not copy provider credentials into this repository or an `.env` file.
+3. Run `pnpm whop:catalog` first. This lists the exact create/update/unchanged
+   plan without mutating provider state.
+4. Review that the desired catalog contains one hidden product, six hidden
+   recurring plans and three hidden one-time top-ups. Price, currency, cadence,
+   product ownership and plan type are immutable safety fields: drift aborts
+   instead of rewriting a potentially sold plan.
+5. Only after explicit provider-mutation approval, run
+   `pnpm whop:catalog -- --apply`. The command uses idempotency keys, performs
+   exact provider readback, and prints only verified binding names—not API
+   keys, webhook secrets, account IDs or provider plan IDs. After exact
+   readback, it pipes all nine plan IDs directly into app-scoped `mc-vault`
+   entries without exposing their values.
+6. Copy those vault entries into the matching Secret Manager containers using
+   the approved non-printing production workflow. Run the default dry-run
+   again; every action must be `unchanged`.
+
+The catalog command intentionally does not create the Standard Webhook. Prior
+AppAgentic launches found that an Admin API key could manage products/plans but
+not webhooks, and a webhook secret is create-only. Register and verify the
+endpoint separately through the authenticated AppAgentic Whop dashboard, store
+the secret without printing it, and then run the signed-event acceptance below.
 
 ## Live acceptance checklist
 

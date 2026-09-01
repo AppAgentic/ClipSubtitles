@@ -22,7 +22,8 @@
     "start:worker-push": "node --no-warnings=ExperimentalWarning dist/worker-push.js",
     "openapi:emit": "NODE_OPTIONS=--no-warnings=ExperimentalWarning tsx src/bin/openapi-emit.ts",
     "mcp:conformance": "NODE_OPTIONS=--no-warnings=ExperimentalWarning tsx src/bin/mcp-conformance.ts",
-    "smoke:e2e": "NODE_OPTIONS=--no-warnings=ExperimentalWarning tsx src/bin/smoke-e2e.ts"
+    "smoke:e2e": "NODE_OPTIONS=--no-warnings=ExperimentalWarning tsx src/bin/smoke-e2e.ts",
+    "whop:catalog": "NODE_OPTIONS=--no-warnings=ExperimentalWarning tsx src/bin/whop-catalog.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1121.0",
