@@ -35,7 +35,8 @@ describe('ConnectAgent', () => {
   });
 
   it('exposes an accessible client board and changes commands', () => {
-    render(<ConnectAgent />);
+    const { container } = render(<ConnectAgent />);
+    expect(container.querySelectorAll('.tg-client-icon[aria-hidden="true"]')).toHaveLength(6);
     expect(screen.getByRole('radio', { name: 'Claude Code' }).getAttribute('aria-checked')).toBe('true');
     fireEvent.click(screen.getByRole('radio', { name: 'Codex' }));
     expect(screen.getByRole('radio', { name: 'Codex' }).getAttribute('aria-checked')).toBe('true');

@@ -1309,6 +1309,13 @@
 }
 
 [data-lo='three-gates'] .tg-client-tiles button {
+  --client-accent: #74747a;
+  --client-accent-rgb: 116 116 122;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   min-width: 0;
   min-height: 40px;
   padding: 0 7px;
@@ -1321,14 +1328,50 @@
   cursor: pointer;
 }
 
+[data-lo='three-gates'] .tg-client-icon {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  color: var(--client-accent);
+  filter: drop-shadow(0 0 5px rgb(var(--client-accent-rgb) / 0.16));
+}
+
+[data-lo='three-gates'] .tg-client-tiles button[data-mcp-client='claude'] {
+  --client-accent: #d97757;
+  --client-accent-rgb: 217 119 87;
+}
+
+[data-lo='three-gates'] .tg-client-tiles button[data-mcp-client='codex'] {
+  --client-accent: #10a37f;
+  --client-accent-rgb: 16 163 127;
+}
+
+[data-lo='three-gates'] .tg-client-tiles button[data-mcp-client='gemini'] {
+  --client-accent: #4d7fe8;
+  --client-accent-rgb: 77 127 232;
+}
+
+[data-lo='three-gates'] .tg-client-tiles button[data-mcp-client='cursor'] {
+  --client-accent: #8b82d9;
+  --client-accent-rgb: 139 130 217;
+}
+
+[data-lo='three-gates'] .tg-client-tiles button[data-mcp-client='vscode'] {
+  --client-accent: #1685c4;
+  --client-accent-rgb: 22 133 196;
+}
+
 [data-lo='three-gates'] .tg-client-tiles button:hover {
-  border-color: rgb(var(--tg-line-rgb) / 0.35);
-  color: var(--text);
+  border-color: rgb(var(--client-accent-rgb) / 0.5);
+  background: rgb(var(--client-accent-rgb) / 0.05);
+  color: color-mix(in srgb, var(--client-accent) 75%, var(--text));
 }
 
 [data-lo='three-gates'] .tg-client-tiles button[aria-checked='true'] {
-  border-color: var(--warm);
-  color: var(--warm);
+  border-color: rgb(var(--client-accent-rgb) / 0.8);
+  background: rgb(var(--client-accent-rgb) / 0.1);
+  color: color-mix(in srgb, var(--client-accent) 75%, var(--text));
+  box-shadow: 0 0 0 1px rgb(var(--client-accent-rgb) / 0.08);
 }
 
 [data-lo='three-gates'] .tg-install-slot {
@@ -1486,7 +1529,7 @@
 }
 
 [data-lo='three-gates'] .tg-client-rail button[aria-checked='true'] {
-  background: rgb(var(--warm-rgb) / 0.07);
+  background: rgb(var(--client-accent-rgb) / 0.1);
 }
 
 [data-lo='three-gates'] .tg-connect-page {

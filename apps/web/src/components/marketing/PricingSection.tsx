@@ -36,7 +36,7 @@ export function PricingSection({ compact = false }: { compact?: boolean }) {
         <div className="tg-price-grid">
           {BILLING_CATALOG.plans.map((plan) => {
             const annual = billingPeriod === 'annual' && 'annualSku' in plan;
-            const priceCents = annual ? plan.annualPriceCents : plan.monthlyPriceCents;
+            const priceCents = annual ? Math.round(plan.annualPriceCents / 12) : plan.monthlyPriceCents;
             const credits = annual ? plan.annualCredits : plan.monthlyCredits;
             return (
               <article key={plan.id} className={plan.id === 'pro' ? 'is-featured' : ''}>
@@ -44,12 +44,14 @@ export function PricingSection({ compact = false }: { compact?: boolean }) {
                 <p className="tg-price-name">{plan.name}</p>
                 <p className="tg-price-value">
                   <strong>${formatPrice(priceCents)}</strong>
-                  <span>{plan.id === 'free' ? 'to start' : annual ? '/ year' : '/ month'}</span>
+                  <span>{plan.id === 'free' ? 'to start' : '/ month'}</span>
                 </p>
                 <p className="tg-price-summary">
                   {plan.id === 'free'
                     ? 'Try the full workflow on your own video.'
-                    : `Includes ${credits.toLocaleString()} credits ${annual ? 'for the year' : 'each month'}.`}
+                    : annual
+                      ? `Billed $${formatPrice(plan.annualPriceCents)} annually · Includes ${credits.toLocaleString()} credits for the year.`
+                      : `Includes ${credits.toLocaleString()} credits each month.`}
                 </p>
                 <ul>
                   {FEATURES[plan.id]?.map((feature) => <li key={feature}>{feature}</li>)}
