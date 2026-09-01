@@ -24,7 +24,9 @@ FROM build-workspace AS server-build
 RUN pnpm --filter @clipsubtitles/server build
 
 FROM build-workspace AS web-build
-RUN pnpm --filter @clipsubtitles/web build
+RUN --mount=type=secret,id=gleap_sdk_token,required=false \
+    NEXT_PUBLIC_GLEAP_SDK_TOKEN="$(cat /run/secrets/gleap_sdk_token 2>/dev/null || true)" \
+    pnpm --filter @clipsubtitles/web build
 
 # Production dependencies are resolved on the target architecture so native
 # canvas binaries match Cloud Run even when an ARM development machine builds

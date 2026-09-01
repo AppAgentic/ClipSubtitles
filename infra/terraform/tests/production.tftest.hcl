@@ -36,6 +36,16 @@ run "production_identifiers_and_isolation" {
     error_message = "Production secrets must retain the full environment name for isolation."
   }
 
+  assert {
+    condition     = google_secret_manager_secret.runtime["gleap-sdk-token"].secret_id == "clipsubtitles-production-gleap-sdk-token"
+    error_message = "The Gleap browser SDK token must remain isolated to the production project."
+  }
+
+  assert {
+    condition     = contains(keys(google_secret_manager_secret_iam_member.build), "gleap-sdk-token")
+    error_message = "Only the dedicated image builder should read the Gleap SDK token during the web build."
+  }
+
 
   assert {
     condition     = length(google_monitoring_uptime_check_config.public) == 2

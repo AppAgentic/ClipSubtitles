@@ -35,7 +35,14 @@ locals {
     "elevenlabs-api-key",
     "gemini-api-key",
   ]))
-  runtime_secret_names = setunion(local.worker_secret_names, toset(values(local.billing_secret_env)))
+  web_build_secret_names = toset([
+    "gleap-sdk-token",
+  ])
+  runtime_secret_names = setunion(
+    local.worker_secret_names,
+    toset(values(local.billing_secret_env)),
+    local.web_build_secret_names,
+  )
 }
 
 resource "google_project_service" "required" {
@@ -290,6 +297,16 @@ resource "google_secret_manager_secret_iam_member" "worker" {
   secret_id = each.value.id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.worker.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "build" {
+  for_each = {
+    for name, secret in google_secret_manager_secret.runtime : name => secret
+    if contains(local.web_build_secret_names, name)
+  }
+  secret_id = each.value.id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.build.email}"
 }
 
 resource "google_cloud_run_v2_service" "api" {
