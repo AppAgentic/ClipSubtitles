@@ -10,7 +10,7 @@ describe('PricingSection', () => {
     render(<PricingSection />);
 
     const monthly = screen.getByRole('button', { name: 'Monthly' });
-    const annual = screen.getByRole('button', { name: 'Annual Save 15%' });
+    const annual = screen.getByRole('button', { name: 'Annual Save up to 20%' });
     expect(monthly.getAttribute('aria-pressed')).toBe('true');
     expect(annual.getAttribute('aria-pressed')).toBe('false');
     expect(screen.getByText('$39')).toBeTruthy();
@@ -19,12 +19,12 @@ describe('PricingSection', () => {
 
     expect(monthly.getAttribute('aria-pressed')).toBe('false');
     expect(annual.getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByText('$12.75')).toBeTruthy();
-    expect(screen.getByText('$33.17')).toBeTruthy();
-    expect(screen.getByText('$84.17')).toBeTruthy();
-    expect(screen.getByText('Billed $153 annually · Includes 3,600 credits for the year.')).toBeTruthy();
-    expect(screen.getByText('Billed $398 annually · Includes 12,000 credits for the year.')).toBeTruthy();
-    expect(screen.getByText('Billed $1,010 annually · Includes 36,000 credits for the year.')).toBeTruthy();
+    expect(screen.getByText('$12')).toBeTruthy();
+    expect(screen.getByText('$33')).toBeTruthy();
+    expect(screen.getByText('$84')).toBeTruthy();
+    expect(screen.getByText('Billed $144 annually · Includes 3,600 credits for the year.')).toBeTruthy();
+    expect(screen.getByText('Billed $396 annually · Includes 12,000 credits for the year.')).toBeTruthy();
+    expect(screen.getByText('Billed $1,008 annually · Includes 36,000 credits for the year.')).toBeTruthy();
     expect(screen.getAllByText('Agent and API access')).toHaveLength(4);
   });
 });

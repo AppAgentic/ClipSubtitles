@@ -55,7 +55,7 @@ describe('billing catalog', () => {
     expect(BILLING_CATALOG.plans.every((plan) => plan.apiAccess)).toBe(true);
   });
 
-  it('offers annual paid plans at approximately fifteen percent off', () => {
+  it('offers annual paid plans with clean monthly equivalents at fifteen to twenty percent off', () => {
     expect(
       BILLING_CATALOG.plans.flatMap((plan) =>
         'annualSku' in plan
@@ -63,9 +63,9 @@ describe('billing catalog', () => {
           : [],
       ),
     ).toEqual([
-      { id: 'creator', annualPriceCents: 15_300, annualCredits: 3_600 },
-      { id: 'pro', annualPriceCents: 39_800, annualCredits: 12_000 },
-      { id: 'studio', annualPriceCents: 101_000, annualCredits: 36_000 },
+      { id: 'creator', annualPriceCents: 14_400, annualCredits: 3_600 },
+      { id: 'pro', annualPriceCents: 39_600, annualCredits: 12_000 },
+      { id: 'studio', annualPriceCents: 100_800, annualCredits: 36_000 },
     ]);
   });
 });

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { OutputKindSchema, ResolutionSchema } from './render';
 
 export const PRICE_VERSION = '2026-08-v1';
-export const BILLING_CATALOG_VERSION = '2026-09-launch-v3';
+export const BILLING_CATALOG_VERSION = '2026-09-launch-v4';
 
 /**
  * Credit price table. Credits per billable output minute; subtitle files are
@@ -120,7 +120,7 @@ export const BILLING_PLANS = [
     name: 'Creator',
     monthlyPriceCents: 1_500,
     monthlyCredits: 300,
-    annualPriceCents: 15_300,
+    annualPriceCents: 14_400,
     annualCredits: 3_600,
     approximateMp4Minutes: 30,
     activeRenderLimit: 1,
@@ -134,7 +134,7 @@ export const BILLING_PLANS = [
     name: 'Pro',
     monthlyPriceCents: 3_900,
     monthlyCredits: 1_000,
-    annualPriceCents: 39_800,
+    annualPriceCents: 39_600,
     annualCredits: 12_000,
     approximateMp4Minutes: 100,
     activeRenderLimit: 2,
@@ -148,7 +148,7 @@ export const BILLING_PLANS = [
     name: 'Studio',
     monthlyPriceCents: 9_900,
     monthlyCredits: 3_000,
-    annualPriceCents: 101_000,
+    annualPriceCents: 100_800,
     annualCredits: 36_000,
     approximateMp4Minutes: 300,
     activeRenderLimit: 4,

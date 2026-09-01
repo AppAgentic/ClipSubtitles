@@ -22,7 +22,7 @@ export function PricingSection({ compact = false }: { compact?: boolean }) {
           <p className="lo-eyebrow tg-eyebrow">Simple pricing</p>
           <h2 id="tg-pricing-title">Start free. Pay when captions become part of your workflow.</h2>
         </div>
-        <p>No card for your first clip. Choose monthly flexibility or save 15% annually; add credits only when you need them.</p>
+        <p>No card for your first clip. Choose monthly flexibility or save up to 20% annually; add credits only when you need them.</p>
       </div>
       <div className="tg-price-body">
         <div className="tg-billing-toggle" role="group" aria-label="Billing period">
@@ -30,7 +30,7 @@ export function PricingSection({ compact = false }: { compact?: boolean }) {
             Monthly
           </button>
           <button type="button" aria-pressed={billingPeriod === 'annual'} onClick={() => setBillingPeriod('annual')}>
-            Annual <span>Save 15%</span>
+            Annual <span>Save up to 20%</span>
           </button>
         </div>
         <div className="tg-price-grid">

@@ -81,9 +81,10 @@ with a separate price.
 | Pro | $39/month | 1,000/month | up to 100 standard MP4 minutes | The same interfaces with higher capacity, concurrency and priority processing |
 | Studio | $99/month | 3,000/month | up to 300 standard MP4 minutes | The same interfaces plus team/brand controls and four active renders when those capabilities ship |
 
-The catalog also includes annual billing at roughly 15% off: Creator is $153/year
-with 3,600 credits, Pro is $398/year with 12,000 credits, and Studio is
-$1,010/year with 36,000 credits. Annual credits are granted as one prepaid pool
+The catalog also includes annual billing at 15–20% off with clean monthly equivalents:
+Creator is $144/year ($12/month) with 3,600 credits, Pro is $396/year ($33/month)
+with 12,000 credits, and Studio is $1,008/year ($84/month) with 36,000 credits.
+Annual credits are granted as one prepaid pool
 and expire at the annual period end plus the same two-month grace window.
 Do not launch an unlimited plan. Monthly subscription credits retain the
 two-month rollover policy; the prepaid annual pool lasts through the annual
