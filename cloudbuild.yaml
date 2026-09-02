@@ -16,7 +16,10 @@ steps:
         corepack prepare pnpm@10.33.1 --activate
         pnpm install --frozen-lockfile
         pnpm --filter @clipsubtitles/web exec playwright install --with-deps chromium
-        REQUIRE_CLEAN_GIT=1 pnpm release:gate
+        # Cloud Build source archives intentionally omit .git. Cleanliness is
+        # verified before submission; this build re-runs the full gate against
+        # the immutable COMMIT_SHA source snapshot.
+        pnpm release:gate
   - name: hashicorp/terraform:1.13.2
     entrypoint: sh
     args:
