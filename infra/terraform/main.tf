@@ -1159,9 +1159,11 @@ resource "google_monitoring_alert_policy" "public_uptime" {
       duration        = "120s"
 
       aggregations {
-        alignment_period     = "120s"
-        per_series_aligner   = "ALIGN_FRACTION_TRUE"
-        cross_series_reducer = "REDUCE_FRACTION_TRUE"
+        alignment_period   = "120s"
+        per_series_aligner = "ALIGN_FRACTION_TRUE"
+        # ALIGN_FRACTION_TRUE emits a DOUBLE ratio even though the raw metric is
+        # BOOL, so the regional reduction must average those aligned ratios.
+        cross_series_reducer = "REDUCE_MEAN"
       }
     }
   }
