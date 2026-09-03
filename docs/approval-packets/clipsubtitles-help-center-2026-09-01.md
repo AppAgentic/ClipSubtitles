@@ -330,7 +330,7 @@ Send an OAuth 2.1 bearer token in the `Authorization` header. Use `captions:read
 - render quotes and renders — quote first, approve second;
 - `/v1/tasks/{taskId}` — poll or cancel durable work;
 - `/v1/exports` and export content routes — list metadata and download finished files;
-- `/v1/workspace` — read or update workspace settings and retention;
+- `/v1/workspace` — update the workspace name; retention is read-only;
 - `/v1/credits` and `/v1/credits/ledger` — inspect balance and credit events; and
 - `/v1/connections` — inspect and revoke agent connections.
 
@@ -416,7 +416,7 @@ ClipSubtitles keeps private media only for a bounded period by default.
 - Signed playback and download URLs: 15 minutes
 - Open render quotes: 15 minutes
 
-Workspace owners can set source retention from 1 to 365 days and final-export retention from 1 to 90 days in **Settings**. The expiry shown beside a file is the authoritative date for that object.
+The source and final-export windows are fixed by ClipSubtitles and shown read-only in **Settings**. The expiry shown beside a file is the authoritative date for that object.
 
 Transcript and project metadata can remain after source media expires. This lets you continue editing captions and create text subtitle files. A new video render needs its source media, so upload the source again if it has expired.
 
@@ -430,7 +430,7 @@ For an account-level access or deletion request, contact `support@clipsubtitles.
 
 ClipSubtitles keeps transcript text out of operational logs. Signed download links are temporary private capabilities. Do not publish or store them as permanent links.
 
-Screenshot placement: after “Default retention.” Use a real redacted Settings screenshot. Callouts: **Source retention**, **Export retention**, **Save**. Alt text: “ClipSubtitles workspace settings with source and export retention controls.”
+Screenshot placement: after “Default retention.” Use a real redacted Settings screenshot. Callout: **Storage policy**. Alt text: “ClipSubtitles workspace settings showing the fixed source and export retention periods.”
 
 ---
 
@@ -518,7 +518,7 @@ No API key is required for the released MCP connection. Use browser OAuth and ne
 
 ### How long are my files kept?
 
-Source media defaults to 30 days, final exports to 7 days and previews to 24 hours. Workspace owners can change source retention to 1–365 days and export retention to 1–90 days.
+Source media is kept for 30 days, final exports for 7 days and previews for 24 hours. These periods are fixed and cannot be extended through workspace settings.
 
 ### What happens when I delete a project?
 
@@ -597,4 +597,3 @@ The current-release and triage rules above were saved internally to the existing
 7. Wait for valid HTTPS, then verify the homepage, every collection and every article through the sitemap. Every public URL must return HTTP 200.
 8. Run all twelve golden questions in the live Kai surface. Correct any unsafe or unsupported answer and repeat the exact failed question.
 9. Replace the temporary `/help` guide in the release candidate with a clear gateway to the canonical Gleap Help Center, while retaining an in-app support button and the product-owned `/developers` page.
-

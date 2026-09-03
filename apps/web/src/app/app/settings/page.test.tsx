@@ -92,8 +92,11 @@ describe('dashboard billing controls', () => {
     await waitFor(() => expect(save.hasAttribute('disabled')).toBe(true));
     expect(api.updateWorkspace).toHaveBeenCalledWith({
       name: 'Renamed workspace',
-      retention: { sourceDays: 30, exportDays: 7 },
     });
+    expect(screen.queryByRole('slider')).toBeNull();
+    expect(
+      screen.getByText(/Original files are kept for 30 days and finished files for 7 days/),
+    ).toBeTruthy();
   });
 
   it('gives a paid workspace one safe management path for plan and billing changes', async () => {

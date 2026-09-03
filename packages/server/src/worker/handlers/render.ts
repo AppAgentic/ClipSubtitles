@@ -105,8 +105,7 @@ export async function renderExportHandler(
   if (!reservation || reservation.status !== 'reserved')
     throw new TaskFailure('QUOTE_INVALIDATED', 'No active credit reservation for this render.');
   const { source, content } = await loadRenderInputs(ctx, task, input);
-  const workspace = await ctx.db.getWorkspace(task.workspaceId);
-  const retentionDays = workspace?.retention.exportDays ?? ctx.config.limits.exportRetentionDays;
+  const retentionDays = ctx.config.limits.exportRetentionDays;
   const workDir = path.join(ctx.config.workDir, task.id);
   try {
     await mkdir(workDir, { recursive: true });

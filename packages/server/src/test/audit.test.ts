@@ -195,12 +195,18 @@ describe('audit: uploads', () => {
     expect(Number(bytes.headers.get('content-length'))).toBe(video.length);
   });
 
-  it('uses the workspace retention setting for source expiry', async () => {
-    await h.api('PATCH', '/v1/workspace', { token, body: { retention: { sourceDays: 2 } } });
+  it('uses the deployment retention policy and rejects customer overrides', async () => {
+    const override = await h.api('PATCH', '/v1/workspace', {
+      token,
+      body: { retention: { sourceDays: 2 } },
+    });
+    expect(override.status).toBe(400);
+
     const project = await uploadedProject('retention');
     const expires = Date.parse(project.source!.expiresAt!);
-    expect(Math.abs(expires - (h.clock.now() + 2 * 86_400_000))).toBeLessThan(60_000);
-    await h.api('PATCH', '/v1/workspace', { token, body: { retention: { sourceDays: 30 } } });
+    expect(
+      Math.abs(expires - h.clock.now() - h.ctx.config.limits.sourceRetentionDays * 86_400_000),
+    ).toBeLessThan(60_000);
   });
 });
 
