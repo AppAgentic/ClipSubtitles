@@ -240,12 +240,41 @@ export type BillingManagementSession = z.infer<typeof BillingManagementSessionSc
 export const CheckoutSourceSchema = z.enum(['web', 'chatgpt', 'claude', 'codex', 'agent']);
 export type CheckoutSource = z.infer<typeof CheckoutSourceSchema>;
 
+export const WebAttributionSchema = z
+  .object({
+    sessionId: z.string().min(8).max(100),
+    capturedAt: z.number().int().positive(),
+    appreferClickId: z.string().max(500).optional(),
+    fbclid: z.string().max(500).optional(),
+    fbp: z.string().max(200).optional(),
+    fbc: z.string().max(500).optional(),
+    campaignId: z.string().max(200).optional(),
+    campaignName: z.string().max(200).optional(),
+    adsetId: z.string().max(200).optional(),
+    adsetName: z.string().max(200).optional(),
+    adId: z.string().max(200).optional(),
+    adName: z.string().max(200).optional(),
+    creativeId: z.string().max(200).optional(),
+    placement: z.string().max(200).optional(),
+    siteSourceName: z.string().max(200).optional(),
+    utmSource: z.string().max(200).optional(),
+    utmMedium: z.string().max(200).optional(),
+    utmCampaign: z.string().max(200).optional(),
+    utmContent: z.string().max(200).optional(),
+    utmTerm: z.string().max(200).optional(),
+    landingUrl: z.string().max(500).optional(),
+    referrer: z.string().max(500).optional(),
+  })
+  .strict();
+export type WebAttribution = z.infer<typeof WebAttributionSchema>;
+
 export const CreateCheckoutRequestSchema = z
   .object({
     sku: BillingSkuSchema,
     source: CheckoutSourceSchema.default('web'),
     returnTo: z.string().max(500).optional(),
     resume: z.string().max(500).optional(),
+    attribution: WebAttributionSchema.optional(),
   })
   .strict();
 export type CreateCheckoutRequest = z.infer<typeof CreateCheckoutRequestSchema>;

@@ -10,6 +10,7 @@ import { audit } from '../services/audit';
 import { OPENAPI_INFO, createApi, registerSecuritySchemes, type Api } from './openapi';
 import { registerAccountRoutes } from './routes/account';
 import { registerAuthRoutes } from './routes/auth';
+import { registerAnalyticsRoutes } from './routes/analytics';
 import { registerBillingRoutes } from './routes/billing';
 import { registerDevRoutes } from './routes/dev';
 import { registerExportRoutes } from './routes/exports';
@@ -43,6 +44,7 @@ export function createApp(ctx: AppContext): App {
   });
 
   registerWellKnownRoutes(api, ctx);
+  registerAnalyticsRoutes(api, ctx);
   registerAuthRoutes(api, ctx);
   if (ctx.config.auth.mode === 'mock' && ctx.config.env !== 'production') registerDevRoutes(api, ctx);
   registerProjectRoutes(api, ctx);

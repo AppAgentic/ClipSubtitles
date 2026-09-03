@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { BILLING_CATALOG, type BillingSku, type CheckoutSource } from '@clipsubtitles/contracts';
 import { api, isUnauthenticated } from '@/lib/api';
+import { readAttribution, trackPaidFunnelEvent } from '@/lib/attribution';
 
 const FEATURES: Record<string, string[]> = {
   free: ['A complete first captioned clip', 'Agent and API access', 'Caption styles and exports'],
@@ -114,6 +115,8 @@ function CheckoutButton({
     setBusy(true);
     setError('');
     try {
+      const attribution = readAttribution();
+      trackPaidFunnelEvent('plan_selected', { sku });
       const completion = new URLSearchParams({ checkout: 'complete', source: context.source });
       if (context.resume) completion.set('resume', context.resume);
       const checkout = await api.createCheckout({
@@ -121,7 +124,9 @@ function CheckoutButton({
         source: context.source,
         returnTo: `/app/settings?${completion.toString()}`,
         ...(context.resume ? { resume: context.resume } : {}),
+        ...(attribution ? { attribution } : {}),
       });
+      trackPaidFunnelEvent('checkout_started', { sku });
       window.location.assign(checkout.url);
     } catch (err) {
       if (isUnauthenticated(err)) {
@@ -135,6 +140,7 @@ function CheckoutButton({
         return;
       }
       setError('Checkout is not available yet. Your free workspace is still ready to use.');
+      trackPaidFunnelEvent('checkout_failed', { sku });
     } finally {
       setBusy(false);
     }

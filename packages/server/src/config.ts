@@ -68,6 +68,7 @@ const EnvSchema = z.object({
   WHOP_PLAN_TOPUP_SMALL: z.string().optional(),
   WHOP_PLAN_TOPUP_MEDIUM: z.string().optional(),
   WHOP_PLAN_TOPUP_LARGE: z.string().optional(),
+  APPREFER_API_KEY: z.string().optional(),
   TRANSCRIPTION_PROVIDERS: z.string().default('mock'),
   RENDERER: z.enum(['ffmpeg', 'remotion']).default('ffmpeg'),
   FFMPEG_PATH: z.string().default('ffmpeg'),
@@ -178,6 +179,7 @@ export interface AppConfig {
         webhookSecret: string;
         planIds: Record<BillingSku, string>;
       };
+  appRefer: { apiKey?: string };
   transcription: { providers: string[] };
   renderer: 'ffmpeg' | 'remotion';
   ffmpegPath: string;
@@ -398,6 +400,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       tokenTtlSeconds: 3600,
     },
     billing,
+    appRefer: { ...(e.APPREFER_API_KEY ? { apiKey: e.APPREFER_API_KEY.trim() } : {}) },
     transcription: {
       providers: transcriptionProviders,
     },

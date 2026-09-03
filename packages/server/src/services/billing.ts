@@ -10,10 +10,13 @@ import {
   type CheckoutSource,
   type CreditBalance,
   type LedgerEntry,
+  type WebAttribution,
 } from '@clipsubtitles/contracts';
 import type { ReservationRecord } from '@clipsubtitles/storage';
 import type { AppContext } from '../context';
 import { ApiError } from '../errors';
+import { audit } from './audit';
+import { checkoutAttributionMetadata, forwardPurchaseToAppRefer } from './attribution';
 
 export async function creditBalance(ctx: AppContext, workspaceId: string): Promise<CreditBalance> {
   const b = await ctx.db.getBalance(workspaceId);
@@ -62,6 +65,7 @@ export async function createCheckout(
     returnTo?: string;
     resume?: string;
     idempotencyKey: string;
+    attribution?: WebAttribution;
   },
 ): Promise<CheckoutSession> {
   const fallback = '/app/settings?checkout=complete';
@@ -74,6 +78,7 @@ export async function createCheckout(
     redirectUrl: redirect,
     ...(input.resume ? { resume: input.resume } : {}),
     idempotencyKey: input.idempotencyKey,
+    attribution: checkoutAttributionMetadata(input.attribution, input.idempotencyKey),
   });
 }
 
@@ -92,7 +97,7 @@ export async function processBillingWebhook(
 ): Promise<{ received: true; duplicate: boolean }> {
   const event = ctx.billing.verifyWebhook(rawBody, headers);
   if (!event.id) throw new Error('Verified billing webhook has no event id.');
-  return ctx.db.transaction(async () => {
+  const result = await ctx.db.transaction<{ received: true; duplicate: boolean }>(async () => {
     const metadata = eventMetadata(event.data);
     const workspaceId = typeof metadata.workspace_id === 'string' ? metadata.workspace_id : undefined;
     const sku = eventSku(ctx, event.data, metadata);
@@ -180,6 +185,38 @@ export async function processBillingWebhook(
     });
     return { received: true, duplicate: false };
   });
+  if (!result.duplicate) {
+    const metadata = eventMetadata(event.data);
+    const sessionId = stringField(metadata, ['web_funnel_session_id']);
+    if (isSuccessfulPayment(event.type, event.data) && sessionId) {
+      await audit(ctx, {
+        actorType: 'system',
+        action: 'paid_funnel.purchase_completed',
+        targetType: 'funnel_session',
+        targetId: sessionId,
+        metadata: {
+          provider: ctx.billing.name,
+          providerEventId: event.id,
+          sku: stringField(metadata, ['sku']),
+          campaignId: stringField(metadata, ['campaign_id']),
+          adsetId: stringField(metadata, ['adset_id']),
+          adId: stringField(metadata, ['ad_id']),
+          utmSource: stringField(metadata, ['utm_source']),
+          utmCampaign: stringField(metadata, ['utm_campaign']),
+        },
+      });
+    }
+    try {
+      await forwardPurchaseToAppRefer(ctx, event);
+    } catch (error) {
+      ctx.logger.warn('purchase attribution forwarding failed', {
+        provider: ctx.billing.name,
+        eventId: event.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+  return result;
 }
 
 function safeRelativePath(value?: string): string | undefined {

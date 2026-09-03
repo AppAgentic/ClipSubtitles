@@ -66,6 +66,7 @@ export function registerBillingRoutes(api: Api, ctx: AppContext): void {
         ...(body.returnTo ? { returnTo: body.returnTo } : {}),
         ...(body.resume ? { resume: body.resume } : {}),
         idempotencyKey: headers['idempotency-key'] ?? `${c.get('requestId')}:${body.sku}`,
+        ...(body.attribution ? { attribution: body.attribution } : {}),
       }), 200);
     },
   );

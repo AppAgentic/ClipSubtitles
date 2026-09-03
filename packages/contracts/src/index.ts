@@ -7,6 +7,7 @@ export * from './captions';
 export * from './tasks';
 export * from './render';
 export * from './billing';
+export * from './analytics';
 export * from './auth';
 export * from './project';
 export * from './mcp';

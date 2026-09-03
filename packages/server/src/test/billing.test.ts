@@ -19,6 +19,7 @@ class FakeBillingProvider implements BillingProvider {
     redirectUrl: string;
     resume?: string;
     idempotencyKey: string;
+    attribution?: Record<string, string>;
   };
 
   async createCheckout(input: NonNullable<FakeBillingProvider['checkoutInput']>): Promise<CheckoutSession> {
@@ -61,6 +62,13 @@ describe('billing checkout and webhook lifecycle', () => {
         source: 'chatgpt',
         returnTo: '//malicious.example/escape',
         resume: 'render:project:quote',
+        attribution: {
+          sessionId: 'session_checkout_123',
+          capturedAt: 1788260460000,
+          appreferClickId: 'click_123',
+          campaignId: 'campaign_123',
+          landingUrl: 'https://clipsubtitles.com/pricing?private=discarded',
+        },
       },
     });
     expect(result.status).toBe(200);
@@ -72,7 +80,16 @@ describe('billing checkout and webhook lifecycle', () => {
       redirectUrl: 'http://127.0.0.1:3100/app/settings?checkout=complete',
       resume: 'render:project:quote',
       idempotencyKey: 'checkout-test-1',
+      attribution: {
+        web_funnel_session_id: 'session_checkout_123',
+        apprefer_click_id: 'click_123',
+        campaign_id: 'campaign_123',
+        landing_url: 'https://clipsubtitles.com/pricing',
+      },
     });
+    expect(billing.checkoutInput?.attribution?.apprefer_event_id).toMatch(
+      /^clipsubtitles_purchase_[a-f0-9]{64}$/,
+    );
   });
 
   it('rate limits unauthenticated webhook floods before provider verification', async () => {

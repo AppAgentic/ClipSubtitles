@@ -6,6 +6,7 @@ import './globals.css';
 import { ToastProvider } from '@/components/ui/Toast';
 import { THEME_BOOT_SCRIPT } from '@/lib/theme';
 import { GleapSupportProvider } from '@/components/support/GleapSupport';
+import { PaidFunnelTracker } from '@/components/analytics/PaidFunnelTracker';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://clipsubtitles.com'),
@@ -35,7 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <div id="app">
           <GleapSupportProvider>
-            <ToastProvider>{children}</ToastProvider>
+            <ToastProvider><PaidFunnelTracker />{children}</ToastProvider>
           </GleapSupportProvider>
         </div>
       </body>

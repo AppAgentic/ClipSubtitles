@@ -20,6 +20,7 @@ export interface BillingProvider {
     redirectUrl: string;
     resume?: string;
     idempotencyKey: string;
+    attribution?: Record<string, string>;
   }): Promise<CheckoutSession>;
   managementUrl(providerSubscriptionId: string): Promise<string>;
   verifyWebhook(rawBody: string, headers: Record<string, string>): BillingWebhook;
@@ -53,6 +54,7 @@ class WhopBillingProvider implements BillingProvider {
     redirectUrl: string;
     resume?: string;
     idempotencyKey: string;
+    attribution?: Record<string, string>;
   }): Promise<CheckoutSession> {
     const result = await this.client.checkoutConfigurations.create(
       {
@@ -65,6 +67,7 @@ class WhopBillingProvider implements BillingProvider {
           source: input.source,
           catalog_version: BILLING_CATALOG.version,
           ...(input.resume ? { resume: input.resume } : {}),
+          ...(input.attribution ?? {}),
         },
       },
       { idempotencyKey: input.idempotencyKey },

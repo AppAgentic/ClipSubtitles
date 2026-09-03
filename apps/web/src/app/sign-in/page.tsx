@@ -3,6 +3,7 @@
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { ClipSubtitlesWordmark } from '@/components/brand/ClipSubtitlesWordmark';
+import { trackPaidFunnelEvent } from '@/lib/attribution';
 
 function SignInInner() {
   const params = useSearchParams();
@@ -25,6 +26,7 @@ function SignInInner() {
         <div className="rise rise-3 mt-8 flex flex-wrap items-center gap-3">
           <a
             href={href}
+            onClick={() => trackPaidFunnelEvent('signup_started')}
             className="inline-flex h-11 items-center gap-2 rounded-xl bg-[var(--color-signal-fill)] px-5 text-[14px] font-semibold text-signal-ink transition hover:brightness-110"
           >
             Continue to sign in

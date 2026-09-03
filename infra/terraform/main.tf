@@ -30,7 +30,7 @@ locals {
     "r2-access-key-id",
     "r2-secret-access-key",
   ])
-  api_secret_names = setunion(local.shared_secret_names, toset(values(local.billing_secret_env)))
+  api_secret_names = setunion(local.shared_secret_names, toset(values(local.billing_secret_env)), toset(["apprefer-api-key"]))
   worker_secret_names = setunion(local.shared_secret_names, toset([
     "elevenlabs-api-key",
     "gemini-api-key",
@@ -41,6 +41,7 @@ locals {
   runtime_secret_names = setunion(
     local.worker_secret_names,
     toset(values(local.billing_secret_env)),
+    toset(["apprefer-api-key"]),
     local.web_build_secret_names,
   )
 }
@@ -379,6 +380,15 @@ resource "google_cloud_run_v2_service" "api" {
               secret  = google_secret_manager_secret.runtime[billing.value].secret_id
               version = "latest"
             }
+          }
+        }
+      }
+      env {
+        name = "APPREFER_API_KEY"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.runtime["apprefer-api-key"].secret_id
+            version = "latest"
           }
         }
       }
