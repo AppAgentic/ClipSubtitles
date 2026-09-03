@@ -44,6 +44,15 @@ test('sign-in page renders without overflow', async ({ page }) => {
 
 test('landing headline stays inside its column', async ({ page }) => {
   await page.goto('/');
+  await expect(page.getByRole('tab', { name: 'Connect your agent' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  const heroAgent = page.getByRole('region', { name: 'Connect ClipSubtitles to your agent' });
+  await expect(heroAgent.getByText(/claude mcp add --transport http/)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Copy prompt' })).toBeVisible();
+  await shot(page, 'landing-agent');
+  await page.getByRole('tab', { name: 'Use in browser' }).click();
   await expect(page.getByRole('button', { name: /Upload a video/ })).toBeVisible();
   await noHorizontalOverflow(page, 'landing');
   const lines = page.locator('.tg-hero h1 > *');
@@ -52,9 +61,10 @@ test('landing headline stays inside its column', async ({ page }) => {
       clientWidth: element.clientWidth,
       scrollWidth: element.scrollWidth,
     }));
-    expect(dimensions.scrollWidth, `headline line ${index + 1} must not overflow`).toBeLessThanOrEqual(
-      dimensions.clientWidth,
-    );
+    expect(
+      dimensions.scrollWidth,
+      `headline line ${index + 1} must not overflow`,
+    ).toBeLessThanOrEqual(dimensions.clientWidth);
   }
   await shot(page, 'landing');
 });
@@ -93,10 +103,12 @@ test('library, editor, and render routes stay within the viewport and the captio
   await page.getByRole('radio', { name: 'Top' }).click();
   await expect(page.getByText('saved', { exact: true })).toBeVisible();
   await page.reload();
-  // The inspector intentionally defaults to word correction after a reload;
-  // reopen Style before asserting the saved project-level setting.
-  await page.getByRole('tab', { name: 'Style' }).click();
+  // Style is the intended first inspector on every editor load.
+  await expect(page.getByRole('tab', { name: 'Style' })).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByRole('radio', { name: 'Top' })).toBeChecked();
+  await page.getByRole('region', { name: 'Inspector' }).scrollIntoViewIfNeeded();
+  await page.waitForTimeout(500);
+  await shot(page, 'editor-style-default');
 
   // Render flow: quote → approve → task → downloads, credits refreshed in the header without a reload.
   const creditsBefore = Number(

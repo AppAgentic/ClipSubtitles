@@ -9,7 +9,7 @@ import { ConnectAgent } from './ConnectAgent';
 import { ClipSubtitlesWordmark } from '@/components/brand/ClipSubtitlesWordmark';
 import { PricingSection } from '@/components/marketing/PricingSection';
 import { MarketingFooter } from '@/components/marketing/MarketingFooter';
-import { TaskFirstStart } from './TaskFirstStart';
+import { PathChooser } from './PathChooser';
 import './landing-options.css';
 import './three-gates.css';
 
@@ -122,7 +122,7 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
               Start with a clip, see accurate animated captions, then review and export a
               publish-ready video.
             </p>
-            <TaskFirstStart />
+            <PathChooser />
           </div>
 
           <div className="tg-hero-proof">

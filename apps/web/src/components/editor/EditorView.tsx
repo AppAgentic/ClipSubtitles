@@ -47,7 +47,7 @@ export function EditorView({ projectId }: { projectId: string }) {
   const [save, setSave] = useState<SaveState>('idle');
   const [timeMs, setTimeMs] = useState(0);
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
-  const [tab, setTab] = useState<'style' | 'words'>('words');
+  const [tab, setTab] = useState<'style' | 'words'>('style');
   const [generateOpen, setGenerateOpen] = useState(false);
   const [generateBusy, setGenerateBusy] = useState(false);
   const [generateTaskId, setGenerateTaskId] = useState<string | null>(null);

@@ -1,8 +1,8 @@
 'use client';
 
-import Link from 'next/link';
 import { useId, useState, type KeyboardEvent } from 'react';
 import { HeroConnect } from './HeroConnect';
+import { TaskFirstStart } from './TaskFirstStart';
 
 type PathId = 'browser' | 'agent';
 
@@ -64,12 +64,7 @@ export function PathChooser() {
         hidden={active !== 'browser'}
         className="tg-path-panel"
       >
-        <p>Sign in, upload a clip and caption it yourself — no install.</p>
-        <p className="tg-tertiary">
-          <Link href="/sign-in?returnTo=/app/new">
-            Continue in browser <span aria-hidden>→</span>
-          </Link>
-        </p>
+        <TaskFirstStart />
       </div>
 
       <div

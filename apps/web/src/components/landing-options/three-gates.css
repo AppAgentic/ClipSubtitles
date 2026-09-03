@@ -1564,6 +1564,70 @@
   text-underline-offset: 3px;
 }
 
+[data-lo='three-gates'] .tg-connect-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--dim);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+[data-lo='three-gates'] .tg-connect-step > span {
+  display: inline-grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgb(var(--warm-rgb) / 0.14);
+  color: var(--warm);
+  font-size: 11px;
+}
+
+[data-lo='three-gates'] .tg-first-prompt {
+  display: grid;
+  gap: 8px;
+  padding-top: 3px;
+  border-top: 1px solid rgb(var(--tg-line-rgb) / 0.12);
+}
+
+[data-lo='three-gates'] .tg-first-prompt > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--ink);
+}
+
+[data-lo='three-gates'] .tg-first-prompt p {
+  margin: 0;
+  color: var(--dim);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+[data-lo='three-gates'] .tg-first-prompt button {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid rgb(var(--warm-rgb) / 0.55);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--warm);
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+[data-lo='three-gates'] .tg-first-prompt button:hover {
+  background: var(--warm);
+  color: var(--warm-ink);
+}
+
 /* Deliberately compact at hero width: 3 columns instead of the guide's full
  * 6-tile row, so labels stay on one line instead of accidentally wrapping.
  * The ≤560px 2-column rule below still wins on phones. */
@@ -1614,6 +1678,10 @@
   max-width: 40ch;
   color: var(--dim);
   font-size: 14px;
+}
+
+[data-lo='three-gates'] .tg-path-panel .tg-start {
+  margin-top: 0;
 }
 
 [data-lo='three-gates'] .tg-path-panel .tg-tertiary {
@@ -2383,6 +2451,12 @@
   }
   [data-lo='three-gates'] .tg-install-slot {
     grid-template-columns: minmax(0, 1fr) auto;
+  }
+  [data-lo='three-gates'] .tg-first-prompt > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  [data-lo='three-gates'] .tg-first-prompt button {
+    justify-self: start;
   }
   [data-lo='three-gates'] .tg-connect-board {
     grid-template-columns: minmax(0, 1fr);

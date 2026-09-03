@@ -21,15 +21,14 @@ describe('PathChooser', () => {
     expect(screen.getByText(/claude mcp add --transport http/)).toBeTruthy();
   });
 
-  it('swaps to the browser panel on click and keeps its subordinate sign-in link', () => {
+  it('swaps to the complete browser upload path on click', () => {
     render(<PathChooser />);
     fireEvent.click(screen.getByRole('tab', { name: 'Use in browser' }));
     expect(screen.getByRole('tab', { name: 'Use in browser' }).getAttribute('aria-selected')).toBe(
       'true',
     );
-    expect(screen.getByRole('link', { name: /Continue in browser/ }).getAttribute('href')).toBe(
-      '/sign-in?returnTo=/app/new',
-    );
+    expect(screen.getByRole('button', { name: /Upload a video/ })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Try a real sample/ })).toBeTruthy();
     expect(screen.queryByRole('radio', { name: 'Claude' })).toBeNull();
   });
 
