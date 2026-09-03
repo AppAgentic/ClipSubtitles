@@ -10,7 +10,10 @@ import { trackPaidFunnelEvent, trackPaidFunnelEventOnce } from '@/lib/attributio
 import { api, directUploadRequest, errorMessage, uploadToTarget } from '@/lib/api';
 import { clearStagedUpload, takeStagedUpload } from '@/lib/staged-upload';
 
-const SAMPLE_URL = '/marketing/clipsubtitles-sample.mp4';
+// Keep the spoken sample URL versioned. Browsers may cache public media for a
+// long time, and reusing the old synthetic sample's URL can silently upload its
+// cached bytes even after the deployed asset is replaced.
+const SAMPLE_URL = '/marketing/clipsubtitles-dialogue-sample-v1.mp4';
 
 export default function NewVideoPage() {
   return <AppShell render={() => <NewProject />} />;
