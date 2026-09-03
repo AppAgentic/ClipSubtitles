@@ -143,6 +143,23 @@ describe('Whop catalog sync', () => {
     expect(desired.every((plan) => plan.metadata.managed_by === WHOP_CATALOG_MANAGER)).toBe(true);
   });
 
+  it('uses renewal_price for the first recurring period without an extra initial fee', async () => {
+    const runner = new StatefulRunner();
+    await syncWhopCatalog({
+      apply: true,
+      accountId: 'biz_clipsubtitlestest',
+      runner,
+    });
+
+    const monthly = runner.plans.get('plan_plan_creator_monthly')!;
+    expect(monthly.initial_price).toBe(0);
+    expect(monthly.renewal_price).toBe(15);
+
+    const topUp = runner.plans.get('plan_topup_small')!;
+    expect(topUp.initial_price).toBe(12);
+    expect(topUp.renewal_price).toBeUndefined();
+  });
+
   it('defaults to dry-run and rejects every other mutation flag', () => {
     expect(parseCatalogSyncArguments([])).toEqual({ apply: false });
     expect(parseCatalogSyncArguments(['--apply'])).toEqual({ apply: true });
