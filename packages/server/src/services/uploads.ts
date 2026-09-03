@@ -42,7 +42,10 @@ function assertDirectObjectMatches(upload: UploadRecord, object: ObjectStat | nu
     object.contentType &&
     object.contentType.split(';')[0]?.trim().toLowerCase() !== upload.expectedMimeType
   )
-    throw new ApiError('UNSUPPORTED_MEDIA', 'The stored content type does not match its authorization.');
+    throw new ApiError(
+      'UNSUPPORTED_MEDIA',
+      'The stored content type does not match its authorization.',
+    );
 }
 
 /**
@@ -94,8 +97,7 @@ export async function finalizeSourceAsset(
   }
   const now = ctx.clock.now();
   const project = await ctx.db.getProjectById(asset.projectId);
-  const workspace = await ctx.db.getWorkspace(asset.workspaceId);
-  const retentionDays = workspace?.retention.sourceDays ?? ctx.config.limits.sourceRetentionDays;
+  const retentionDays = ctx.config.limits.sourceRetentionDays;
   const updated = await ctx.db.updateAsset(
     asset.id,
     {
@@ -220,7 +222,12 @@ export async function completeDirectUpload(
   input: { sha256?: string },
 ): Promise<Task> {
   const upload = await ctx.db.getUpload(principal.workspaceId, uploadId);
-  if (!upload || upload.projectId !== projectId || upload.transport !== 'direct' || !upload.storageKey)
+  if (
+    !upload ||
+    upload.projectId !== projectId ||
+    upload.transport !== 'direct' ||
+    !upload.storageKey
+  )
     throw new ApiError('NOT_FOUND', 'Upload target not found.');
   if (upload.expiresAt <= ctx.clock.iso())
     throw new ApiError('RETENTION_EXPIRED', 'The upload target has expired. Request a new one.');
@@ -291,7 +298,8 @@ export async function completeDirectUpload(
           'finalize_upload',
           upload.id,
         );
-        if (!existing) throw new ApiError('CONFLICT', 'The upload completion raced another request.');
+        if (!existing)
+          throw new ApiError('CONFLICT', 'The upload completion raced another request.');
         return existing;
       }
       await ctx.db.updateProjectMeta(projectId, { status: 'importing' }, claimTime);

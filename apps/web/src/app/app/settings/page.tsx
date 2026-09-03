@@ -10,7 +10,7 @@ import {
   type Me,
 } from '@clipsubtitles/contracts';
 import { AppShell } from '@/components/shell/AppShell';
-import { Button, Field, Slider, TextInput } from '@/components/ui/primitives';
+import { Button, Field, TextInput } from '@/components/ui/primitives';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useToast } from '@/components/ui/Toast';
 import { api, errorMessage } from '@/lib/api';
@@ -23,8 +23,6 @@ export default function AppSettingsPage() {
 export function Settings({ me }: { me: Me }) {
   const toast = useToast();
   const [name, setName] = useState(me.workspace.name);
-  const [sourceDays, setSourceDays] = useState(me.workspace.retention.sourceDays);
-  const [exportDays, setExportDays] = useState(me.workspace.retention.exportDays);
   const [saving, setSaving] = useState(false);
   const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const [billing, setBilling] = useState<BillingOverview | null>(null);
@@ -34,11 +32,7 @@ export function Settings({ me }: { me: Me }) {
   const [checkoutComplete, setCheckoutComplete] = useState(false);
   const [checkoutSource, setCheckoutSource] = useState('');
   const [showAllActivity, setShowAllActivity] = useState(false);
-  const [savedWorkspace, setSavedWorkspace] = useState({
-    name: me.workspace.name,
-    sourceDays: me.workspace.retention.sourceDays,
-    exportDays: me.workspace.retention.exportDays,
-  });
+  const [savedWorkspaceName, setSavedWorkspaceName] = useState(me.workspace.name);
 
   const load = () => {
     api
@@ -64,8 +58,8 @@ export function Settings({ me }: { me: Me }) {
   const save = async () => {
     setSaving(true);
     try {
-      await api.updateWorkspace({ name, retention: { sourceDays, exportDays } });
-      setSavedWorkspace({ name, sourceDays, exportDays });
+      await api.updateWorkspace({ name });
+      setSavedWorkspaceName(name);
       toast.push('ok', 'Settings saved.');
     } catch (err) {
       toast.push('error', errorMessage(err));
@@ -103,10 +97,7 @@ export function Settings({ me }: { me: Me }) {
   const currentPlan =
     BILLING_PLANS.find((plan) => plan.id === (billing?.planId ?? 'free'))?.name ?? 'Free';
   const visibleLedger = showAllActivity ? ledger.slice(0, 12) : ledger.slice(0, 5);
-  const workspaceChanged =
-    name !== savedWorkspace.name ||
-    sourceDays !== savedWorkspace.sourceDays ||
-    exportDays !== savedWorkspace.exportDays;
+  const workspaceChanged = name !== savedWorkspaceName;
 
   return (
     <div className="settings-page mx-auto max-w-[1180px]">
@@ -143,39 +134,13 @@ export function Settings({ me }: { me: Me }) {
           </SettingsSection>
 
           <SettingsSection
-            title="Workspace and storage"
-            description="Name your workspace and decide how long media stays available."
+            title="Workspace"
+            description="Choose the name shown across your projects and exports."
             last
           >
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-5">
               <Field label="Workspace name" presentation="settings">
                 <TextInput value={name} onChange={(e) => setName(e.target.value)} maxLength={120} />
-              </Field>
-              <Field
-                label="Keep original videos"
-                hint="Original uploads are deleted automatically after this period."
-                presentation="settings"
-              >
-                <Slider
-                  value={sourceDays}
-                  min={1}
-                  max={365}
-                  onChange={setSourceDays}
-                  format={formatDays}
-                />
-              </Field>
-              <Field
-                label="Keep finished files"
-                hint="Exports can be created again later from the saved project."
-                presentation="settings"
-              >
-                <Slider
-                  value={exportDays}
-                  min={1}
-                  max={90}
-                  onChange={setExportDays}
-                  format={formatDays}
-                />
               </Field>
               <div className="flex items-center justify-between gap-4 border-t border-line pt-5">
                 <p className="hidden text-[12px] text-ink-mute sm:block">
@@ -379,10 +344,11 @@ export function Settings({ me }: { me: Me }) {
           >
             <div className="grid gap-5 sm:grid-cols-2 sm:gap-0">
               <div className="sm:border-r sm:border-line sm:pr-6">
-                <h3 className="text-[13px] font-semibold text-ink">Your data</h3>
+                <h3 className="text-[13px] font-semibold text-ink">Storage policy</h3>
                 <p className="mt-2 text-[12px] leading-5 text-ink-dim">
-                  Deleting a video project removes its original and finished files immediately.
-                  Caption text is used only for your project and exports.
+                  Original files are kept for {me.workspace.retention.sourceDays} days and finished
+                  files for {me.workspace.retention.exportDays} days. Deleting a project removes
+                  both immediately.
                 </p>
               </div>
               <div className="border-t border-line pt-5 sm:border-t-0 sm:pt-0 sm:pl-6">
@@ -485,10 +451,6 @@ function initials(value: string): string {
     .join('')
     .slice(0, 2)
     .toUpperCase();
-}
-
-function formatDays(value: number): string {
-  return `${value} ${value === 1 ? 'day' : 'days'}`;
 }
 
 function creditPoolLabel(kind: string): string {

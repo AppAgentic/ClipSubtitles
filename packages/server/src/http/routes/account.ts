@@ -13,7 +13,12 @@ import {
 } from '@clipsubtitles/contracts';
 import { authenticate, principalKey, rateLimit, requireScope } from '../../auth/middleware';
 import type { AppContext } from '../../context';
-import { getMe, listConnections, revokeConnection, updateWorkspaceSettings } from '../../services/account';
+import {
+  getMe,
+  listConnections,
+  revokeConnection,
+  updateWorkspaceSettings,
+} from '../../services/account';
 import { creditBalance, ledger } from '../../services/billing';
 import { SECURITY, errorResponses, jsonBody, jsonResponse, type Api } from '../openapi';
 
@@ -39,7 +44,7 @@ export function registerAccountRoutes(api: Api, ctx: AppContext): void {
       method: 'patch',
       path: '/v1/workspace',
       tags: ['Account'],
-      summary: 'Update workspace name and retention windows',
+      summary: 'Update workspace name',
       security: SECURITY,
       middleware: [auth, limited, requireScope('captions:write')] as const,
       request: { body: jsonBody(UpdateWorkspaceRequestSchema) },
@@ -47,13 +52,9 @@ export function registerAccountRoutes(api: Api, ctx: AppContext): void {
     }),
     async (c) => {
       const body = c.req.valid('json');
-      const retention: { sourceDays?: number; exportDays?: number } = {};
-      if (body.retention?.sourceDays !== undefined) retention.sourceDays = body.retention.sourceDays;
-      if (body.retention?.exportDays !== undefined) retention.exportDays = body.retention.exportDays;
       return c.json(
         await updateWorkspaceSettings(ctx, c.get('principal'), {
           ...(body.name ? { name: body.name } : {}),
-          ...(body.retention ? { retention } : {}),
         }),
         200,
       );

@@ -57,7 +57,11 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     parsed = null;
   }
   if (!res.ok) {
-    const body = (parsed as ApiError | null)?.error ?? { code: 'INTERNAL' as ErrorCode, message: `Request failed (${res.status}).`, retryable: false };
+    const body = (parsed as ApiError | null)?.error ?? {
+      code: 'INTERNAL' as ErrorCode,
+      message: `Request failed (${res.status}).`,
+      retryable: false,
+    };
     throw new ApiClientError(res.status, body);
   }
   return parsed as T;
@@ -67,43 +71,69 @@ const json = (body: unknown): RequestInit => ({ method: 'POST', body: JSON.strin
 
 export const api = {
   me: () => request<Me>('/v1/me'),
-  updateWorkspace: (body: { name?: string; retention?: { sourceDays?: number; exportDays?: number } }) => request<Workspace>('/v1/workspace', { method: 'PATCH', body: JSON.stringify(body) }),
+  updateWorkspace: (body: { name?: string }) =>
+    request<Workspace>('/v1/workspace', { method: 'PATCH', body: JSON.stringify(body) }),
   credits: () => request<CreditBalance>('/v1/credits'),
   billing: () => request<BillingOverview>('/v1/billing'),
-  billingManagement: () => request<BillingManagementSession>('/v1/billing/manage', { method: 'POST' }),
-  createCheckout: (body: CreateCheckoutRequest) => request<CheckoutSession>('/v1/billing/checkout', {
-    method: 'POST',
-    headers: { 'idempotency-key': `web-${Date.now()}-${Math.random().toString(36).slice(2)}` },
-    body: JSON.stringify(body),
-  }),
+  billingManagement: () =>
+    request<BillingManagementSession>('/v1/billing/manage', { method: 'POST' }),
+  createCheckout: (body: CreateCheckoutRequest) =>
+    request<CheckoutSession>('/v1/billing/checkout', {
+      method: 'POST',
+      headers: { 'idempotency-key': `web-${Date.now()}-${Math.random().toString(36).slice(2)}` },
+      body: JSON.stringify(body),
+    }),
   ledger: () => request<{ entries: LedgerEntry[] }>('/v1/credits/ledger'),
   connections: () => request<{ connections: Connection[] }>('/v1/connections'),
-  revokeConnection: (id: string) => request<Connection>(`/v1/connections/${id}/revoke`, { method: 'POST' }),
+  revokeConnection: (id: string) =>
+    request<Connection>(`/v1/connections/${id}/revoke`, { method: 'POST' }),
 
   listProjects: () => request<{ projects: ProjectSummary[] }>('/v1/projects'),
-  getProject: (id: string, opts: { words?: boolean; wordsOffset?: number; wordsLimit?: number } = {}) => {
+  getProject: (
+    id: string,
+    opts: { words?: boolean; wordsOffset?: number; wordsLimit?: number } = {},
+  ) => {
     const q = new URLSearchParams();
     q.set('include', opts.words ? 'pages,words' : 'pages');
     if (opts.wordsOffset !== undefined) q.set('wordsOffset', String(opts.wordsOffset));
     if (opts.wordsLimit !== undefined) q.set('wordsLimit', String(opts.wordsLimit));
     return request<CaptionProject>(`/v1/projects/${id}?${q.toString()}`);
   },
-  createProject: (body: CreateProjectRequest) => request<CreateProjectResponse>('/v1/projects', json(body)),
-  createUploadTarget: (id: string) => request<UploadTarget>(`/v1/projects/${id}/upload-targets`, { method: 'POST' }),
+  createProject: (body: CreateProjectRequest) =>
+    request<CreateProjectResponse>('/v1/projects', json(body)),
+  createUploadTarget: (id: string) =>
+    request<UploadTarget>(`/v1/projects/${id}/upload-targets`, { method: 'POST' }),
   createDirectUploadTarget: (id: string, body: CreateDirectUploadTargetRequest) =>
     request<UploadTarget>(`/v1/projects/${id}/direct-upload-targets`, json(body)),
   deleteProject: (id: string) => request<void>(`/v1/projects/${id}`, { method: 'DELETE' }),
-  patchProject: (id: string, expectedVersion: number, ops: PatchOp[], opts: { keepalive?: boolean } = {}) =>
-    request<{ project: CaptionProject; applied: number; newRevision: boolean }>(`/v1/projects/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ expectedVersion, ops }),
-      ...(opts.keepalive ? { keepalive: true } : {}),
-    }),
-  generateCaptions: (id: string, body: GenerateCaptionsRequest) => request<{ task: Task; project: CaptionProject }>(`/v1/projects/${id}/captions`, json(body)),
-  createPreview: (id: string, body: CreatePreviewRequest) => request<{ task: Task }>(`/v1/projects/${id}/previews`, json(body)),
-  createQuote: (id: string, settings: OutputSettings) => request<RenderQuote>(`/v1/projects/${id}/render-quotes`, json({ settings })),
-  startRender: (id: string, body: { quoteId: string; approvedCreditCost: number; idempotencyKey: string }) =>
-    request<{ task: Task; quote: RenderQuote; reservedCredits: number }>(`/v1/projects/${id}/renders`, json(body)),
+  patchProject: (
+    id: string,
+    expectedVersion: number,
+    ops: PatchOp[],
+    opts: { keepalive?: boolean } = {},
+  ) =>
+    request<{ project: CaptionProject; applied: number; newRevision: boolean }>(
+      `/v1/projects/${id}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ expectedVersion, ops }),
+        ...(opts.keepalive ? { keepalive: true } : {}),
+      },
+    ),
+  generateCaptions: (id: string, body: GenerateCaptionsRequest) =>
+    request<{ task: Task; project: CaptionProject }>(`/v1/projects/${id}/captions`, json(body)),
+  createPreview: (id: string, body: CreatePreviewRequest) =>
+    request<{ task: Task }>(`/v1/projects/${id}/previews`, json(body)),
+  createQuote: (id: string, settings: OutputSettings) =>
+    request<RenderQuote>(`/v1/projects/${id}/render-quotes`, json({ settings })),
+  startRender: (
+    id: string,
+    body: { quoteId: string; approvedCreditCost: number; idempotencyKey: string },
+  ) =>
+    request<{ task: Task; quote: RenderQuote; reservedCredits: number }>(
+      `/v1/projects/${id}/renders`,
+      json(body),
+    ),
 
   listTasks: (opts: { projectId?: string; active?: boolean } = {}) => {
     const q = new URLSearchParams();
@@ -121,8 +151,12 @@ export const api = {
   },
   getExport: (id: string) => request<Export>(`/v1/exports/${id}`),
 
-  devFixtures: () => request<{ fixtures: Array<{ id: string; title: string; language: string; available: boolean }> }>('/dev/fixtures'),
-  createFixtureProject: (fixtureId: string) => request<{ project: CaptionProject }>(`/dev/fixtures/${fixtureId}/projects`, { method: 'POST' }),
+  devFixtures: () =>
+    request<{
+      fixtures: Array<{ id: string; title: string; language: string; available: boolean }>;
+    }>('/dev/fixtures'),
+  createFixtureProject: (fixtureId: string) =>
+    request<{ project: CaptionProject }>(`/dev/fixtures/${fixtureId}/projects`, { method: 'POST' }),
 };
 
 /** Load every transcript word through bounded windows. */
@@ -130,7 +164,11 @@ export async function loadAllWords(projectId: string, total: number): Promise<Tr
   const words: TranscriptWord[] = [];
   const limit = 500;
   for (let offset = 0; offset < total; offset += limit) {
-    const p = await api.getProject(projectId, { words: true, wordsOffset: offset, wordsLimit: limit });
+    const p = await api.getProject(projectId, {
+      words: true,
+      wordsOffset: offset,
+      wordsLimit: limit,
+    });
     words.push(...(p.transcript?.words ?? []));
     if (!p.transcript?.words?.length) break;
   }
@@ -150,12 +188,22 @@ export function directUploadRequest(file: File): CreateDirectUploadTargetRequest
   return { bytes: file.size, mimeType: mimeType as CreateDirectUploadTargetRequest['mimeType'] };
 }
 
-export async function uploadToTarget(target: UploadTarget, file: File, onProgress: (fraction: number) => void): Promise<void> {
+export async function uploadToTarget(
+  target: UploadTarget,
+  file: File,
+  onProgress: (fraction: number) => void,
+): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     const url = new URL(target.url);
-    xhr.open(target.method, target.transport === 'direct' ? target.url : `${url.pathname}${url.search}`);
-    const headers = target.transport === 'direct' ? target.headers : { 'content-type': file.type || 'application/octet-stream' };
+    xhr.open(
+      target.method,
+      target.transport === 'direct' ? target.url : `${url.pathname}${url.search}`,
+    );
+    const headers =
+      target.transport === 'direct'
+        ? target.headers
+        : { 'content-type': file.type || 'application/octet-stream' };
     for (const [name, value] of Object.entries(headers)) xhr.setRequestHeader(name, value);
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) onProgress(e.loaded / e.total);
@@ -170,16 +218,32 @@ export async function uploadToTarget(target: UploadTarget, file: File, onProgres
         const body = JSON.parse(xhr.responseText) as ApiError;
         reject(new ApiClientError(xhr.status, body.error));
       } catch {
-        reject(new ApiClientError(xhr.status, { code: 'INTERNAL', message: `Upload failed (${xhr.status}).`, retryable: false }));
+        reject(
+          new ApiClientError(xhr.status, {
+            code: 'INTERNAL',
+            message: `Upload failed (${xhr.status}).`,
+            retryable: false,
+          }),
+        );
       }
     };
-    xhr.onerror = () => reject(new ApiClientError(0, { code: 'INTERNAL', message: 'Network error during upload.', retryable: true }));
+    xhr.onerror = () =>
+      reject(
+        new ApiClientError(0, {
+          code: 'INTERNAL',
+          message: 'Network error during upload.',
+          retryable: true,
+        }),
+      );
     xhr.send(file);
   });
   if (target.transport !== 'direct') return;
   onProgress(0.92);
   const complete = new URL(target.completeUrl);
-  const accepted = await request<{ task: Task }>(`${complete.pathname}${complete.search}`, json({}));
+  const accepted = await request<{ task: Task }>(
+    `${complete.pathname}${complete.search}`,
+    json({}),
+  );
   const deadline = Date.now() + 10 * 60_000;
   let pollDelayMs = 500;
   for (;;) {
@@ -189,12 +253,20 @@ export async function uploadToTarget(target: UploadTarget, file: File, onProgres
       return;
     }
     if (current.task.status === 'failed' || current.task.status === 'cancelled') {
-      throw new ApiClientError(422, current.task.error ?? { code: 'TASK_FAILED', message: 'Upload verification failed.', retryable: false });
+      throw new ApiClientError(
+        422,
+        current.task.error ?? {
+          code: 'TASK_FAILED',
+          message: 'Upload verification failed.',
+          retryable: false,
+        },
+      );
     }
     if (Date.now() >= deadline) {
       throw new ApiClientError(408, {
         code: 'INTERNAL',
-        message: 'Upload verification is taking longer than expected. The task will continue safely in the background.',
+        message:
+          'Upload verification is taking longer than expected. The task will continue safely in the background.',
         retryable: true,
       });
     }
@@ -209,7 +281,8 @@ export function isUnauthenticated(err: unknown): boolean {
 }
 
 export function errorMessage(err: unknown): string {
-  if (err instanceof ApiClientError) return err.errorRef ? `${err.message} (ref ${err.errorRef})` : err.message;
+  if (err instanceof ApiClientError)
+    return err.errorRef ? `${err.message} (ref ${err.errorRef})` : err.message;
   if (err instanceof Error) return err.message;
   return 'Something went wrong.';
 }
