@@ -259,10 +259,11 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Compact live-type wordmark: one weight, one colour, no badge treatment. */
+/* Shared lockup: selected Caption C mark plus compact live type. */
 .cs-wordmark {
   display: inline-flex;
   align-items: center;
+  gap: 0.48em;
   white-space: nowrap;
   color: currentColor;
   font-family: var(--tg-font-display, var(--font-display));
@@ -270,6 +271,17 @@ body {
   font-style: normal;
   line-height: 1;
   letter-spacing: -0.07em;
+}
+
+.cs-wordmark__mark {
+  width: 1.55em;
+  height: 1.55em;
+  flex: none;
+  object-fit: contain;
+}
+
+.cs-wordmark__name {
+  display: inline-flex;
 }
 
 .cs-wordmark__clip {

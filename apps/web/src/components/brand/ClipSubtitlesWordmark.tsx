@@ -1,16 +1,27 @@
+import Image from 'next/image';
+
 type ClipSubtitlesWordmarkProps = {
   className?: string;
 };
 
 /**
- * Production translation of the selected GPT Image 2 Editorial Strip concept.
- * Live type keeps the mark crisp, theme-aware and accessible at every size.
+ * Shared brand lockup using the selected Caption C monogram and live type.
  */
 export function ClipSubtitlesWordmark({ className = '' }: ClipSubtitlesWordmarkProps) {
   return (
     <span className={`cs-wordmark ${className}`.trim()}>
-      <span className="cs-wordmark__clip">Clip</span>
-      <span className="cs-wordmark__subtitles">Subtitles</span>
+      <Image
+        className="cs-wordmark__mark"
+        src="/brand/clipsubtitles-mark.png"
+        alt=""
+        aria-hidden="true"
+        width={32}
+        height={32}
+      />
+      <span className="cs-wordmark__name">
+        <span className="cs-wordmark__clip">Clip</span>
+        <span className="cs-wordmark__subtitles">Subtitles</span>
+      </span>
     </span>
   );
 }

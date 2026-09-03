@@ -13,6 +13,10 @@ export const metadata: Metadata = {
   title: { default: 'ClipSubtitles', template: '%s · ClipSubtitles' },
   description:
     'Create accurate, styled video captions, preview the result and export the files you need.',
+  icons: {
+    icon: '/brand/clipsubtitles-mark.png',
+    apple: '/brand/clipsubtitles-mark.png',
+  },
   robots: { index: false },
 };
 
