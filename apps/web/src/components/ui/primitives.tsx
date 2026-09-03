@@ -182,11 +182,13 @@ export function Field({
   hint,
   children,
   inline = false,
+  presentation = 'default',
 }: {
   label: ReactNode;
   hint?: ReactNode;
   children: ReactNode;
   inline?: boolean;
+  presentation?: 'default' | 'settings';
 }) {
   const labelId = useId();
   const hintId = useId();
@@ -200,13 +202,24 @@ export function Field({
       >
         <span
           id={labelId}
-          className="text-[11px] font-medium uppercase tracking-[0.12em] text-ink-mute"
+          className={
+            presentation === 'settings'
+              ? 'text-[13px] font-medium text-ink-dim'
+              : 'text-[11px] font-medium uppercase tracking-[0.12em] text-ink-mute'
+          }
         >
           {label}
         </span>
         {children}
         {hint ? (
-          <span id={hintId} className="text-[11px] text-ink-mute">
+          <span
+            id={hintId}
+            className={
+              presentation === 'settings'
+                ? 'text-[12px] leading-5 text-ink-mute'
+                : 'text-[11px] text-ink-mute'
+            }
+          >
             {hint}
           </span>
         ) : null}

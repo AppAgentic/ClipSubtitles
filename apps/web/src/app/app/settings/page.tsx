@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import {
   BILLING_PLANS,
   BILLING_TOP_UPS,
@@ -10,7 +10,7 @@ import {
   type Me,
 } from '@clipsubtitles/contracts';
 import { AppShell } from '@/components/shell/AppShell';
-import { Button, Field, KV, Panel, Slider, TextInput } from '@/components/ui/primitives';
+import { Button, Field, Slider, TextInput } from '@/components/ui/primitives';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useToast } from '@/components/ui/Toast';
 import { api, errorMessage } from '@/lib/api';
@@ -33,6 +33,12 @@ export function Settings({ me }: { me: Me }) {
   const [managingBilling, setManagingBilling] = useState(false);
   const [checkoutComplete, setCheckoutComplete] = useState(false);
   const [checkoutSource, setCheckoutSource] = useState('');
+  const [showAllActivity, setShowAllActivity] = useState(false);
+  const [savedWorkspace, setSavedWorkspace] = useState({
+    name: me.workspace.name,
+    sourceDays: me.workspace.retention.sourceDays,
+    exportDays: me.workspace.retention.exportDays,
+  });
 
   const load = () => {
     api
@@ -59,6 +65,7 @@ export function Settings({ me }: { me: Me }) {
     setSaving(true);
     try {
       await api.updateWorkspace({ name, retention: { sourceDays, exportDays } });
+      setSavedWorkspace({ name, sourceDays, exportDays });
       toast.push('ok', 'Settings saved.');
     } catch (err) {
       toast.push('error', errorMessage(err));
@@ -93,90 +100,134 @@ export function Settings({ me }: { me: Me }) {
     }
   };
 
+  const currentPlan =
+    BILLING_PLANS.find((plan) => plan.id === (billing?.planId ?? 'free'))?.name ?? 'Free';
+  const visibleLedger = showAllActivity ? ledger.slice(0, 12) : ledger.slice(0, 5);
+  const workspaceChanged =
+    name !== savedWorkspace.name ||
+    sourceDays !== savedWorkspace.sourceDays ||
+    exportDays !== savedWorkspace.exportDays;
+
   return (
-    <div className="grid gap-5 lg:grid-cols-2">
-      <div className="flex flex-col gap-5">
-        <Panel title="Account" className="rise p-4">
-          <KV k="User" v={me.user.displayName ?? '—'} />
-          <KV k="Email" v={me.user.emailMasked ?? '—'} mono />
-        </Panel>
-        <Panel title="Appearance" className="rise rise-1 p-4">
-          <ThemeToggle />
-        </Panel>
-        <Panel title="Workspace and storage" className="rise rise-1 p-4">
-          <div className="flex flex-col gap-4">
-            <Field label="Workspace name">
-              <TextInput value={name} onChange={(e) => setName(e.target.value)} maxLength={120} />
-            </Field>
-            <Field
-              label="Keep original videos"
-              hint="Original uploads are automatically deleted after this many days."
-            >
-              <Slider
-                value={sourceDays}
-                min={1}
-                max={365}
-                onChange={setSourceDays}
-                format={(v) => `${v} d`}
-              />
-            </Field>
-            <Field
-              label="Keep finished files"
-              hint="Finished files are automatically deleted after this many days. You can create them again from a saved video project."
-            >
-              <Slider
-                value={exportDays}
-                min={1}
-                max={90}
-                onChange={setExportDays}
-                format={(v) => `${v} d`}
-              />
-            </Field>
-            <div>
-              <Button variant="primary" onClick={() => void save()} loading={saving}>
-                Save
-              </Button>
+    <div className="settings-page mx-auto max-w-[1180px]">
+      <header className="rise mb-7 sm:mb-9">
+        <h1 className="text-[32px] font-semibold tracking-[-0.04em] sm:text-[40px]">Settings</h1>
+        <p className="mt-2 max-w-[54ch] text-[14px] leading-6 text-ink-dim sm:text-[15px]">
+          Manage your workspace, storage, appearance and billing in one place.
+        </p>
+      </header>
+
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(360px,.9fr)] lg:gap-6">
+        <section className="rise rise-1 overflow-hidden rounded-[24px] border border-line bg-panel shadow-[var(--shadow-card)]">
+          <SettingsSection title="Account" description="Your signed-in ClipSubtitles identity.">
+            <div className="flex items-center gap-4">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[15px] bg-signal/10 text-[15px] font-semibold text-signal">
+                {initials(me.user.displayName ?? me.user.emailMasked ?? 'CS')}
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-[15px] font-semibold text-ink">
+                  {me.user.displayName ?? '—'}
+                </p>
+                <p className="mono mt-1 truncate text-[12px] text-ink-dim">
+                  {me.user.emailMasked ?? '—'}
+                </p>
+              </div>
+            </div>
+          </SettingsSection>
+
+          <SettingsSection
+            title="Appearance"
+            description="Use your device theme or choose a permanent look."
+          >
+            <ThemeToggle embedded />
+          </SettingsSection>
+
+          <SettingsSection
+            title="Workspace and storage"
+            description="Name your workspace and decide how long media stays available."
+            last
+          >
+            <div className="flex flex-col gap-6">
+              <Field label="Workspace name" presentation="settings">
+                <TextInput value={name} onChange={(e) => setName(e.target.value)} maxLength={120} />
+              </Field>
+              <Field
+                label="Keep original videos"
+                hint="Original uploads are deleted automatically after this period."
+                presentation="settings"
+              >
+                <Slider
+                  value={sourceDays}
+                  min={1}
+                  max={365}
+                  onChange={setSourceDays}
+                  format={formatDays}
+                />
+              </Field>
+              <Field
+                label="Keep finished files"
+                hint="Exports can be created again later from the saved project."
+                presentation="settings"
+              >
+                <Slider
+                  value={exportDays}
+                  min={1}
+                  max={90}
+                  onChange={setExportDays}
+                  format={formatDays}
+                />
+              </Field>
+              <div className="flex items-center justify-between gap-4 border-t border-line pt-5">
+                <p className="hidden text-[12px] text-ink-mute sm:block">
+                  {workspaceChanged ? 'You have unsaved changes.' : 'Everything is up to date.'}
+                </p>
+                <Button
+                  className="w-full sm:ml-auto sm:w-auto"
+                  variant="primary"
+                  onClick={() => void save()}
+                  loading={saving}
+                  disabled={!workspaceChanged}
+                >
+                  Save changes
+                </Button>
+              </div>
+            </div>
+          </SettingsSection>
+        </section>
+
+        <section
+          id="billing"
+          className="rise rise-1 scroll-mt-24 overflow-hidden rounded-[24px] border border-line bg-panel shadow-[var(--shadow-card)] lg:sticky lg:top-[90px]"
+        >
+          <div className="border-b border-line p-5 sm:p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[13px] font-medium text-ink-dim">Plan and credits</p>
+                <p className="mt-2 text-[26px] font-semibold tracking-[-0.035em]">{currentPlan}</p>
+              </div>
+              <a
+                href="/pricing"
+                className="mt-0.5 text-[12px] font-medium text-signal hover:underline"
+              >
+                Compare plans
+              </a>
+            </div>
+            <div className="mt-5 flex items-end justify-between rounded-[18px] bg-panel-2 px-4 py-3.5">
+              <div>
+                <p className="text-[12px] text-ink-dim">Available balance</p>
+                <p className="mono mt-1 text-[24px] font-medium tracking-[-0.03em]">
+                  {billing?.credits.available ?? me.credits.available}
+                </p>
+              </div>
+              <span className="pb-1 text-[12px] text-ink-mute">credits</span>
             </div>
           </div>
-        </Panel>
-        <Panel title="Your data" className="rise rise-2 p-4">
-          <p className="text-[12px] text-ink-dim">
-            Deleting a video project removes its original video and finished files immediately.
-            Caption text is used only to create your project and exports.
-          </p>
-        </Panel>
-        <Panel title="Help and support" className="rise rise-2 p-4">
-          <p className="text-[12px] leading-5 text-ink-dim">
-            Ask a question, report a problem, or share feedback without leaving your workspace.
-          </p>
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <SupportButton className="inline-flex h-10 items-center rounded-full bg-signal px-4 text-[13px] font-semibold text-white transition-opacity hover:opacity-90">
-              Contact support
-            </SupportButton>
-            <a
-              href="mailto:support@clipsubtitles.com"
-              className="text-[12px] text-ink-dim hover:text-ink"
-            >
-              support@clipsubtitles.com
-            </a>
-          </div>
-        </Panel>
-      </div>
-      <div className="flex flex-col gap-5">
-        <Panel
-          title="Plan and credits"
-          className="rise"
-          aside={
-            <a href="/pricing" className="text-[11px] text-signal hover:underline">
-              Compare plans
-            </a>
-          }
-        >
-          <div id="billing" className="flex flex-col gap-4 p-4">
+
+          <div className="flex flex-col gap-5 p-5 sm:p-6">
             {checkoutComplete ? (
               <div
                 role="status"
-                className="rounded-2xl border border-phosphor/25 bg-phosphor/10 px-4 py-3 text-[12px] text-ink"
+                className="rounded-[16px] border border-phosphor/25 bg-phosphor/10 px-4 py-3 text-[12px] leading-5 text-ink"
               >
                 Checkout complete. Your plan and credits will update here as soon as payment is
                 confirmed.
@@ -185,49 +236,37 @@ export function Settings({ me }: { me: Me }) {
                   : ''}
               </div>
             ) : null}
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <p className="text-[11px] uppercase tracking-[.12em] text-ink-mute">Current plan</p>
-                <p className="mt-1 text-xl font-semibold">
-                  {BILLING_PLANS.find((plan) => plan.id === (billing?.planId ?? 'free'))?.name ??
-                    'Free'}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-[11px] uppercase tracking-[.12em] text-ink-mute">Available</p>
-                <p className="mono mt-1 text-xl">
-                  {billing?.credits.available ?? me.credits.available} credits
-                </p>
-              </div>
-            </div>
             {billing?.pools?.length ? (
-              <ul className="grid gap-2 sm:grid-cols-2">
-                {billing.pools.map((pool, index) => (
-                  <li
-                    key={`${pool.kind}-${index}`}
-                    className="rounded-xl border border-line bg-panel-2 px-3 py-2 text-[12px]"
-                  >
-                    <span className="capitalize text-ink-dim">{pool.kind}</span>
-                    <strong className="mono float-right">{pool.available}</strong>
-                    {pool.expiresAt ? (
-                      <p className="mt-1 text-[10px] text-ink-mute">
-                        Rolls off {new Date(pool.expiresAt).toLocaleDateString()}
-                      </p>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
+              <div>
+                <p className="mb-2 text-[11px] font-medium text-ink-mute">Credit pools</p>
+                <ul className="grid gap-2 sm:grid-cols-2">
+                  {billing.pools.map((pool, index) => (
+                    <li
+                      key={`${pool.kind}-${index}`}
+                      className="rounded-[14px] bg-panel-2 px-3.5 py-3 text-[12px]"
+                    >
+                      <span className="text-ink-dim">{creditPoolLabel(pool.kind)}</span>
+                      <strong className="mono float-right">{pool.available}</strong>
+                      {pool.expiresAt ? (
+                        <p className="mt-1 text-[10px] text-ink-mute">
+                          Rolls off {new Date(pool.expiresAt).toLocaleDateString()}
+                        </p>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ) : null}
             {billing?.planId === 'free' || !billing ? (
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-4">
                 <div
-                  className="inline-flex w-fit rounded-full border border-line bg-panel-2 p-1"
+                  className="inline-flex w-full rounded-full bg-panel-2 p-1"
                   role="group"
                   aria-label="Billing period"
                 >
                   <button
                     type="button"
-                    className={`rounded-full px-3 py-1.5 text-[12px] ${billingPeriod === 'monthly' ? 'bg-panel text-ink shadow-sm' : 'text-ink-dim'}`}
+                    className={`flex-1 rounded-full px-3 py-2 text-[12px] font-medium transition-colors ${billingPeriod === 'monthly' ? 'bg-panel text-ink shadow-sm' : 'text-ink-dim hover:text-ink'}`}
                     aria-pressed={billingPeriod === 'monthly'}
                     onClick={() => setBillingPeriod('monthly')}
                   >
@@ -235,14 +274,14 @@ export function Settings({ me }: { me: Me }) {
                   </button>
                   <button
                     type="button"
-                    className={`rounded-full px-3 py-1.5 text-[12px] ${billingPeriod === 'annual' ? 'bg-panel text-ink shadow-sm' : 'text-ink-dim'}`}
+                    className={`flex-1 rounded-full px-3 py-2 text-[12px] font-medium transition-colors ${billingPeriod === 'annual' ? 'bg-panel text-ink shadow-sm' : 'text-ink-dim hover:text-ink'}`}
                     aria-pressed={billingPeriod === 'annual'}
                     onClick={() => setBillingPeriod('annual')}
                   >
                     Annual · save up to 20%
                   </button>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="grid gap-2">
                   {BILLING_PLANS.filter((plan) => plan.id !== 'free' && 'sku' in plan).map(
                     (plan) => {
                       const annual = billingPeriod === 'annual';
@@ -251,14 +290,38 @@ export function Settings({ me }: { me: Me }) {
                         ? Math.round(plan.annualPriceCents / 12)
                         : plan.monthlyPriceCents;
                       return (
-                        <Button
+                        <button
+                          type="button"
                           key={plan.id}
-                          variant={plan.id === 'pro' ? 'primary' : 'ghost'}
+                          aria-label={`${plan.name} · $${price / 100}/mo${annual ? ' billed annually' : ''}`}
                           onClick={() => void checkout(sku)}
-                          loading={checkoutSku === sku}
+                          disabled={checkoutSku !== null}
+                          className={`group flex min-h-14 w-full items-center justify-between rounded-[16px] border px-4 py-3 text-left transition-[border,background,transform] active:translate-y-px disabled:opacity-50 ${
+                            plan.id === 'pro'
+                              ? 'border-signal/35 bg-signal/8 hover:border-signal/60'
+                              : 'border-line-strong hover:border-ink-mute hover:bg-panel-2'
+                          }`}
                         >
-                          {plan.name} · ${price / 100}/mo{annual ? ' billed annually' : ''}
-                        </Button>
+                          <span>
+                            <span className="block text-[14px] font-semibold text-ink">
+                              {plan.name}
+                            </span>
+                            <span className="mt-0.5 block text-[11px] text-ink-mute">
+                              {plan.id === 'pro' ? (
+                                <span className="font-medium text-signal">Recommended · </span>
+                              ) : null}
+                              {annual ? 'Billed annually' : 'Billed monthly'}
+                            </span>
+                          </span>
+                          <span className="flex items-center gap-2">
+                            <span className="mono text-[14px] font-medium text-ink">
+                              ${price / 100}/mo
+                            </span>
+                            <span className="text-signal" aria-hidden="true">
+                              →
+                            </span>
+                          </span>
+                        </button>
                       );
                     },
                   )}
@@ -266,8 +329,8 @@ export function Settings({ me }: { me: Me }) {
               </div>
             ) : (
               <div className="flex flex-col gap-4">
-                <div className="rounded-2xl border border-line bg-panel-2 p-3">
-                  <p className="text-[12px] text-ink-dim">
+                <div className="rounded-[18px] bg-panel-2 p-4">
+                  <p className="text-[13px] leading-5 text-ink-dim">
                     Upgrade, downgrade, change payment method, view invoices, or cancel through the
                     secure billing portal.
                   </p>
@@ -306,33 +369,133 @@ export function Settings({ me }: { me: Me }) {
               </div>
             )}
           </div>
-        </Panel>
-        <Panel
-          title="Credit activity"
-          className="rise rise-2"
-          aside={
+        </section>
+
+        <section className="rise rise-2 overflow-hidden rounded-[24px] border border-line bg-panel shadow-[var(--shadow-card)] lg:col-start-1">
+          <SettingsSection
+            title="Data and support"
+            description="Understand storage behavior or get help from the team."
+            last
+          >
+            <div className="grid gap-5 sm:grid-cols-2 sm:gap-0">
+              <div className="sm:border-r sm:border-line sm:pr-6">
+                <h3 className="text-[13px] font-semibold text-ink">Your data</h3>
+                <p className="mt-2 text-[12px] leading-5 text-ink-dim">
+                  Deleting a video project removes its original and finished files immediately.
+                  Caption text is used only for your project and exports.
+                </p>
+              </div>
+              <div className="border-t border-line pt-5 sm:border-t-0 sm:pt-0 sm:pl-6">
+                <h3 className="text-[13px] font-semibold text-ink">Need help?</h3>
+                <p className="mt-2 text-[12px] leading-5 text-ink-dim">
+                  Ask a question, report a problem, or share feedback.
+                </p>
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <SupportButton className="inline-flex h-9 items-center rounded-full bg-signal px-4 text-[12px] font-semibold text-white transition-opacity hover:opacity-90">
+                    Contact support
+                  </SupportButton>
+                  <a
+                    href="mailto:support@clipsubtitles.com"
+                    className="text-[11px] text-ink-mute hover:text-ink"
+                  >
+                    Email support
+                  </a>
+                </div>
+              </div>
+            </div>
+          </SettingsSection>
+        </section>
+
+        <section className="rise rise-2 overflow-hidden rounded-[24px] border border-line bg-panel shadow-[var(--shadow-card)] lg:col-start-2">
+          <header className="flex items-center justify-between border-b border-line px-5 py-4 sm:px-6">
+            <div>
+              <h2 className="text-[16px] font-semibold tracking-[-0.015em]">Credit activity</h2>
+              <p className="mt-0.5 text-[11px] text-ink-mute">Your latest workspace transactions</p>
+            </div>
             <span className="mono text-[11px] text-ink-dim">{me.credits.available} available</span>
-          }
-        >
+          </header>
           {ledger.length === 0 ? (
-            <div className="px-4 py-3 text-[12px] text-ink-mute">No entries.</div>
+            <div className="px-5 py-5 text-[12px] text-ink-mute sm:px-6">No activity yet.</div>
           ) : (
-            <ul className="divide-y divide-line/70">
-              {ledger.slice(0, 12).map((e) => (
-                <li key={e.id} className="flex items-center justify-between px-4 py-2 text-[12px]">
-                  <span className="text-ink-dim">{creditActivityLabel(e.kind)}</span>
-                  <span className={`mono ${e.amount < 0 ? 'text-signal' : 'text-phosphor'}`}>
-                    {e.amount > 0 ? '+' : ''}
-                    {e.amount}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <>
+              <ul className="divide-y divide-line/70">
+                {visibleLedger.map((e) => (
+                  <li
+                    key={e.id}
+                    className="flex items-center justify-between px-5 py-3 text-[12px] sm:px-6"
+                  >
+                    <span className="text-ink-dim">{creditActivityLabel(e.kind)}</span>
+                    <span className={`mono ${e.amount < 0 ? 'text-signal' : 'text-phosphor'}`}>
+                      {e.amount > 0 ? '+' : ''}
+                      {e.amount}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {ledger.length > 5 ? (
+                <button
+                  type="button"
+                  className="w-full border-t border-line px-5 py-3 text-left text-[12px] font-medium text-signal hover:bg-panel-2 sm:px-6"
+                  onClick={() => setShowAllActivity((value) => !value)}
+                >
+                  {showAllActivity
+                    ? 'Show recent activity'
+                    : `Show ${Math.min(ledger.length, 12)} entries`}
+                </button>
+              ) : null}
+            </>
           )}
-        </Panel>
+        </section>
       </div>
     </div>
   );
+}
+
+function SettingsSection({
+  title,
+  description,
+  children,
+  last = false,
+}: {
+  title: string;
+  description: string;
+  children: ReactNode;
+  last?: boolean;
+}) {
+  return (
+    <div
+      className={`grid gap-5 p-5 sm:grid-cols-[180px_minmax(0,1fr)] sm:p-6 ${last ? '' : 'border-b border-line'}`}
+    >
+      <div>
+        <h2 className="text-[16px] font-semibold tracking-[-0.015em] text-ink">{title}</h2>
+        <p className="mt-1.5 max-w-[26ch] text-[11px] leading-[1.55] text-ink-mute">
+          {description}
+        </p>
+      </div>
+      <div className="min-w-0">{children}</div>
+    </div>
+  );
+}
+
+function initials(value: string): string {
+  return value
+    .split(/\s+/)
+    .map((part) => part.match(/^[\p{L}\p{N}]/u)?.[0] ?? '')
+    .filter(Boolean)
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function formatDays(value: number): string {
+  return `${value} ${value === 1 ? 'day' : 'days'}`;
+}
+
+function creditPoolLabel(kind: string): string {
+  if (kind === 'admin') return 'Workspace credits';
+  if (kind === 'subscription') return 'Plan credits';
+  if (kind === 'topup') return 'Top-up credits';
+  return `${kind.charAt(0).toUpperCase()}${kind.slice(1)} credits`;
 }
 
 function agentName(source: string): string {

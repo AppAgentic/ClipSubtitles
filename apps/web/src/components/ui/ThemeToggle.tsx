@@ -9,7 +9,7 @@ import { applyTheme, readStoredTheme, storeTheme, type ThemePreference } from '@
  * paint (matching the server-rendered markup) and corrects to the stored
  * preference after mount — no hydration mismatch, just a same-frame update.
  */
-export function ThemeToggle() {
+export function ThemeToggle({ embedded = false }: { embedded?: boolean }) {
   const [pref, setPref] = useState<ThemePreference>('system');
 
   useEffect(() => {
@@ -22,17 +22,24 @@ export function ThemeToggle() {
     applyTheme(next);
   };
 
+  const control = (
+    <Segmented
+      {...(embedded ? { label: 'Appearance' } : {})}
+      value={pref}
+      onChange={update}
+      options={[
+        { value: 'system', label: 'System' },
+        { value: 'light', label: 'Light' },
+        { value: 'dark', label: 'Dark' },
+      ]}
+    />
+  );
+
+  if (embedded) return control;
+
   return (
     <Field label="Appearance" hint="Follows your system setting unless you choose one below.">
-      <Segmented
-        value={pref}
-        onChange={update}
-        options={[
-          { value: 'system', label: 'System' },
-          { value: 'light', label: 'Light' },
-          { value: 'dark', label: 'Dark' },
-        ]}
-      />
+      {control}
     </Field>
   );
 }

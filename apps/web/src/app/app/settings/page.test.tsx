@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { BillingOverview, Me } from '@clipsubtitles/contracts';
 import { ToastProvider } from '@/components/ui/Toast';
@@ -71,6 +71,29 @@ describe('dashboard billing controls', () => {
     expect(screen.getByRole('button', { name: 'Creator · $12/mo billed annually' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Pro · $33/mo billed annually' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Studio · $84/mo billed annually' })).toBeTruthy();
+  });
+
+  it('keeps workspace saving quiet until a setting actually changes', async () => {
+    vi.spyOn(api, 'updateWorkspace').mockResolvedValue({
+      ...me.workspace,
+      name: 'Renamed workspace',
+    });
+    renderSettings(freeBilling);
+
+    const save = screen.getByRole('button', { name: 'Save changes' });
+    expect(save.hasAttribute('disabled')).toBe(true);
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Workspace name' }), {
+      target: { value: 'Renamed workspace' },
+    });
+    expect(save.hasAttribute('disabled')).toBe(false);
+    fireEvent.click(save);
+
+    await waitFor(() => expect(save.hasAttribute('disabled')).toBe(true));
+    expect(api.updateWorkspace).toHaveBeenCalledWith({
+      name: 'Renamed workspace',
+      retention: { sourceDays: 30, exportDays: 7 },
+    });
   });
 
   it('gives a paid workspace one safe management path for plan and billing changes', async () => {
