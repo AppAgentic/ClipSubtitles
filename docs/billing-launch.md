@@ -114,20 +114,28 @@ the secret without printing it, and then run the signed-event acceptance below.
    `https://api.clipsubtitles.com/v1/billing/webhooks/whop` and store its secret
    without printing it. Subscribe it to `payment.succeeded`,
    `membership.activated`, `membership.deactivated`, and
-   `membership.cancel_at_period_end_changed`.
+   `membership.cancel_at_period_end_changed`, plus `refund.created` and
+   `dispute.created` after the matching reversal/hold handlers are deployed.
 3. Deploy with pinned Secret Manager versions, then read back only non-secret
    configuration and service readiness.
 4. Complete a real low-value top-up and a paid-plan checkout from an
    authenticated test workspace.
 5. Confirm one verified event creates one billing-event row and one credit
-   grant; replay the same signed event and confirm it is a no-op.
+   grant; replay the same signed event and confirm it is a no-op. Refund the
+   payment and confirm the original workspace receives one idempotent
+   adjustment, no unrelated pool is modified, and the balance cannot become
+   negative. Exercise the equivalent dispute hold/reversal path with a
+   provider fixture or controlled provider event.
 6. Open *Manage subscription* from a paid test workspace and verify upgrade,
    downgrade, payment-method, invoice and cancellation controls. Confirm the
    membership status webhooks update the dashboard without granting credits.
 7. Exhaust a test workspace, trigger `checkout_required` from an agent, pay on
    the app-owned URL, and resume the same quote when valid.
-8. Review `/terms` and `/privacy` with counsel before public payment traffic.
+8. Complete every gate in `docs/legal-review-2026-09-03.md`, including counsel
+   review of `/terms`, `/privacy`, and `/refunds`, before public payment
+   traffic.
 
-The code path is ready for this acceptance pass, but passing unit/integration
-tests with an injected provider is not evidence that live Whop event payloads
+The purchase-grant path is ready for its acceptance pass. Refund/dispute
+handling remains a code blocker. Passing unit/integration tests with an
+injected provider is not evidence that live Whop event payloads, legal settings
 or account ownership have been verified.

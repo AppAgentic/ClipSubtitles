@@ -1,9 +1,10 @@
 # Legal and privacy review packet for paid traffic
 
-Status: factual engineering draft, prepared 2026-09-01. This is not legal
-advice and is not a substitute for review by counsel in the launch entity's
-jurisdictions. Paid checkout must remain disabled until the public Terms and
-Privacy pages have an effective date and the open decisions below are resolved.
+Status: superseded by the evidence-backed 2026-09-03 review in
+`docs/legal-review-2026-09-03.md`. This remains the original factual engineering
+packet. It is not legal advice. Paid checkout must remain disabled until the
+remaining provider, refund/dispute, entity-account and solicitor gates in the
+newer review are resolved.
 
 ## Product facts counsel can rely on
 
@@ -20,9 +21,12 @@ Privacy pages have an effective date and the open decisions below are resolved.
 | Security and operational metadata | Service | Authentication, rate limiting, fraud/security response and support diagnostics | Structured logs and audit records; content and credential fields are redacted |
 
 ClipSubtitles does not need to sell customer data, use uploaded media for
-advertising, or train a ClipSubtitles model. No advertising, session-replay or
-third-party product-analytics SDK is present in the release candidate. Those
-facts must be re-audited if analytics or marketing tooling is later added.
+advertising, or train a ClipSubtitles model. No advertising or session-replay
+SDK is intentionally enabled. The 2026-09-03 review found that Gleap had been
+initialized site-wide with page-view events; the current remediation branch
+removes that automatic tracking and initializes Gleap only when support is
+opened. These facts must be re-audited if analytics or marketing tooling is
+later added.
 
 ### Processors and infrastructure
 
@@ -33,7 +37,8 @@ facts must be re-audited if analytics or marketing tooling is later added.
 | ElevenLabs | Primary speech-to-text | Audio extracted from the uploaded media |
 | Google Gemini | Fallback speech-to-text | Audio only when the primary provider fails and fallback is allowed |
 | Google Cloud | Cloud Run compute, Cloud SQL, Tasks, Scheduler, load balancing, secrets and logs | Application requests, derived project/transcript state, rendering inputs/outputs in transit, redacted operations data |
-| Whop | Checkout, subscription management and payment events after enablement | Account/workspace-bound checkout metadata and billing activity; provider handles payment details |
+| Whop | Checkout, transaction taxes, subscription management and payment events after enablement | Account/workspace-bound checkout metadata and billing activity; provider handles payment details |
+| Gleap | User-requested support and Help Center | Support content plus bounded account/workspace/page context after the user opens support |
 
 Provider legal names, data locations, retention, training/default data-use
 settings, DPAs and international-transfer mechanisms must be verified from the

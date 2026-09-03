@@ -1,10 +1,12 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
+import Link from 'next/link';
+import { Suspense, useState } from 'react';
 import { ClipSubtitlesWordmark } from '@/components/brand/ClipSubtitlesWordmark';
 
 function SignInInner() {
+  const [eligible, setEligible] = useState(false);
   const params = useSearchParams();
   const returnTo = params.get('returnTo') ?? '/app';
   const href = `/auth/login?returnTo=${encodeURIComponent(returnTo)}`;
@@ -23,9 +25,32 @@ function SignInInner() {
           Sign in to review captions, continue editing and download your finished videos.
         </p>
         <div className="rise rise-3 mt-8 flex flex-wrap items-center gap-3">
+          <label className="flex w-full items-start gap-2 text-[12px] leading-5 text-ink-dim">
+            <input
+              type="checkbox"
+              checked={eligible}
+              onChange={(event) => setEligible(event.target.checked)}
+              className="mt-1"
+            />
+            <span>
+              I confirm I am 18 or over and agree to the{' '}
+              <Link className="text-signal" href="/terms">
+                Terms
+              </Link>{' '}
+              and acknowledge the{' '}
+              <Link className="text-signal" href="/privacy">
+                Privacy Policy
+              </Link>
+              .
+            </span>
+          </label>
           <a
             href={href}
-            className="inline-flex h-11 items-center gap-2 rounded-xl bg-[var(--color-signal-fill)] px-5 text-[14px] font-semibold text-signal-ink transition hover:brightness-110"
+            aria-disabled={!eligible}
+            onClick={(event) => {
+              if (!eligible) event.preventDefault();
+            }}
+            className={`inline-flex h-11 items-center gap-2 rounded-xl bg-[var(--color-signal-fill)] px-5 text-[14px] font-semibold text-signal-ink transition ${eligible ? 'hover:brightness-110' : 'cursor-not-allowed opacity-45'}`}
           >
             Continue to sign in
             <span aria-hidden>→</span>

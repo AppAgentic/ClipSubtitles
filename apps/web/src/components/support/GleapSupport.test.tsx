@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { cleanup, render, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { GleapSupportProvider, identifySupportUser } from './GleapSupport';
+import { GleapSupportProvider, SupportButton, identifySupportUser } from './GleapSupport';
 
 const gleap = vi.hoisted(() => ({
   initialize: vi.fn(),
@@ -17,8 +17,6 @@ const gleap = vi.hoisted(() => ({
 }));
 
 vi.mock('gleap', () => ({ default: gleap }));
-vi.mock('next/navigation', () => ({ usePathname: () => '/app' }));
-
 afterEach(() => {
   cleanup();
   delete process.env.NEXT_PUBLIC_GLEAP_SDK_TOKEN;
@@ -26,7 +24,7 @@ afterEach(() => {
 });
 
 describe('Gleap support', () => {
-  it('initializes privately and applies queued signed-in user context', async () => {
+  it('initializes only when support is requested and applies queued signed-in user context', async () => {
     process.env.NEXT_PUBLIC_GLEAP_SDK_TOKEN = 'public_sdk_token';
     identifySupportUser({
       user: { id: 'user_test', displayName: 'Test User', emailMasked: 't***@example.com' },
@@ -43,10 +41,12 @@ describe('Gleap support', () => {
 
     render(
       <GleapSupportProvider>
-        <div>App</div>
+        <SupportButton>Support</SupportButton>
       </GleapSupportProvider>,
     );
 
+    expect(gleap.initialize).not.toHaveBeenCalled();
+    fireEvent.click(document.querySelector('button')!);
     await waitFor(() => expect(gleap.initialize).toHaveBeenCalledWith('public_sdk_token'));
     expect(gleap.showFeedbackButton).toHaveBeenCalledWith(false);
     expect(gleap.hideAiChatbar).toHaveBeenCalled();
@@ -63,5 +63,7 @@ describe('Gleap support', () => {
         customData: expect.objectContaining({ workspaceId: 'ws_test', availableCredits: 10 }),
       }),
     );
+    expect(gleap.trackEvent).not.toHaveBeenCalled();
+    expect(gleap.open).toHaveBeenCalledOnce();
   });
 });
