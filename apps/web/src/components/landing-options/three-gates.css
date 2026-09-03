@@ -189,13 +189,6 @@
   display: block;
 }
 
-@media (min-width: 861px) {
-  [data-lo='three-gates'] .tg-hero h1 span,
-  [data-lo='three-gates'] .tg-hero h1 em {
-    white-space: nowrap;
-  }
-}
-
 [data-lo='three-gates'] .tg-hero h1 em,
 [data-lo='three-gates'] .tg-final h2 em {
   font-style: normal;

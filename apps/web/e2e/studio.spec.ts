@@ -42,6 +42,23 @@ test('sign-in page renders without overflow', async ({ page }) => {
   await shot(page, 'sign-in');
 });
 
+test('landing headline stays inside its column', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: /Upload a video/ })).toBeVisible();
+  await noHorizontalOverflow(page, 'landing');
+  const lines = page.locator('.tg-hero h1 > *');
+  for (let index = 0; index < (await lines.count()); index += 1) {
+    const dimensions = await lines.nth(index).evaluate((element) => ({
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+    }));
+    expect(dimensions.scrollWidth, `headline line ${index + 1} must not overflow`).toBeLessThanOrEqual(
+      dimensions.clientWidth,
+    );
+  }
+  await shot(page, 'landing');
+});
+
 test('library, editor, and render routes stay within the viewport and the caption workflow works', async ({
   page,
 }) => {
