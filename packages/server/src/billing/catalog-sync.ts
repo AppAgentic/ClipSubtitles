@@ -303,6 +303,12 @@ function recurringCreateArgs(desired: DesiredPlan): string[] {
   ];
 }
 
+function initialPrice(desired: DesiredPlan): number {
+  // Whop treats initial_price as an additional first-payment fee for renewal
+  // plans. The normal first period is charged through renewal_price.
+  return desired.planType === 'renewal' ? 0 : desired.price;
+}
+
 function productWriteArgs(
   command: 'create' | 'update',
   accountId: string,
@@ -343,7 +349,7 @@ function planWriteArgs(
     ...(command === 'create'
       ? [
           ...option('currency', 'usd'),
-          ...option('initial_price', desired.price),
+          ...option('initial_price', initialPrice(desired)),
           ...option('release_method', 'buy_now'),
           '--adaptive_pricing_enabled=false',
           '--unlimited_stock',
@@ -410,7 +416,7 @@ function immutableDrift(
   const drift: string[] = [];
   if (actual.plan_type !== desired.planType) drift.push('plan_type');
   if (String(actual.currency).toLowerCase() !== 'usd') drift.push('currency');
-  if (Number(actual.initial_price) !== desired.price) drift.push('initial_price');
+  if (Number(actual.initial_price) !== initialPrice(desired)) drift.push('initial_price');
   if (actual.release_method !== 'buy_now') drift.push('release_method');
   if (actual.adaptive_pricing_enabled !== false) drift.push('adaptive_pricing_enabled');
   if (actual.unlimited_stock !== true) drift.push('unlimited_stock');
