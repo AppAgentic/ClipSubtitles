@@ -28,6 +28,7 @@ import {
   renderFlowReducer,
 } from '@/lib/render-flow-state';
 import { ExportList } from '@/app/app/page';
+import { trackPaidFunnelEvent, trackPaidFunnelEventOnce } from '@/lib/attribution';
 
 const OUTPUT_LABELS: Record<OutputKind, { label: string; hint: string }> = {
   mp4: { label: 'MP4 with captions burned in', hint: 'H.264 + AAC, ready to post' },
@@ -63,6 +64,9 @@ export function RenderFlow({ projectId }: { projectId: string }) {
   }, [projectId, toast]);
   useEffect(() => reload(), [reload]);
   useEffect(() => {
+    if (project) trackPaidFunnelEventOnce('export_reviewed', { project_id: project.id });
+  }, [project]);
+  useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
@@ -79,6 +83,9 @@ export function RenderFlow({ projectId }: { projectId: string }) {
       else if (task.status === 'cancelled')
         pending.settle('info', 'Export cancelled. Credits returned.');
       else pending.settle('error', 'We could not finish the export. No credits were charged.');
+      if (task.status === 'succeeded') {
+        trackPaidFunnelEventOnce('export_completed', { project_id: projectId });
+      }
     }
   }, [task, reload, pending]);
 
@@ -106,6 +113,10 @@ export function RenderFlow({ projectId }: { projectId: string }) {
         idempotencyKey: `web-render-${quote.id}`,
       });
       dispatch({ type: 'render_started', taskId: res.task.id });
+      trackPaidFunnelEvent('export_started', {
+        project_id: projectId,
+        credits: res.reservedCredits,
+      });
       notifyCreditsChanged();
       pending.start(`${res.reservedCredits} credits approved. Creating your files…`);
     } catch (err) {
@@ -155,6 +166,20 @@ export function RenderFlow({ projectId }: { projectId: string }) {
     <div className="mx-auto grid max-w-[1100px] gap-5 lg:grid-cols-[minmax(0,1fr)_400px]">
       <div className="flex flex-col gap-5">
         <div className="rise">
+          <ol
+            className="mb-6 grid grid-cols-3 border-b border-line pb-3 text-[10px] text-ink-mute sm:text-[11px]"
+            aria-label="Captioning steps"
+          >
+            <li>
+              <span className="mono mr-1">01</span>Upload
+            </li>
+            <li className="text-center">
+              <span className="mono mr-1">02</span>Review &amp; style
+            </li>
+            <li className="text-right font-semibold text-signal">
+              <span className="mono mr-1">03</span>Export
+            </li>
+          </ol>
           <Link
             href={`/studio/${project.id}`}
             className="mono text-[11px] text-ink-mute hover:text-ink"
@@ -180,92 +205,22 @@ export function RenderFlow({ projectId }: { projectId: string }) {
             ) : null
           }
         >
-          <fieldset disabled={locked} className="grid gap-2">
-            {(Object.keys(OUTPUT_LABELS) as OutputKind[]).map((kind) => {
-              const on = state.settings.outputs.includes(kind);
-              const rate = PRICE_TABLE.perMinute[kind][state.settings.resolution];
-              return (
-                <label
-                  key={kind}
-                  className={`flex cursor-pointer items-center justify-between gap-3 rounded-lg border px-3 py-2.5 transition-colors ${on ? 'border-signal/50 bg-signal/5' : 'border-line-strong hover:border-ink-mute'} ${locked ? 'cursor-not-allowed opacity-60' : ''}`}
-                >
-                  <span className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={on}
-                      onChange={() => dispatch({ type: 'toggle_output', kind })}
-                      className="accent-[var(--color-signal)]"
-                    />
-                    <span>
-                      <span className="block text-[13px] text-ink">
-                        {OUTPUT_LABELS[kind].label}
-                      </span>
-                      <span className="block text-[11px] text-ink-mute">
-                        {OUTPUT_LABELS[kind].hint}
-                      </span>
-                    </span>
-                  </span>
-                  <span className="mono text-[11px] text-ink-dim">
-                    {rate ? `${rate} cr/min` : 'free'}
-                  </span>
-                </label>
-              );
-            })}
-          </fieldset>
-          <fieldset
-            disabled={locked}
-            className={`mt-4 grid gap-4 md:grid-cols-3 ${locked ? 'opacity-60' : ''}`}
-          >
-            <Field label="Resolution">
-              <Segmented
-                value={state.settings.resolution}
-                onChange={(v) =>
-                  dispatch({
-                    type: 'settings',
-                    patch: { resolution: v as OutputSettings['resolution'] },
-                  })
-                }
-                size="sm"
-                options={[
-                  { value: '720p', label: '720p' },
-                  { value: '1080p', label: '1080p' },
-                  { value: 'source', label: 'Source' },
-                ]}
-              />
-            </Field>
-            <Field label="Frame rate">
-              <Segmented
-                value={String(state.settings.fps)}
-                onChange={(v) =>
-                  dispatch({
-                    type: 'settings',
-                    patch: { fps: v === 'source' ? 'source' : (Number(v) as 24 | 25 | 30 | 60) },
-                  })
-                }
-                size="sm"
-                options={[
-                  { value: 'source', label: 'Src' },
-                  { value: '24', label: '24' },
-                  { value: '30', label: '30' },
-                  { value: '60', label: '60' },
-                ]}
-              />
-            </Field>
-            <Field label="Quality">
-              <Segmented
-                value={state.settings.quality}
-                onChange={(v) =>
-                  dispatch({ type: 'settings', patch: { quality: v as OutputSettings['quality'] } })
-                }
-                size="sm"
-                options={[
-                  { value: 'standard', label: 'Standard' },
-                  { value: 'high', label: `High ×${PRICE_TABLE.highQualityMultiplier}` },
-                ]}
-              />
-            </Field>
-          </fieldset>
-          <div className="mt-4 flex flex-wrap items-center gap-3">
+          <div className="mb-4 flex flex-col gap-4 rounded-xl bg-signal/[0.07] p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-signal">
+                Recommended
+              </p>
+              <p className="mt-1 text-[15px] font-semibold text-ink">
+                {state.settings.outputs.map((output) => output.toUpperCase()).join(' + ')}
+              </p>
+              <p className="mt-1 text-[11px] text-ink-mute">
+                {state.settings.resolution} ·{' '}
+                {state.settings.fps === 'source'
+                  ? 'source frame rate'
+                  : `${state.settings.fps} fps`}{' '}
+                · {state.settings.quality} quality
+              </p>
+            </div>
             {terminal ? (
               <Button variant="primary" onClick={() => dispatch({ type: 'reset' })}>
                 Render again
@@ -273,6 +228,8 @@ export function RenderFlow({ projectId }: { projectId: string }) {
             ) : (
               <Button
                 variant="primary"
+                size="lg"
+                className="w-full sm:w-auto"
                 onClick={() => void getQuote()}
                 loading={quoting}
                 disabled={!canQuote(state, projectReady) || quoting}
@@ -280,6 +237,101 @@ export function RenderFlow({ projectId }: { projectId: string }) {
                 Review cost
               </Button>
             )}
+          </div>
+          <details className="group border-t border-line pt-3">
+            <summary className="cursor-pointer py-2 text-[12px] font-medium text-ink-dim hover:text-ink">
+              More file and quality options
+            </summary>
+            <fieldset disabled={locked} className="mt-3 grid gap-2">
+              {(Object.keys(OUTPUT_LABELS) as OutputKind[]).map((kind) => {
+                const on = state.settings.outputs.includes(kind);
+                const rate = PRICE_TABLE.perMinute[kind][state.settings.resolution];
+                return (
+                  <label
+                    key={kind}
+                    className={`flex cursor-pointer items-center justify-between gap-3 rounded-lg border px-3 py-2.5 transition-colors ${on ? 'border-signal/50 bg-signal/5' : 'border-line-strong hover:border-ink-mute'} ${locked ? 'cursor-not-allowed opacity-60' : ''}`}
+                  >
+                    <span className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={on}
+                        onChange={() => dispatch({ type: 'toggle_output', kind })}
+                        className="accent-[var(--color-signal)]"
+                      />
+                      <span>
+                        <span className="block text-[13px] text-ink">
+                          {OUTPUT_LABELS[kind].label}
+                        </span>
+                        <span className="block text-[11px] text-ink-mute">
+                          {OUTPUT_LABELS[kind].hint}
+                        </span>
+                      </span>
+                    </span>
+                    <span className="mono text-[11px] text-ink-dim">
+                      {rate ? `${rate} cr/min` : 'free'}
+                    </span>
+                  </label>
+                );
+              })}
+            </fieldset>
+            <fieldset
+              disabled={locked}
+              className={`mt-4 grid gap-4 md:grid-cols-3 ${locked ? 'opacity-60' : ''}`}
+            >
+              <Field label="Resolution">
+                <Segmented
+                  value={state.settings.resolution}
+                  onChange={(v) =>
+                    dispatch({
+                      type: 'settings',
+                      patch: { resolution: v as OutputSettings['resolution'] },
+                    })
+                  }
+                  size="sm"
+                  options={[
+                    { value: '720p', label: '720p' },
+                    { value: '1080p', label: '1080p' },
+                    { value: 'source', label: 'Source' },
+                  ]}
+                />
+              </Field>
+              <Field label="Frame rate">
+                <Segmented
+                  value={String(state.settings.fps)}
+                  onChange={(v) =>
+                    dispatch({
+                      type: 'settings',
+                      patch: { fps: v === 'source' ? 'source' : (Number(v) as 24 | 25 | 30 | 60) },
+                    })
+                  }
+                  size="sm"
+                  options={[
+                    { value: 'source', label: 'Src' },
+                    { value: '24', label: '24' },
+                    { value: '30', label: '30' },
+                    { value: '60', label: '60' },
+                  ]}
+                />
+              </Field>
+              <Field label="Quality">
+                <Segmented
+                  value={state.settings.quality}
+                  onChange={(v) =>
+                    dispatch({
+                      type: 'settings',
+                      patch: { quality: v as OutputSettings['quality'] },
+                    })
+                  }
+                  size="sm"
+                  options={[
+                    { value: 'standard', label: 'Standard' },
+                    { value: 'high', label: `High ×${PRICE_TABLE.highQualityMultiplier}` },
+                  ]}
+                />
+              </Field>
+            </fieldset>
+          </details>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
             {!projectReady ? (
               <span className="text-[12px] text-warn">Generate captions before exporting.</span>
             ) : null}

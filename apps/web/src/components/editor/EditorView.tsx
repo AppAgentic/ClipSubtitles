@@ -22,6 +22,7 @@ import { ApiClientError, api, errorMessage, loadAllWords } from '@/lib/api';
 import { isActiveTask, useTask } from '@/lib/hooks';
 import { titleCase } from '@/lib/format';
 import { PatchQueue } from '@/lib/patch-queue';
+import { trackPaidFunnelEventOnce } from '@/lib/attribution';
 import { GenerateDialog } from './GenerateDialog';
 import { PageList } from './PageList';
 import { StyleInspector } from './StyleInspector';
@@ -110,12 +111,35 @@ export function EditorView({ projectId }: { projectId: string }) {
 
   useEffect(() => {
     load()
-      .then((p) => {
-        if (search.get('generate') === '1' && !p.transcript && p.status === 'ready')
+      .then(async (p) => {
+        if (search.get('generate') !== '1' || p.transcript || p.status !== 'ready') return;
+        if (search.get('onboarding') !== '1') {
           setGenerateOpen(true);
+          return;
+        }
+        setGenerateBusy(true);
+        try {
+          const res = await api.generateCaptions(projectId, {
+            preset: 'clean',
+            position: 'bottom',
+            idempotencyKey: `web-onboarding-${p.id}-${p.version}`,
+          });
+          setGenerateTaskId(res.task.id);
+          setProject((current) =>
+            current
+              ? { ...res.project, transcript: res.project.transcript ?? current.transcript }
+              : res.project,
+          );
+          queue.current?.resetVersion(res.project.version, false);
+        } catch (err) {
+          toast.push('error', errorMessage(err));
+          setGenerateOpen(true);
+        } finally {
+          setGenerateBusy(false);
+        }
       })
       .catch((err) => toast.push('error', errorMessage(err)));
-  }, [load, search, toast]);
+  }, [load, projectId, search, toast]);
 
   // Generation task: poll, then reload.
   const { task: genTask } = useTask(generateTaskId);
@@ -145,6 +169,7 @@ export function EditorView({ projectId }: { projectId: string }) {
     if (previewTask.status === 'succeeded') {
       setPreviewUrl(previewExports[0]?.downloadUrl ?? null);
       setPreviewTaskId(null);
+      trackPaidFunnelEventOnce('preview_seen', { project_id: projectId });
     } else if (previewTask.status === 'failed' || previewTask.status === 'cancelled') {
       setPreviewTaskId(null);
       toast.push(
@@ -156,36 +181,50 @@ export function EditorView({ projectId }: { projectId: string }) {
     }
   }, [previewTask, previewExports, toast]);
 
-  const sendOps = useCallback((ops: PatchOp[]) => {
-    if (!queue.current) return;
-    setSave('saving');
-    void queue.current.enqueue(ops);
-  }, []);
+  const sendOps = useCallback(
+    (ops: PatchOp[]) => {
+      if (!queue.current) return;
+      if (ops.some((op) => WORD_OPS.has(op.op))) {
+        trackPaidFunnelEventOnce('first_edit_made', { project_id: projectId });
+      }
+      setSave('saving');
+      void queue.current.enqueue(ops);
+    },
+    [projectId],
+  );
 
   /** Style edits: instant local feedback; persistence is coalesced and serialized by the queue. */
-  const onStyle = useCallback((patch: StylePatch) => {
-    setStyle((prev) => {
-      if (!prev) return prev;
-      try {
-        return applyStylePatch(prev, patch);
-      } catch {
-        return prev;
-      }
-    });
-    setSave('saving');
-    queue.current?.style(patch);
-  }, []);
+  const onStyle = useCallback(
+    (patch: StylePatch) => {
+      trackPaidFunnelEventOnce('style_previewed', { project_id: projectId });
+      setStyle((prev) => {
+        if (!prev) return prev;
+        try {
+          return applyStylePatch(prev, patch);
+        } catch {
+          return prev;
+        }
+      });
+      setSave('saving');
+      queue.current?.style(patch);
+    },
+    [projectId],
+  );
 
   const onPreset = useCallback(
-    (preset: StylePresetId) => sendOps([{ op: 'set_preset', preset }]),
-    [sendOps],
+    (preset: StylePresetId) => {
+      trackPaidFunnelEventOnce('style_previewed', { project_id: projectId, preset });
+      sendOps([{ op: 'set_preset', preset }]);
+    },
+    [projectId, sendOps],
   );
   const onPosition = useCallback(
     (position: CaptionPosition) => {
+      trackPaidFunnelEventOnce('style_previewed', { project_id: projectId, position });
       setStyle((prev) => (prev ? { ...prev, position } : prev));
       sendOps([{ op: 'set_position', position }]);
     },
-    [sendOps],
+    [projectId, sendOps],
   );
 
   const generate = async (req: GenerateCaptionsRequest) => {
@@ -235,10 +274,21 @@ export function EditorView({ projectId }: { projectId: string }) {
     [pages, timeMs],
   );
   const selectedPage: CaptionPage | null = useMemo(
-    () => pages.find((p) => p.id === selectedPageId) ?? activePage,
-    [pages, selectedPageId, activePage],
+    () =>
+      pages.find((p) => p.id === selectedPageId) ??
+      activePage ??
+      pages.find((p) => p.id === project?.qa?.issues[0]?.pageId) ??
+      pages[0] ??
+      null,
+    [pages, selectedPageId, activePage, project?.qa?.issues],
   );
   const busy = save === 'saving';
+
+  useEffect(() => {
+    if (project?.transcript?.wordCount) {
+      trackPaidFunnelEventOnce('transcript_ready', { project_id: projectId });
+    }
+  }, [project?.transcript?.wordCount, projectId]);
 
   if (!project || !style)
     return <div className="p-6 text-[13px] text-ink-mute">Loading project…</div>;
@@ -251,8 +301,24 @@ export function EditorView({ projectId }: { projectId: string }) {
 
   return (
     <div className="flex min-h-[560px] flex-col gap-3 lg:h-[calc(100vh-48px-32px)]">
+      {search.get('onboarding') === '1' ? (
+        <ol
+          className="rise grid grid-cols-3 border-b border-line pb-3 text-[10px] text-ink-mute lg:hidden"
+          aria-label="Captioning steps"
+        >
+          <li>
+            <span className="mono mr-1">01</span>Upload
+          </li>
+          <li className="text-center font-semibold text-signal">
+            <span className="mono mr-1">02</span>Review &amp; style
+          </li>
+          <li className="text-right">
+            <span className="mono mr-1">03</span>Export
+          </li>
+        </ol>
+      ) : null}
       <header className="rise flex flex-wrap items-center gap-3">
-        <Link href="/" className="mono text-[11px] text-ink-mute hover:text-ink">
+        <Link href="/app" className="mono text-[11px] text-ink-mute hover:text-ink">
           ← library
         </Link>
         {titleDraft === null ? (
@@ -299,26 +365,35 @@ export function EditorView({ projectId }: { projectId: string }) {
           state={save}
           onReload={() => load().catch((err) => toast.push('error', errorMessage(err)))}
         />
-        <Button
-          size="sm"
-          onClick={() => setGenerateOpen(true)}
-          disabled={
-            generating || project.status === 'awaiting_source' || project.status === 'importing'
-          }
-        >
-          {hasTranscript ? 'Regenerate' : 'Generate captions'}
-        </Button>
-        <Button
-          size="sm"
-          onClick={() => void preview()}
-          disabled={!hasTranscript || isActiveTask(previewTask)}
-          loading={isActiveTask(previewTask)}
-        >
-          Preview 8s
-        </Button>
-        <LinkButton href={`/studio/${project.id}/render`} variant="primary" size="sm">
-          Export…
-        </LinkButton>
+        <div className="flex w-full gap-2 sm:w-auto">
+          <Button
+            size="sm"
+            className="hidden sm:inline-flex"
+            onClick={() => setGenerateOpen(true)}
+            disabled={
+              generating || project.status === 'awaiting_source' || project.status === 'importing'
+            }
+          >
+            {hasTranscript ? 'Regenerate' : 'Generate captions'}
+          </Button>
+          <Button
+            size="sm"
+            className="flex-1 sm:flex-none"
+            onClick={() => void preview()}
+            disabled={!hasTranscript || isActiveTask(previewTask)}
+            loading={isActiveTask(previewTask)}
+          >
+            Preview 8s
+          </Button>
+          <LinkButton
+            href={`/studio/${project.id}/render`}
+            variant="primary"
+            size="sm"
+            className="flex-1 sm:flex-none"
+          >
+            Continue to export
+          </LinkButton>
+        </div>
       </header>
 
       {generating && genTask ? (
@@ -348,7 +423,7 @@ export function EditorView({ projectId }: { projectId: string }) {
       ) : null}
 
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[300px_minmax(0,1fr)_340px]">
-        <section className="rise rise-2 order-1 min-h-[420px] lg:order-2 lg:min-h-0">
+        <section className="rise rise-2 order-1 min-h-[300px] sm:min-h-[420px] lg:order-2 lg:min-h-0">
           {project.source ? (
             <VideoStage
               source={project.source}

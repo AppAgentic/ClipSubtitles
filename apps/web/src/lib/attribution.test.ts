@@ -1,7 +1,12 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { captureAttribution, readAttribution, trackPaidFunnelEvent } from './attribution';
+import {
+  captureAttribution,
+  readAttribution,
+  trackPaidFunnelEvent,
+  trackPaidFunnelEventOnce,
+} from './attribution';
 
 describe('paid web attribution', () => {
   beforeEach(() => {
@@ -13,7 +18,11 @@ describe('paid web attribution', () => {
   afterEach(() => vi.restoreAllMocks());
 
   it('captures AppRefer and Meta IDs without retaining landing query parameters', () => {
-    history.replaceState({}, '', '/pricing?ar_click_id=click_123&fbclid=fb_123&campaign_id=campaign_1&utm_source=meta&private=discarded');
+    history.replaceState(
+      {},
+      '',
+      '/pricing?ar_click_id=click_123&fbclid=fb_123&campaign_id=campaign_1&utm_source=meta&private=discarded',
+    );
     const attribution = captureAttribution();
     expect(attribution).toMatchObject({
       appreferClickId: 'click_123',
@@ -33,7 +42,9 @@ describe('paid web attribution', () => {
   });
 
   it('sends funnel events only when paid attribution exists', async () => {
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}', { status: 200 }));
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response('{}', { status: 200 }));
     trackPaidFunnelEvent('pricing_viewed');
     expect(fetchMock).not.toHaveBeenCalled();
 
@@ -46,6 +57,22 @@ describe('paid web attribution', () => {
       event: 'plan_selected',
       attribution: { sessionId: attribution?.sessionId, appreferClickId: 'click_123' },
       properties: { sku: 'plan_creator_annual' },
+    });
+  });
+
+  it('records one-time activation milestones once per paid session', () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response('{}', { status: 200 }));
+    history.replaceState({}, '', '/?utm_source=meta');
+    captureAttribution();
+
+    trackPaidFunnelEventOnce('signup_completed');
+    trackPaidFunnelEventOnce('signup_completed');
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toMatchObject({
+      event: 'signup_completed',
     });
   });
 });

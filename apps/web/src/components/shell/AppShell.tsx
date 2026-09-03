@@ -12,6 +12,7 @@ import {
   identifySupportUser,
   SupportButton,
 } from '@/components/support/GleapSupport';
+import { trackPaidFunnelEventOnce } from '@/lib/attribution';
 
 type NavIconName = 'home' | 'plus' | 'film' | 'spark' | 'settings' | 'help' | 'code';
 
@@ -77,6 +78,7 @@ export function AppShell({
   const { me, loading, unauthenticated, error } = useMe();
   const router = useRouter();
   const pathname = usePathname();
+  const immersive = pathname.startsWith('/studio/');
 
   useEffect(() => {
     if (!loading && unauthenticated)
@@ -84,7 +86,10 @@ export function AppShell({
   }, [loading, unauthenticated, router, pathname]);
 
   useEffect(() => {
-    if (me) identifySupportUser(me);
+    if (me) {
+      identifySupportUser(me);
+      trackPaidFunnelEventOnce('signup_completed');
+    }
   }, [me]);
 
   if (loading || (!me && !error)) {
@@ -169,30 +174,32 @@ export function AppShell({
           </div>
         </header>
         <main
-          className={`mx-auto w-full min-w-0 flex-1 pb-24 lg:pb-8 ${wide ? 'max-w-none px-3 py-4 sm:px-4' : 'max-w-[1380px] px-4 py-6 sm:px-7 sm:py-8'}`}
+          className={`mx-auto w-full min-w-0 flex-1 ${immersive ? 'pb-8' : 'pb-24 lg:pb-8'} ${wide ? 'max-w-none px-3 py-4 sm:px-4' : 'max-w-[1380px] px-4 py-6 sm:px-7 sm:py-8'}`}
         >
           {render ? render(me) : children}
         </main>
       </div>
-      <nav
-        aria-label="Workspace"
-        className="fixed inset-x-3 bottom-3 z-40 flex h-[62px] items-center justify-around rounded-2xl border border-line bg-panel/95 px-1 shadow-[var(--shadow-float)] backdrop-blur-xl lg:hidden"
-      >
-        {NAV.slice(0, 5).map((n) => {
-          const active = n.match(pathname);
-          return (
-            <Link
-              key={n.href}
-              href={n.href}
-              aria-current={active ? 'page' : undefined}
-              className={`flex min-w-0 flex-1 flex-col items-center gap-1 py-2 text-[9px] transition-colors ${active ? 'text-signal' : 'text-ink-mute'}`}
-            >
-              <NavIcon name={n.icon} className="h-[18px] w-[18px]" />
-              <span className="max-w-full truncate px-1">{n.mobileLabel ?? n.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
+      {immersive ? null : (
+        <nav
+          aria-label="Workspace"
+          className="fixed inset-x-3 bottom-3 z-40 flex h-[62px] items-center justify-around rounded-2xl border border-line bg-panel/95 px-1 shadow-[var(--shadow-float)] backdrop-blur-xl lg:hidden"
+        >
+          {NAV.slice(0, 5).map((n) => {
+            const active = n.match(pathname);
+            return (
+              <Link
+                key={n.href}
+                href={n.href}
+                aria-current={active ? 'page' : undefined}
+                className={`flex min-w-0 flex-1 flex-col items-center gap-1 py-2 text-[9px] transition-colors ${active ? 'text-signal' : 'text-ink-mute'}`}
+              >
+                <NavIcon name={n.icon} className="h-[18px] w-[18px]" />
+                <span className="max-w-full truncate px-1">{n.mobileLabel ?? n.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      )}
     </div>
   );
 }

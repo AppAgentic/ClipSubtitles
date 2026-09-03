@@ -3,13 +3,13 @@ import Image from 'next/image';
 import { GatesStory } from './GatesStory';
 import { HeroCaptionVideo } from './HeroCaptionVideo';
 import { OptionSwitcher } from './OptionSwitcher';
-import { PathChooser } from './PathChooser';
 import { StyleBoard } from './StyleBoard';
 import { SITE_URL } from '@/components/marketing/seo-pages';
 import { ConnectAgent } from './ConnectAgent';
 import { ClipSubtitlesWordmark } from '@/components/brand/ClipSubtitlesWordmark';
 import { PricingSection } from '@/components/marketing/PricingSection';
 import { MarketingFooter } from '@/components/marketing/MarketingFooter';
+import { TaskFirstStart } from './TaskFirstStart';
 import './landing-options.css';
 import './three-gates.css';
 
@@ -65,6 +65,8 @@ const RELATED_PAGES = [
   ['/transparent-caption-overlay', 'Transparent caption overlays'],
 ] as const;
 
+const START_HREF = '/auth/login?returnTo=%2Fapp%2Fnew';
+
 export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) {
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -113,24 +115,20 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
           <div className="tg-hero-copy">
             <p className="lo-eyebrow tg-eyebrow tg-hero-eyebrow">AI video caption generator</p>
             <h1 id="tg-h1">
-              Create styled video captions <br /> <em>with your AI agent.</em>
+              <span>Add captions to your video</span>
+              <em>with ChatGPT or Claude.</em>
             </h1>
             <p className="tg-lede">
-              Upload a clip—or hand it to your AI agent. Review every word, choose a style, and
-              download a publish-ready captioned video.
+              Start with a clip, see accurate animated captions, then review and export a
+              publish-ready video.
             </p>
-            <div className="tg-cta">
-              <Link href="/sign-in?returnTo=/app/new" className="lo-btn tg-btn-primary">
-                Try for $0
-              </Link>
-              <a href="#tg-how" className="lo-btn tg-btn-ghost">
-                See how it works
-              </a>
-            </div>
-            <PathChooser />
+            <TaskFirstStart />
           </div>
 
           <div className="tg-hero-proof">
+            <p className="tg-proof-label">
+              <span aria-hidden>●</span> Captioned with ClipSubtitles
+            </p>
             <HeroCaptionVideo />
           </div>
         </section>
@@ -169,7 +167,7 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
             <path d="M8 14c19 2 37 15 42 32 4 14-3 24-15 21-10-3-11-14-4-23 7-19 33-22 71-4" />
             <path d="m91 28 14 13-17 8" />
           </svg>
-          <Link href="/sign-in?returnTo=/app/new" className="lo-btn tg-btn-primary">
+          <Link href={START_HREF} className="lo-btn tg-btn-primary">
             Try for $0
           </Link>
         </section>
@@ -252,8 +250,12 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
             <p>Bring one video. Leave with styled, publish-ready captions.</p>
           </div>
           <div className="tg-cta">
-            <Link href="/sign-in?returnTo=/app/new" className="lo-btn tg-bottom-primary">Try for $0</Link>
-            <Link href="/developers" className="lo-btn tg-bottom-secondary">Connect your agent</Link>
+            <Link href={START_HREF} className="lo-btn tg-bottom-primary">
+              Try for $0
+            </Link>
+            <Link href="/developers" className="lo-btn tg-bottom-secondary">
+              Connect your agent
+            </Link>
           </div>
         </section>
       </main>

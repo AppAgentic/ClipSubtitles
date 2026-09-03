@@ -12,7 +12,7 @@ export function PaidFunnelTracker() {
     if (pathname === '/') trackPaidFunnelEvent('landing_captured');
     if (pathname === '/pricing') trackPaidFunnelEvent('pricing_viewed');
     if (pathname === '/sign-in') trackPaidFunnelEvent('signup_screen_viewed');
-    if (pathname.startsWith('/app')) trackPaidFunnelEvent('dashboard_viewed');
+    if (pathname === '/app') trackPaidFunnelEvent('dashboard_viewed');
   }, [pathname]);
   return null;
 }

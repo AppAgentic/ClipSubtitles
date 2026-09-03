@@ -110,6 +110,8 @@ function Library({ me }: { me: Me }) {
 
   const selectedSummary = projects?.find((project) => project.id === selectedId) ?? projects?.[0];
 
+  if (projects?.length === 0) return <FirstRunHome displayName={me.user.displayName} />;
+
   return (
     <div className="dashboard-editorial">
       <section className="rise flex flex-col gap-5 border-b border-line pb-6 sm:flex-row sm:items-end sm:justify-between">
@@ -268,6 +270,60 @@ function Library({ me }: { me: Me }) {
           ))}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function FirstRunHome({ displayName }: { displayName: string | undefined }) {
+  return (
+    <div className="mx-auto max-w-[820px] py-4 sm:py-10">
+      <ol
+        className="rise mb-10 grid grid-cols-3 border-b border-line pb-4 text-[11px] text-ink-mute"
+        aria-label="Captioning steps"
+      >
+        <li className="font-semibold text-signal">
+          <span className="mono mr-2">01</span>Upload
+        </li>
+        <li className="text-center">
+          <span className="mono mr-2">02</span>Review &amp; style
+        </li>
+        <li className="text-right">
+          <span className="mono mr-2">03</span>Export
+        </li>
+      </ol>
+      <section className="rise rise-1 grid gap-8 sm:grid-cols-[minmax(0,1fr)_220px] sm:items-center">
+        <div>
+          <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.18em] text-signal">
+            Welcome{displayName ? `, ${displayName.split(' ')[0]}` : ''}
+          </p>
+          <h1 className="max-w-[12ch] text-[44px] font-semibold leading-[0.98] tracking-[-0.045em] sm:text-[58px]">
+            Caption your first video.
+          </h1>
+          <p className="mt-5 max-w-[48ch] text-[14px] leading-relaxed text-ink-dim">
+            Start with your own clip or use our sample. We’ll guide you through the words, look and
+            export.
+          </p>
+          <div className="mt-7 flex flex-wrap gap-3">
+            <LinkButton href="/app/new" variant="primary" size="lg">
+              Upload a video
+            </LinkButton>
+            <LinkButton href="/app/new?demo=1" size="lg">
+              <span aria-hidden>▶</span> Try the sample
+            </LinkButton>
+          </div>
+          <p className="mt-4 text-[11px] text-ink-mute">First clip free · no card required</p>
+        </div>
+        <video
+          src="/marketing/hero-bold-pop.mp4"
+          poster="/marketing/hero-bold-pop-poster.jpg"
+          muted
+          autoPlay
+          loop
+          playsInline
+          className="mx-auto aspect-[9/16] w-[180px] rounded-[22px] object-cover shadow-[var(--shadow-float)] sm:w-[220px]"
+          aria-label="Example video with animated captions"
+        />
+      </section>
     </div>
   );
 }

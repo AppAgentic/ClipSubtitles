@@ -49,27 +49,17 @@ test('library, editor, and render routes stay within the viewport and the captio
   await noHorizontalOverflow(page, 'library');
   await shot(page, 'library');
 
-  // Create a project from the local demo fixture (mock mode) and land in the editor.
+  // Start with the same bundled sample that a first-time customer sees. The redesigned
+  // onboarding uploads it and generates the recommended captions automatically.
   await page.goto('/app/new');
   await noHorizontalOverflow(page, 'new-clip');
-  const demo = page.getByRole('button', { name: /Clean English product demo/ });
+  const demo = page.getByRole('button', { name: /Try the sample video/ });
   await expect(demo).toBeVisible({ timeout: 10_000 });
-  await demo.first().click();
+  await demo.click();
   await expect(page).toHaveURL(/\/studio\/proj_/);
-  await expect(page.getByRole('dialog', { name: /Generate captions/ })).toBeVisible();
-  await noHorizontalOverflow(page, 'editor-dialog');
-  await shot(page, 'editor-generate-dialog');
-
-  // Escape closes the dialog; reopen and submit.
-  await page.keyboard.press('Escape');
-  await expect(page.getByRole('dialog')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Generate captions' }).click();
-  const dialog = page.getByRole('dialog', { name: /Generate captions/ });
-  await dialog.getByRole('button', { name: 'Generate' }).click();
-  await expect(page.getByText('Captions generated.')).toBeVisible({ timeout: 120_000 });
   await expect(
     page.getByRole('list', { name: 'Caption pages' }).getByRole('listitem').first(),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 120_000 });
   await noHorizontalOverflow(page, 'editor');
 
   // Selecting a page seeks the video; the live overlay draws the same words the page lists.
@@ -77,7 +67,7 @@ test('library, editor, and render routes stay within the viewport and the captio
   await firstPage.click();
   await expect(page.locator('.caption-word').first()).toBeVisible();
   const overlayText = (await page.locator('.caption-word').allTextContents()).join(' ');
-  expect(overlayText).toContain('Welcome');
+  expect(overlayText).toContain('mock1');
   await shot(page, 'editor');
 
   // Selecting a page switched the inspector to WORDS; go back to STYLE for the position control.
@@ -100,7 +90,7 @@ test('library, editor, and render routes stay within the viewport and the captio
         .getAttribute('aria-label')
     )?.match(/(\d+) credits/)?.[1],
   );
-  await page.getByRole('link', { name: 'Export…' }).click();
+  await page.getByRole('link', { name: 'Continue to export' }).click();
   await expect(page.getByRole('heading', { name: /^Export /, level: 1 })).toBeVisible();
   await noHorizontalOverflow(page, 'render');
   await page.getByRole('button', { name: 'Review cost' }).click();
@@ -109,6 +99,7 @@ test('library, editor, and render routes stay within the viewport and the captio
   await shot(page, 'render-quote');
 
   // Changing settings drops the visible quote (the card can never diverge from what Approve renders).
+  await page.getByText('More file and quality options', { exact: true }).click();
   await page.getByRole('radio', { name: '720p' }).click();
   await expect(quoteCard).toHaveCount(0);
   await expect(page.getByText('Your options changed — review the updated cost.')).toBeVisible();
