@@ -10,6 +10,13 @@ const execFileAsync = promisify(execFile);
 export const WHOP_CLI_VERSION = '0.16.0';
 export const WHOP_CATALOG_MANAGER = 'clipsubtitles.sync-whop-catalog';
 
+export function parseWhopCliVersion(output: string): string {
+  return output
+    .split(/\r?\n/, 1)[0]
+    ?.trim()
+    .replace(/^whop\s+/i, '') ?? '';
+}
+
 type JsonRecord = Record<string, unknown>;
 
 export interface WhopCommandRunner {
@@ -422,7 +429,14 @@ function immutableDrift(
     if (actual.billing_period !== null && actual.billing_period !== undefined) {
       drift.push('billing_period');
     }
-    if (actual.renewal_price !== null && actual.renewal_price !== undefined) {
+    // Whop canonicalizes one-time plans to renewal_price=0 even when the
+    // create request omits renewal pricing. Treat null/undefined/zero as the
+    // same non-renewing state; any non-zero value is still immutable drift.
+    if (
+      actual.renewal_price !== null &&
+      actual.renewal_price !== undefined &&
+      Number(actual.renewal_price) !== 0
+    ) {
       drift.push('renewal_price');
     }
   }
@@ -481,8 +495,8 @@ export async function syncWhopCatalog(input: {
   if (!/^biz_[A-Za-z0-9]+$/.test(input.accountId)) {
     throw new WhopCatalogSyncError('invalid_configuration', 'WHOP_ACCOUNT_ID is invalid.');
   }
-  const version = await input.runner.version();
-  if (version.trim() !== WHOP_CLI_VERSION) {
+  const version = parseWhopCliVersion(await input.runner.version());
+  if (version !== WHOP_CLI_VERSION) {
     throw new WhopCatalogSyncError(
       'unsupported_cli_version',
       `Whop CLI ${WHOP_CLI_VERSION} is required.`,

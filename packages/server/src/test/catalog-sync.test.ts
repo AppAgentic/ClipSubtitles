@@ -2,12 +2,35 @@ import { describe, expect, it } from 'vitest';
 import {
   desiredWhopPlans,
   parseCatalogSyncArguments,
+  parseWhopCliVersion,
   syncWhopCatalog,
   WHOP_CATALOG_MANAGER,
   WHOP_CLI_VERSION,
   WhopCatalogSyncError,
   type WhopCommandRunner,
 } from '../billing/catalog-sync';
+
+describe('parseWhopCliVersion', () => {
+  it('accepts the pinned version when the CLI also reports its API version', () => {
+    expect(parseWhopCliVersion('0.16.0\nAPI version: 2026-08-13')).toBe('0.16.0');
+    expect(parseWhopCliVersion('whop 0.16.0\r\nAPI version: 2026-08-13')).toBe('0.16.0');
+  });
+});
+
+describe('one-time plan readback', () => {
+  it('accepts Whop canonical renewal_price=0 for a non-renewing plan', async () => {
+    const runner = new StatefulRunner();
+    await syncWhopCatalog({ apply: true, accountId: 'biz_test', runner });
+    const topup = [...runner.plans.values()].find(
+      (plan) => (plan.metadata as Resource).catalog_key === 'topup_small',
+    );
+    expect(topup).toBeDefined();
+    topup!.renewal_price = 0;
+
+    const result = await syncWhopCatalog({ apply: false, accountId: 'biz_test', runner });
+    expect(result.actions.find((action) => action.key === 'topup_small')?.operation).toBe('unchanged');
+  });
+});
 
 type Resource = Record<string, unknown>;
 
