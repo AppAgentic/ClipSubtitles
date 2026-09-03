@@ -18,6 +18,7 @@ type NavIconName = 'home' | 'plus' | 'film' | 'spark' | 'settings' | 'help' | 'c
 const NAV: Array<{
   href: string;
   label: string;
+  mobileLabel?: string;
   icon: NavIconName;
   match: (p: string) => boolean;
 }> = [
@@ -37,6 +38,7 @@ const NAV: Array<{
   {
     href: '/app/connections',
     label: 'AI connections',
+    mobileLabel: 'AI tools',
     icon: 'spark',
     match: (p) => p.startsWith('/app/connections'),
   },
@@ -186,7 +188,7 @@ export function AppShell({
               className={`flex min-w-0 flex-1 flex-col items-center gap-1 py-2 text-[9px] transition-colors ${active ? 'text-signal' : 'text-ink-mute'}`}
             >
               <NavIcon name={n.icon} className="h-[18px] w-[18px]" />
-              <span className="max-w-full truncate px-1">{n.label}</span>
+              <span className="max-w-full truncate px-1">{n.mobileLabel ?? n.label}</span>
             </Link>
           );
         })}
