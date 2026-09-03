@@ -40,63 +40,100 @@ function Exports() {
           actions={<LinkButton href="/app">Back to Library</LinkButton>}
         />
       ) : (
-        <Panel className="rise rise-1 table-scroll overflow-hidden">
-          <table className="w-full text-left text-[13px]">
-            <thead className="text-[10px] uppercase tracking-[0.14em] text-ink-mute">
-              <tr className="border-b border-line">
-                <th className="px-4 py-2.5 font-medium">File</th>
-                <th className="px-3 py-2.5 font-medium">Video</th>
-                <th className="px-3 py-2.5 text-right font-medium">Size</th>
-                <th className="px-3 py-2.5 text-right font-medium">Created</th>
-                <th className="px-3 py-2.5 text-right font-medium">Removed</th>
-                <th className="px-3 py-2.5" />
-              </tr>
-            </thead>
-            <tbody>
-              {exports.map((e) => (
-                <tr
-                  key={e.id}
-                  className="border-b border-line/60 last:border-b-0 hover:bg-panel-2/60"
-                >
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <Chip tone={statusTone(e.status)}>{e.kind}</Chip>
-                      <span className="text-ink">{e.fileName}</span>
-                    </div>
-                    <div className="mono mt-0.5 text-[11px] text-ink-mute">
-                      {e.kind.toUpperCase()}
-                    </div>
-                  </td>
-                  <td className="mono px-3 py-3 text-[12px]">
-                    <Link
-                      href={`/studio/${e.projectId}`}
-                      className="text-ink-dim hover:text-signal"
+        <>
+          <Panel className="rise rise-1 hidden overflow-hidden sm:block">
+            <div className="table-scroll">
+              <table className="w-full text-left text-[13px]">
+                <thead className="text-[10px] uppercase tracking-[0.14em] text-ink-mute">
+                  <tr className="border-b border-line">
+                    <th className="px-4 py-2.5 font-medium">File</th>
+                    <th className="px-3 py-2.5 font-medium">Video</th>
+                    <th className="px-3 py-2.5 text-right font-medium">Size</th>
+                    <th className="px-3 py-2.5 text-right font-medium">Created</th>
+                    <th className="px-3 py-2.5 text-right font-medium">Removed</th>
+                    <th className="px-3 py-2.5" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {exports.map((e) => (
+                    <tr
+                      key={e.id}
+                      className="border-b border-line/60 last:border-b-0 hover:bg-panel-2/60"
                     >
-                      Open video
-                    </Link>
-                  </td>
-                  <td className="mono px-3 py-3 text-right text-ink-dim">{bytes(e.bytes)}</td>
-                  <td className="mono px-3 py-3 text-right text-ink-mute">
-                    {relativeTime(e.createdAt)}
-                  </td>
-                  <td className="mono px-3 py-3 text-right text-ink-mute">
-                    {relativeTime(e.expiresAt)}
-                  </td>
-                  <td className="px-3 py-3 text-right">
-                    {e.downloadUrl ? (
-                      <a
-                        href={`${e.downloadUrl}&download=1`}
-                        className="text-[12px] text-signal hover:text-signal-soft"
-                      >
-                        Download
-                      </a>
-                    ) : null}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Panel>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <Chip tone={statusTone(e.status)}>{e.kind}</Chip>
+                          <span className="text-ink">{e.fileName}</span>
+                        </div>
+                        <div className="mono mt-0.5 text-[11px] text-ink-mute">
+                          {e.kind.toUpperCase()}
+                        </div>
+                      </td>
+                      <td className="mono px-3 py-3 text-[12px]">
+                        <Link
+                          href={`/studio/${e.projectId}`}
+                          className="text-ink-dim hover:text-signal"
+                        >
+                          Open video
+                        </Link>
+                      </td>
+                      <td className="mono px-3 py-3 text-right text-ink-dim">{bytes(e.bytes)}</td>
+                      <td className="mono px-3 py-3 text-right text-ink-mute">
+                        {relativeTime(e.createdAt)}
+                      </td>
+                      <td className="mono px-3 py-3 text-right text-ink-mute">
+                        {relativeTime(e.expiresAt)}
+                      </td>
+                      <td className="px-3 py-3 text-right">
+                        {e.downloadUrl ? (
+                          <a
+                            href={`${e.downloadUrl}&download=1`}
+                            className="text-[12px] text-signal hover:text-signal-soft"
+                          >
+                            Download
+                          </a>
+                        ) : null}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Panel>
+          <ul className="rise rise-1 space-y-2 sm:hidden" aria-label="Finished files">
+            {exports.map((e) => (
+              <li key={e.id} className="rounded-xl border border-line bg-panel p-4">
+                <div className="flex min-w-0 items-start gap-2">
+                  <Chip tone={statusTone(e.status)}>{e.kind}</Chip>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13px] font-medium text-ink">{e.fileName}</p>
+                    <p className="mono mt-1 text-[11px] text-ink-mute">
+                      {bytes(e.bytes)} · created {relativeTime(e.createdAt)} · removed{' '}
+                      {relativeTime(e.expiresAt)}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center justify-end gap-4 border-t border-line/70 pt-3">
+                  <Link
+                    href={`/studio/${e.projectId}`}
+                    className="text-[12px] text-ink-dim hover:text-signal"
+                  >
+                    Open video
+                  </Link>
+                  {e.downloadUrl ? (
+                    <a
+                      href={`${e.downloadUrl}&download=1`}
+                      className="text-[12px] font-medium text-signal hover:text-signal-soft"
+                      aria-label={`Download ${e.fileName}`}
+                    >
+                      Download
+                    </a>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </div>
   );

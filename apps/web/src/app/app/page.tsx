@@ -207,21 +207,6 @@ function Library({ me }: { me: Me }) {
                 </header>
                 <ExportList exports={exports.slice(0, 5)} />
               </section>
-              <section className="rounded-xl border border-signal/25 bg-signal/[0.05] p-5">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-signal">
-                  Polish the next cut
-                </p>
-                <h2 className="editorial-serif mt-2 text-[21px] font-semibold">
-                  Fix the words, then make the look yours.
-                </h2>
-                <p className="mt-2 text-[12px] leading-relaxed text-ink-dim">
-                  Open your latest video to adjust any caption, compare styles and preview before
-                  export.
-                </p>
-                <LinkButton href={`/studio/${selectedSummary.id}`} variant="ghost" className="mt-4">
-                  Continue editing →
-                </LinkButton>
-              </section>
             </div>
           </div>
 
@@ -253,7 +238,7 @@ function Library({ me }: { me: Me }) {
 
           <section className="rise rise-4 mt-8 overflow-hidden rounded-xl border border-line bg-panel">
             <header className="flex items-center justify-between border-b border-line px-5 py-4">
-              <h2 className="editorial-serif text-[19px] font-semibold">In progress</h2>
+              <h2 className="editorial-serif text-[19px] font-semibold">Recent activity</h2>
               {hasActive ? (
                 <Chip tone="signal" dot>
                   working
