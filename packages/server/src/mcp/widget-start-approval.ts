@@ -45,7 +45,12 @@ async function uploadNativeVideo(file){
 async function startNativeCaptions(){
   autoReviewProjectId=nativeUploadProject;
   const generated=await callTool('generate_captions',{projectId:nativeUploadProject,idempotencyKey:nativeUploadKey+':captions'});
-  nativeUploadProject=null;nativeUploadKey=null;nativeUploadIdentity=null;render(generated);
+  if(!generated.task||!generated.task.id)throw new Error('The caption task was not returned. Please try again.');
+  render({task:{...generated.task,projectId:nativeUploadProject,kind:'generate_captions'}});
+  nativeUploadProject=null;nativeUploadKey=null;nativeUploadIdentity=null;
+  // Generation returns only pointers. Polling fetches the full task and then
+  // opens the authoritative editor; never render its compact project pointer.
+
 }
 async function createFromFile(file){
   const host=window.openai||{};

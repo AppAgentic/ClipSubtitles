@@ -7,7 +7,14 @@ import {
   segmentationForStyle,
   wordsFromText,
 } from '@clipsubtitles/core';
-import { CaptionPageSchema, TranscriptWordSchema } from '@clipsubtitles/contracts';
+import {
+  CaptionPageSchema,
+  TranscriptWordSchema,
+  GenerateCaptionsTool,
+  GetCaptionTaskTool,
+  OpenCaptionEditorTool,
+  ProxyUploadTargetSchema,
+} from '@clipsubtitles/contracts';
 import { widgetHtmlForPreview } from '../mcp/ui';
 
 function captionWords(wordCount: number) {
@@ -37,12 +44,12 @@ function project(wordCount = 12, maxWordsPerPage = 1) {
     source: { playbackUrl: 'https://clipsubtitles.com/v1/source/test' },
   };
 }
-type TestProject = ReturnType<typeof project>;
 const frames: HTMLIFrameElement[] = [];
 function mount(
-  data: { project: TestProject },
+  data: unknown,
   responses: unknown[] = [],
   globals: Record<string, unknown> = {},
+  kind: Parameters<typeof widgetHtmlForPreview>[0] = 'editor',
 ) {
   const frame = document.createElement('iframe');
   document.body.appendChild(frame);
@@ -52,13 +59,13 @@ function mount(
       openai: Record<string, unknown>;
       ClipSubtitlesOverlay: { attachCaptionOverlay: ReturnType<typeof vi.fn> };
     };
-  const html = widgetHtmlForPreview('editor', 'https://clipsubtitles.com', data);
+  const html = widgetHtmlForPreview(kind, 'https://clipsubtitles.com', data);
   const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]!);
   win.document.open();
   win.document.write(html.replace(/<script>[\s\S]*?<\/script>/g, ''));
   win.document.close();
   win.requestAnimationFrame = vi.fn(() => 1);
-  const callTool = vi.fn(async () => {
+  const callTool = vi.fn(async (_name: string, _args: Record<string, unknown>) => {
     const response = responses.shift();
     if (response instanceof Error) throw response;
     return response;
@@ -96,6 +103,242 @@ afterEach(async () => {
 });
 
 describe('assembled caption workspace', () => {
+  it('uploads through the start UI, handles real project-and-task pointers, polls, and opens the full editor', async () => {
+    const projectId = 'proj_00000000000000000000';
+    const taskId = 'task_00000000000000000000';
+    const revisionId = 'rev_00000000000000000000';
+    const now = new Date().toISOString();
+    const generated = GenerateCaptionsTool.outputSchema.parse({
+      project: { id: projectId, title: 'Synthetic review', status: 'transcribing', version: 1 },
+      task: { id: taskId, status: 'queued', progress: 0 },
+    });
+    expect(generated.task).not.toHaveProperty('kind');
+    expect(generated.project).not.toHaveProperty('pages');
+    const running = GetCaptionTaskTool.outputSchema.parse({
+      task: {
+        ...generated.task,
+        kind: 'generate_captions',
+        projectId,
+        status: 'running',
+        progress: 45,
+        stage: 'transcribing',
+        attempts: 1,
+        maxAttempts: 3,
+        cancelRequested: false,
+        createdAt: now,
+        updatedAt: now,
+      },
+    });
+    const complete = GetCaptionTaskTool.outputSchema.parse({
+      task: {
+        ...running.task,
+        status: 'succeeded',
+        progress: 100,
+        finishedAt: now,
+        result: {
+          kind: 'generate_captions',
+          projectId,
+          revisionId,
+          projectVersion: 2,
+          wordCount: 12,
+          pageCount: 12,
+          provider: 'mock',
+          language: 'en',
+        },
+      },
+    });
+    const fixture = project();
+    const editor = OpenCaptionEditorTool.outputSchema.parse({
+      project: {
+        ...fixture,
+        id: projectId,
+        status: 'captioned',
+        version: 2,
+        contentHash: 'a'.repeat(64),
+        createdAt: now,
+        updatedAt: now,
+        source: {
+          ...fixture.source,
+          id: 'asset_00000000000000000000',
+          status: 'ready',
+          origin: 'upload',
+          mimeType: 'video/mp4',
+          bytes: 4,
+          durationMs: 12000,
+          width: 360,
+          height: 640,
+          hasAudio: true,
+        },
+        transcript: {
+          ...fixture.transcript,
+          id: revisionId,
+          revisionNumber: 1,
+          source: 'generated',
+          provider: 'mock',
+          language: 'en',
+          durationMs: 12000,
+          createdAt: now,
+        },
+        pageCount: fixture.pages.length,
+        segmentation: segmentationForStyle(fixture.style),
+        qa: null,
+        activeTasks: [],
+        recentExports: [],
+        links: { editor: 'https://clipsubtitles.com/studio/' + projectId },
+        contentNotice: 'Synthetic fixture',
+      },
+    });
+    const target = {
+      ...ProxyUploadTargetSchema.parse({
+        uploadId: 'upl_00000000000000000000',
+        transport: 'proxy',
+        method: 'PUT',
+        url: 'https://clipsubtitles.com/v1/uploads/synthetic',
+        maxBytes: 31457280,
+        acceptedMimeTypes: ['video/mp4'],
+        expiresAt: new Date(Date.now() + 60000).toISOString(),
+        webUploadUrl: 'https://clipsubtitles.com/studio/' + projectId + '/upload',
+      }),
+      projectId,
+    };
+    const prepared = {
+      structuredContent: {
+        status: 'upload_required',
+        project: { ...generated.project, status: 'awaiting_source' },
+        upload: {
+          maxBytes: target.maxBytes,
+          acceptedMimeTypes: target.acceptedMimeTypes,
+          expiresAt: target.expiresAt,
+          webUploadUrl: target.webUploadUrl,
+        },
+      },
+      _meta: { uploadTarget: target },
+    };
+    const h = mount(
+      { ready: true },
+      [
+        prepared,
+        { structuredContent: generated },
+        { structuredContent: running },
+        { structuredContent: complete },
+        { structuredContent: editor },
+      ],
+      {},
+      'start',
+    );
+    const timers = new Map<number, { callback: () => Promise<void> | void; delay: number }>();
+    let timerId = 1;
+    Object.defineProperty(h.win, 'setTimeout', {
+      value: (callback: () => Promise<void> | void, delay: number) => {
+        const id = timerId++;
+        timers.set(id, { callback, delay });
+        return id;
+      },
+    });
+    Object.defineProperty(h.win, 'clearTimeout', {
+      value: (id: number) => {
+        timers.delete(id);
+      },
+    });
+    const put = vi.fn<typeof fetch>().mockResolvedValue({ ok: true } as Response);
+    h.win.fetch = put;
+    const file = new h.win.File(['mock'], 'Synthetic.mp4', {
+      type: 'video/mp4',
+      lastModified: 100,
+    });
+    Object.defineProperty(h.el('fallback'), 'files', { value: [file] });
+    h.el('fallback').dispatchEvent(new h.win.Event('change'));
+    await settle();
+    expect(put).toHaveBeenCalledWith(
+      target.url,
+      expect.objectContaining({ method: 'PUT', body: file, credentials: 'omit' }),
+    );
+    expect(h.callTool.mock.calls.map((call) => call[0])).toEqual([
+      'prepare_caption_upload',
+      'generate_captions',
+    ]);
+    expect(h.el('content').textContent).toContain('Waiting to start');
+    expect(h.win.document.getElementById('source-video')).toBeNull();
+    expect([...timers.values()].map((timer) => timer.delay)).toEqual([2200]);
+    async function poll() {
+      const [id, timer] = [...timers.entries()][0]!;
+      timers.delete(id);
+      await timer.callback();
+      await settle();
+    }
+    await poll();
+    expect(h.el('content').textContent).toContain('Transcribing speech');
+    expect(h.win.document.getElementById('source-video')).toBeNull();
+    await poll();
+    expect(h.callTool.mock.calls.map((call) => call[0])).toEqual([
+      'prepare_caption_upload',
+      'generate_captions',
+      'get_caption_task',
+      'get_caption_task',
+      'open_caption_editor',
+    ]);
+    expect(h.el<HTMLVideoElement>('source-video').src).toContain('/v1/source/test?stream=1');
+    expect(h.el('styles').querySelectorAll('button')).toHaveLength(
+      Object.keys(STYLE_PRESETS).length,
+    );
+    expect(h.el('pages').querySelectorAll('button')).toHaveLength(12);
+    expect(h.el('words').textContent).toBe('Word0');
+    expect(timers.size).toBe(0);
+
+    // Hosts can echo the original presentation result with each persisted UI state.
+    // It is a fresh JSON object, but must not undo the local start -> editor transition.
+    const originalHostOutput = JSON.stringify(h.win.openai.toolOutput);
+    const echoHostOutput = () =>
+      h.win.dispatchEvent(
+        new h.win.CustomEvent('openai:set_globals', {
+          detail: {
+            globals: {
+              toolOutput: JSON.parse(originalHostOutput),
+              widgetState: h.win.openai.widgetState,
+            },
+          },
+        }),
+      );
+    const persist = vi.fn((widgetState: unknown) => {
+      h.win.openai.widgetState = widgetState;
+      echoHostOutput();
+    });
+    h.win.openai.setWidgetState = persist;
+    const video = h.el<HTMLVideoElement>('source-video');
+    h.el('next-page').click();
+    expect(persist).toHaveBeenCalled();
+    expect(h.el<HTMLVideoElement>('source-video')).toBe(video);
+    expect(video.currentTime).toBe(1);
+    h.el('words').querySelector('button')!.click();
+    const input = h.el<HTMLInputElement>('word-input');
+    input.value = 'Unsaved after upload';
+    input.focus();
+    echoHostOutput();
+    expect(h.el('word-input')).toBe(input);
+    expect(input.value).toBe('Unsaved after upload');
+    expect(h.win.document.activeElement).toBe(input);
+    const refreshed = OpenCaptionEditorTool.outputSchema.parse({
+      project: {
+        ...editor.project,
+        title: 'Refreshed caption project',
+        version: 3,
+      },
+    });
+    h.callTool.mockResolvedValueOnce({ structuredContent: refreshed });
+    h.el('refresh-review').click();
+    await settle();
+    expect(h.callTool).toHaveBeenLastCalledWith(
+      'get_caption_project',
+      expect.objectContaining({ projectId }),
+    );
+    expect(h.el('content').textContent).toContain('Refreshed caption project');
+    const refreshedVideo = h.el<HTMLVideoElement>('source-video');
+    refreshedVideo.dispatchEvent(new h.win.Event('loadedmetadata'));
+    refreshedVideo.dispatchEvent(new h.win.Event('timeupdate'));
+    expect(h.el('scene-count').textContent).toBe('Caption 2 of 12');
+    expect(h.el<HTMLVideoElement>('source-video').currentTime).toBe(1);
+  });
+
   it('updates host safe areas without remounting playback or losing an unsaved correction', () => {
     const h = mount({ project: project() }, [], {
       displayMode: 'fullscreen',
