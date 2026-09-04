@@ -31,6 +31,7 @@ export const MCP_TOOL_NAMES = [
   'open_caption_start',
   'show_caption_style_picker',
   'open_caption_editor',
+  'open_caption_progress',
 ] as const;
 export type McpToolName = (typeof MCP_TOOL_NAMES)[number];
 
@@ -258,7 +259,7 @@ export const RenderCaptionExportTool = describe({
 export const GetCaptionTaskTool = describe({
   name: 'get_caption_task',
   description:
-    'Poll a durable task. Finished render tasks include export metadata with short-lived download URLs. Errors are bounded and carry an errorRef for support.',
+    'Read durable task progress without opening a new card. Use open_caption_progress once when the user needs a live progress view. Finished render tasks include export metadata with short-lived download URLs. Errors are bounded and carry an errorRef for support.',
   inputSchema: z.object({ taskId: TaskIdSchema }).strict(),
   outputSchema: z.object({
     task: TaskSchema,
@@ -273,6 +274,14 @@ export const GetCaptionTaskTool = describe({
   },
   scope: 'captions:read',
   cost: 'free',
+});
+
+export const OpenCaptionProgressTool = describe({
+  ...GetCaptionTaskTool,
+  name: 'open_caption_progress',
+  description:
+    'Open one live progress card for a task. The card refreshes itself and shows completed video, downloads, or the next captioning step. Use get_caption_task for subsequent data-only checks instead of opening repeated cards.',
+  annotations: { ...GetCaptionTaskTool.annotations, title: 'Open caption progress' },
 });
 
 export const CancelCaptionTaskTool = describe({
@@ -349,7 +358,7 @@ export const ShowCaptionStylePickerTool = describe({
 export const OpenCaptionEditorTool = describe({
   name: 'open_caption_editor',
   description:
-    'Open the focused ChatGPT caption editor for an existing project. Returns the authoritative project, caption pages, and a bounded word window; edits from the UI call update_caption_project and remain version checked.',
+    'Open the combined video and caption-style review immediately after transcription completes. Styles are visible on the first screen and in fullscreen, alongside live caption playback and optional word corrections. Returns the authoritative project, pages, and a bounded word window; edits remain version checked.',
   inputSchema: z.object({ projectId: ProjectIdSchema }).strict(),
   outputSchema: z.object({ project: CaptionProjectSchema }),
   annotations: {
@@ -376,6 +385,7 @@ export const MCP_TOOLS = [
   OpenCaptionStartTool,
   ShowCaptionStylePickerTool,
   OpenCaptionEditorTool,
+  OpenCaptionProgressTool,
 ] as const;
 
 export const MCP_SERVER_INFO = {

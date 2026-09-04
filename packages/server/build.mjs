@@ -2,6 +2,7 @@
 // Workspace packages are bundled in (they are TypeScript sources); everything
 // resolved from node_modules stays external so native modules keep working.
 import { build } from 'esbuild';
+import './build-widget.mjs';
 
 /** @type {import('esbuild').Plugin} */
 const externalizeNodeModules = {

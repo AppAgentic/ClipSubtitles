@@ -7,3 +7,5 @@ coverage
 fixtures/generated
 pnpm-lock.yaml
 *.md
+
+packages/server/src/mcp/generated

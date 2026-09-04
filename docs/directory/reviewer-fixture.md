@@ -88,3 +88,7 @@ depending on the machine. Remotion renderer (`RENDERER=remotion`) is slower.
 - Any tool that posts to a third-party platform, deletes data, or reads outside
   the signed-in workspace.
 - Transcript content in error messages or logs.
+
+### Live progress card
+
+Open `open_caption_progress` once for an active task. Verify that it updates in place, reports transcription completion as captions ready, and displays a playable video for a completed preview. Subsequent `get_caption_task` calls must return task data without producing another card.

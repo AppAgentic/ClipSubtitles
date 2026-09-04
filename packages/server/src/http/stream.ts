@@ -10,6 +10,8 @@ export interface StreamFileOptions {
   download?: boolean;
   rangeHeader?: string | undefined;
   cacheSeconds?: number;
+  /** Return metadata only; never open an upstream object stream for HEAD. */
+  head?: boolean;
 }
 
 /** Stream a local file with HTTP Range support (needed for video seeking in the editor). */
@@ -24,7 +26,10 @@ export async function streamFile(opts: StreamFileOptions): Promise<Response> {
   });
   if (opts.fileName) {
     const safe = opts.fileName.replace(/[^\w.\- ]+/g, '_');
-    headers.set('Content-Disposition', `${opts.download ? 'attachment' : 'inline'}; filename="${safe}"`);
+    headers.set(
+      'Content-Disposition',
+      `${opts.download ? 'attachment' : 'inline'}; filename="${safe}"`,
+    );
   }
   const range = opts.rangeHeader ? /^bytes=(\d*)-(\d*)$/.exec(opts.rangeHeader.trim()) : null;
   if (range && size > 0) {
@@ -43,10 +48,14 @@ export async function streamFile(opts: StreamFileOptions): Promise<Response> {
     }
     headers.set('Content-Range', `bytes ${start}-${end}/${size}`);
     headers.set('Content-Length', String(end - start + 1));
-    const body = Readable.toWeb(createReadStream(opts.path, { start, end })) as unknown as ReadableStream;
+    if (opts.head) return new Response(null, { status: 206, headers });
+    const body = Readable.toWeb(
+      createReadStream(opts.path, { start, end }),
+    ) as unknown as ReadableStream;
     return new Response(body, { status: 206, headers });
   }
   headers.set('Content-Length', String(size));
+  if (opts.head) return new Response(null, { status: 200, headers });
   const body = Readable.toWeb(createReadStream(opts.path)) as unknown as ReadableStream;
   return new Response(body, { status: 200, headers });
 }
@@ -69,7 +78,10 @@ export async function streamObject(opts: StreamObjectOptions): Promise<Response>
   });
   if (opts.fileName) {
     const safe = opts.fileName.replace(/[^\w.\- ]+/g, '_');
-    headers.set('Content-Disposition', `${opts.download ? 'attachment' : 'inline'}; filename="${safe}"`);
+    headers.set(
+      'Content-Disposition',
+      `${opts.download ? 'attachment' : 'inline'}; filename="${safe}"`,
+    );
   }
   const range = opts.rangeHeader ? /^bytes=(\d*)-(\d*)$/.exec(opts.rangeHeader.trim()) : null;
   if (range && size > 0) {
@@ -87,10 +99,14 @@ export async function streamObject(opts: StreamObjectOptions): Promise<Response>
     }
     headers.set('Content-Range', `bytes ${start}-${end}/${size}`);
     headers.set('Content-Length', String(end - start + 1));
-    const body = Readable.toWeb(await opts.store.readStream(opts.key, { start, end })) as unknown as ReadableStream;
+    if (opts.head) return new Response(null, { status: 206, headers });
+    const body = Readable.toWeb(
+      await opts.store.readStream(opts.key, { start, end }),
+    ) as unknown as ReadableStream;
     return new Response(body, { status: 206, headers });
   }
   headers.set('Content-Length', String(size));
+  if (opts.head) return new Response(null, { status: 200, headers });
   const body = Readable.toWeb(await opts.store.readStream(opts.key)) as unknown as ReadableStream;
   return new Response(body, { status: 200, headers });
 }

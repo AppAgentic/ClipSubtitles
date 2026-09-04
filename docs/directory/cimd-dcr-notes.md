@@ -68,7 +68,7 @@ explicit approval required for paid renders. Revocation is per client via
    `registration_endpoint` (DCR) — or the CIMD capability if that option is chosen.
 3. From a clean MCP client (e.g. the MCP Inspector), connect to
    `https://api.clipsubtitles.com/api/mcp`, complete the browser sign-in, and run
-   `initialize` + `tools/list`; expect twelve tools.
+   `initialize` + `tools/list`; expect thirteen tools.
 4. Revoke the client's grant in the account page and confirm the next call is
    `401 unauthenticated` (grant revocation test exists in `packages/server/src/test/mcp.test.ts`).
 

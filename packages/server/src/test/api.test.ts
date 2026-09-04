@@ -220,6 +220,72 @@ describe('projects, uploads, and captions', () => {
     expect(play.headers.get('content-range')).toMatch(/^bytes 0-99\//);
   });
 
+  it('streams signed widget media without provider redirects and renews expired playback URLs', async () => {
+    const project = await uploadProject('widget-media.mp4');
+    const originalStore = h.ctx.store;
+    const reads: Array<{ start: number; end: number } | undefined> = [];
+    let redirects = 0;
+    h.ctx.store = new Proxy(originalStore, {
+      get(target, property, receiver) {
+        if (property === 'signedDownloadUrl') return async () => {
+          redirects++;
+          return 'https://objects.example.test/signed-source';
+        };
+        if (property === 'readStream') return async (key: string, range?: { start: number; end: number }) => {
+          reads.push(range);
+          return target.readStream(key, range);
+        };
+        const value = Reflect.get(target, property, receiver) as unknown;
+        return typeof value === 'function' ? value.bind(target) : value;
+      },
+    });
+    try {
+      const url = new URL(project.source!.playbackUrl!);
+      const requestPath = () => `${url.pathname}${url.search}`;
+      expect((await h.app.request(requestPath())).status).toBe(302);
+      url.searchParams.set('stream', '1');
+      const head = await h.app.request(requestPath(), { method: 'HEAD' });
+      expect(head.status).toBe(200);
+      expect(head.headers.get('content-length')).toBe(String(project.source!.bytes));
+      expect(reads).toHaveLength(0);
+      const probe = await h.app.request(requestPath(), { headers: { range: 'bytes=0-1' } });
+      expect(probe.status).toBe(206);
+      expect(probe.headers.get('location')).toBeNull();
+      expect(probe.headers.get('content-type')).toBe('video/mp4');
+      expect(probe.headers.get('accept-ranges')).toBe('bytes');
+      expect(probe.headers.get('content-range')).toBe(`bytes 0-1/${project.source!.bytes}`);
+      expect(probe.headers.get('content-length')).toBe('2');
+      const sourceBytes = await readFile(await h.makeSourceVideo('widget-media.mp4', 2));
+      expect(Buffer.from(await probe.arrayBuffer())).toEqual(sourceBytes.subarray(0, 2));
+      expect(reads).toEqual([{ start: 0, end: 1 }]);
+      const tail = await h.app.request(requestPath(), { headers: { range: 'bytes=-16' } });
+      expect(tail.status).toBe(206);
+      expect(Buffer.from(await tail.arrayBuffer())).toEqual(sourceBytes.subarray(-16));
+      const invalid = await h.app.request(requestPath(), { headers: { range: `bytes=${sourceBytes.length}-` } });
+      expect(invalid.status).toBe(416);
+      const tampered = new URL(url);
+      tampered.searchParams.set('ws', 'another-workspace');
+      expect((await h.app.request(`${tampered.pathname}${tampered.search}`)).status).toBe(401);
+      const oldTime = h.clock.now();
+      try {
+        h.clock.advance((h.config.limits.signedUrlTtlSeconds + 1) * 1000);
+        expect((await h.app.request(requestPath())).status).toBe(401);
+        const renewed = await h.api<CaptionProject>('GET', `/v1/projects/${project.id}`, { token });
+        expect(renewed.status).toBe(200);
+        const fresh = new URL(renewed.body.source!.playbackUrl!);
+        fresh.searchParams.set('stream', '1');
+        const freshProbe = await h.app.request(`${fresh.pathname}${fresh.search}`, { headers: { range: 'bytes=0-1' } });
+        expect(freshProbe.status).toBe(206);
+        await freshProbe.arrayBuffer();
+      } finally {
+        h.clock.advance(oldTime - h.clock.now());
+      }
+      expect(redirects).toBe(1);
+    } finally {
+      h.ctx.store = originalStore;
+    }
+  });
+
   it('rejects oversized JSON bodies and rejected source URLs', async () => {
     const big = await h.api('POST', '/v1/projects', {
       token,
@@ -505,6 +571,16 @@ describe('quotes, renders, billing, tasks', () => {
     expect(redirect.status).toBe(302);
     expect(redirect.headers.get('location')).toBe('https://objects.example.test/signed-export');
     expect(providerSignedKey).toMatch(/\/exports\//);
+    providerSignedKey = undefined;
+    appSignedUrl.searchParams.set('stream', '1');
+    const inline = await h.app.request(`${appSignedUrl.pathname}${appSignedUrl.search}`, {
+      headers: { range: 'bytes=0-1' },
+    });
+    expect(inline.status).toBe(206);
+    expect(inline.headers.get('location')).toBeNull();
+    expect(inline.headers.get('content-length')).toBe('2');
+    expect((await inline.arrayBuffer()).byteLength).toBe(2);
+    expect(providerSignedKey).toBeUndefined();
     h.ctx.store = originalStore;
   });
 
