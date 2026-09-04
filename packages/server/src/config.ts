@@ -268,10 +268,22 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
         'AUTH_MODE=workos requires WORKOS_API_KEY, WORKOS_CLIENT_ID, and WORKOS_AUTHKIT_ISSUER.',
       );
     }
+    const issuer = e.WORKOS_AUTHKIT_ISSUER.trim().replace(/\/$/, '');
+    let issuerUrl: URL;
+    try {
+      issuerUrl = new URL(issuer);
+    } catch {
+      throw new ConfigError('WORKOS_AUTHKIT_ISSUER must be an absolute URL.');
+    }
+    if (issuerUrl.protocol !== 'https:' || issuerUrl.pathname !== '/') {
+      throw new ConfigError(
+        'WORKOS_AUTHKIT_ISSUER must be the HTTPS WorkOS Connect/AuthKit domain root, not a User Management issuer.',
+      );
+    }
     workos = {
       apiKey: e.WORKOS_API_KEY.trim(),
       clientId: e.WORKOS_CLIENT_ID.trim(),
-      issuer: e.WORKOS_AUTHKIT_ISSUER.trim().replace(/\/$/, ''),
+      issuer,
       // The callback is reached through the web origin (proxied to the API) so the session cookie lands on the web host.
       redirectUri: e.WORKOS_REDIRECT_URI ?? `${e.WEB_PUBLIC_URL.replace(/\/$/, '')}/auth/callback`,
       ...(e.WORKOS_WEBHOOK_SECRET ? { webhookSecret: e.WORKOS_WEBHOOK_SECRET.trim() } : {}),

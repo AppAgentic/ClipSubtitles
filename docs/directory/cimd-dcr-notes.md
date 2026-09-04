@@ -12,7 +12,9 @@ production; there is no production client yet (gate 2).**
 
 - `resource` — `API_PUBLIC_URL`
 - `authorization_servers` — the configured issuer (local mock AS, or the WorkOS
-  AuthKit issuer when `AUTH_MODE=workos`)
+  Connect/AuthKit domain root when `AUTH_MODE=workos`). Do not use WorkOS's
+  `api.workos.com/user_management/client_…` issuer here: it is the web-login
+  identity issuer and does not publish the MCP Connect registration endpoint.
 - `scopes_supported` — `captions:read`, `captions:write`
 - `bearer_methods_supported` — `header`
 - `resource_name` — the MCP server title
@@ -48,7 +50,8 @@ can get a client id — choose one before gate 3:
 | **CIMD** (Client ID Metadata Documents) | The client id *is* an HTTPS URL to a JSON document describing the client; the AS fetches and validates it | WorkOS dashboard / support — confirm AuthKit's current support before relying on it | Preferred by the latest MCP authorization spec when supported; no registration call needed. |
 
 Either way the API only sees a bearer JWT: verification is RS256 against the
-WorkOS JWKS (`packages/server/src/auth/tokens.ts`), audience/issuer pinned
+WorkOS Connect JWKS at `<AuthKit issuer>/oauth2/jwks`
+(`packages/server/src/auth/tokens.ts`), audience/issuer pinned
 from config, scopes required per route. Revocation is per client via
 `oauth_grants`, so a directory client can be cut off without touching users.
 

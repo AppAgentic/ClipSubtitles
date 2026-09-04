@@ -13,7 +13,12 @@ import {
 import { createProviderRegistry, type ProviderRegistry } from '@clipsubtitles/transcription';
 import { createIdentityProvider, type IdentityProvider } from './auth/identity-provider';
 import { createRateLimiters, type RateLimiters } from './auth/ratelimit';
-import { LocalTokenVerifier, WorkOSTokenVerifier, type TokenVerifier } from './auth/tokens';
+import {
+  LocalTokenVerifier,
+  WorkOSTokenVerifier,
+  workOSConnectJwksUrl,
+  type TokenVerifier,
+} from './auth/tokens';
 import type { AppConfig } from './config';
 import { createLogger, type Logger } from './logging';
 import { createTaskDispatcher, type TaskDispatcher } from './tasks/dispatcher';
@@ -137,7 +142,7 @@ export async function createAppContext(
     (config.auth.mode === 'workos' && config.auth.workos
       ? new WorkOSTokenVerifier(
           config.auth.workos.issuer,
-          `https://api.workos.com/sso/jwks/${config.auth.workos.clientId}`,
+          workOSConnectJwksUrl(config.auth.workos.issuer),
           `${config.apiPublicUrl}/api/mcp`,
         )
       : new LocalTokenVerifier(
