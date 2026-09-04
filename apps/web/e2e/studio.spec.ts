@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page, type Response } from '@playwright/test';
+import { writeFile } from 'node:fs/promises';
 
 const SHOT_DIR = process.env.E2E_SHOT_DIR ?? 'e2e/.results/shots';
 
@@ -18,12 +19,38 @@ async function shot(page: Page, name: string): Promise<void> {
 }
 
 async function signIn(page: Page): Promise<void> {
-  await page.goto('/auth/login?returnTo=/app');
-  await expect(page.getByRole('heading', { name: 'Choose a local identity' })).toBeVisible();
-  await page.getByRole('button', { name: /Joe \(mock\)/ }).click();
-  await expect(
-    page.getByRole('heading', { name: /Good (morning|afternoon|evening), Joe\./ }),
-  ).toBeVisible();
+  const responses: Array<{ path: string; status: number }> = [];
+  const observe = (response: Response) => {
+    const path = new URL(response.url()).pathname;
+    if (
+      ['/auth/login', '/auth/mock/sign-in', '/auth/callback', '/app', '/v1/me'].includes(path) &&
+      responses.length < 30
+    )
+      responses.push({ path, status: response.status() });
+  };
+  page.on('response', observe);
+  try {
+    await page.goto('/auth/login?returnTo=/app');
+    await expect(page.getByRole('heading', { name: 'Choose a local identity' })).toBeVisible();
+    await page.getByRole('button', { name: /Joe \(mock\)/ }).click();
+    await expect(
+      page.getByRole('heading', { name: /Good (morning|afternoon|evening), Joe\./ }),
+    ).toBeVisible();
+  } catch (error) {
+    // Paths/statuses distinguish callback, session and page-load failures without cookies or query values.
+    const diagnostics = test.info().outputPath('sign-in-network.json');
+    await writeFile(
+      diagnostics,
+      JSON.stringify({ finalPath: new URL(page.url()).pathname, responses }, null, 2),
+    );
+    await test.info().attach('sign-in-network.json', {
+      path: diagnostics,
+      contentType: 'application/json',
+    });
+    throw error;
+  } finally {
+    page.off('response', observe);
+  }
 }
 
 test.beforeAll(async ({ request }) => {

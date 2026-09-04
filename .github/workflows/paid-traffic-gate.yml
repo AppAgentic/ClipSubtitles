@@ -29,7 +29,25 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @clipsubtitles/web exec playwright install --with-deps chromium
+      - name: Validate diagnostic redaction
+        run: python3 -B scripts/test_ci_diagnostics.py
       - run: REQUIRE_CLEAN_GIT=1 pnpm release:gate
+        env:
+          AUTH_MODE: mock
+      - name: Prepare sanitized browser failure diagnostics
+        if: failure()
+        env:
+          AUTH_MODE: mock
+        run: python3 -B scripts/collect-ci-diagnostics.py apps/web/e2e/.results apps/web/e2e/.results/ci-diagnostics
+      - name: Retain browser failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: apps/web/e2e/.results/ci-diagnostics/
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 7
 
   infrastructure:
     runs-on: ubuntu-24.04
