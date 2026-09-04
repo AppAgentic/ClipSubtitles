@@ -36,7 +36,7 @@ async function signIn(page: Page): Promise<void> {
     await page.getByRole('button', { name: /Joe \(mock\)/ }).click();
     await expect(page).toHaveURL(/\/app$/);
     await expect(page.getByRole('navigation', { name: 'Workspace' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
+    await expect(page.getByLabel('Joe (mock)', { exact: true })).toBeVisible();
     // A fresh workspace shows onboarding, while returning users see a greeting.
     // Verify the cookie-backed identity independently of project-dependent home copy.
     const identity = await page.request.get('/v1/me');
