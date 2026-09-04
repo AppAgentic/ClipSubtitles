@@ -1,13 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Connection } from '@clipsubtitles/contracts';
 import { AppShell } from '@/components/shell/AppShell';
 import { Button, Chip, LinkButton } from '@/components/ui/primitives';
 import { useToast } from '@/components/ui/Toast';
 import { api, errorMessage } from '@/lib/api';
 import { relativeTime } from '@/lib/format';
+import { CHATGPT_FIRST_REQUEST } from '@/components/landing-options/McpClientBoard';
 
 export default function ConnectionsPage() {
   return <AppShell render={() => <Connections />} />;
@@ -16,6 +17,8 @@ export default function ConnectionsPage() {
 function Connections() {
   const toast = useToast();
   const [connections, setConnections] = useState<Connection[] | null>(null);
+  const [promptCopied, setPromptCopied] = useState(false);
+  const promptTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(() => {
     api
@@ -24,7 +27,18 @@ function Connections() {
       .catch((error) => toast.push('error', errorMessage(error)));
   }, [toast]);
 
-  useEffect(load, [load]);
+  useEffect(() => {
+    load();
+    window.addEventListener('focus', load);
+    return () => window.removeEventListener('focus', load);
+  }, [load]);
+
+  useEffect(
+    () => () => {
+      if (promptTimer.current) clearTimeout(promptTimer.current);
+    },
+    [],
+  );
 
   const chatGptConnection = useMemo(
     () => connections?.find((connection) => isChatGpt(connection)) ?? null,
@@ -44,6 +58,17 @@ function Connections() {
       load();
     } catch (error) {
       toast.push('error', errorMessage(error));
+    }
+  };
+
+  const copyFirstRequest = async () => {
+    if (promptTimer.current) clearTimeout(promptTimer.current);
+    try {
+      await navigator.clipboard.writeText(CHATGPT_FIRST_REQUEST);
+      setPromptCopied(true);
+      promptTimer.current = setTimeout(() => setPromptCopied(false), 1600);
+    } catch {
+      toast.push('error', 'Could not copy the request. Select the text and copy it manually.');
     }
   };
 
@@ -96,9 +121,19 @@ function Connections() {
                 </p>
                 <div className="mt-5 flex flex-wrap items-center gap-3">
                   {connectionState === 'connected' && chatGptConnection ? (
-                    <Button variant="danger" onClick={() => void revoke(chatGptConnection)}>
-                      Disconnect
-                    </Button>
+                    <>
+                      <a
+                        href="https://chatgpt.com/"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex h-10 items-center justify-center rounded-full bg-[var(--color-signal-fill)] px-4 text-[13px] font-medium text-signal-ink transition-transform active:translate-y-px"
+                      >
+                        Start in ChatGPT <span aria-hidden>↗</span>
+                      </a>
+                      <Button variant="danger" onClick={() => void revoke(chatGptConnection)}>
+                        Disconnect
+                      </Button>
+                    </>
                   ) : (
                     <a
                       href="https://chatgpt.com"
@@ -121,26 +156,44 @@ function Connections() {
 
           <section className="rise rise-2 rounded-xl border border-line bg-panel p-6">
             <p className="text-[10px] uppercase tracking-[0.18em] text-ink-mute">
-              Three simple steps
+              What to do after connecting
             </p>
-            <h2 className="editorial-serif mt-1 text-[23px] font-semibold">How it works</h2>
+            <h2 className="editorial-serif mt-1 text-[23px] font-semibold">
+              Start your first caption in ChatGPT
+            </h2>
             <ol className="mt-6 grid gap-5 md:grid-cols-3">
               <Step
                 number="1"
-                title="Connect"
-                body="Add ClipSubtitles to ChatGPT and sign in to your account."
+                title="Return to ChatGPT"
+                body="Open a new chat and choose ClipSubtitles from Tools."
               />
               <Step
                 number="2"
-                title="Ask naturally"
-                body="Attach a video and describe the captions or changes you want."
+                title="Attach your video"
+                body="Add the clip directly to your message so only that file is handed to ClipSubtitles."
               />
               <Step
                 number="3"
-                title="Approve the export"
-                body="Review the files and fixed credit cost before anything is rendered."
+                title="Send the request"
+                body="ClipSubtitles generates the captions, then lets you review the words and style before export."
               />
             </ol>
+            <div className="mt-6 grid gap-3 rounded-lg border border-line bg-panel-2 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+              <div>
+                <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-signal">
+                  Paste this with your video
+                </p>
+                <p className="mt-2 text-[12px] leading-relaxed text-ink-dim">
+                  {CHATGPT_FIRST_REQUEST}
+                </p>
+              </div>
+              <Button variant="primary" onClick={() => void copyFirstRequest()}>
+                {promptCopied ? 'Copied' : 'Copy request'}
+              </Button>
+              <span className="sr-only" aria-live="polite">
+                {promptCopied ? 'First ClipSubtitles request copied.' : ''}
+              </span>
+            </div>
           </section>
 
           <section

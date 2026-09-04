@@ -18,7 +18,7 @@ describe('PathChooser', () => {
       'false',
     );
     expect(screen.getByRole('radio', { name: 'Claude' })).toBeTruthy();
-    expect(screen.getByText(/claude mcp add --transport http/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Copy setup prompt' })).toBeTruthy();
   });
 
   it('swaps to the complete browser upload path on click', () => {

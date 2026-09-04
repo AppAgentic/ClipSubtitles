@@ -37,9 +37,15 @@ export const MCP_INSTALL = [
     command: `claude mcp add --transport http clipsubtitles ${MCP_ENDPOINT}`,
   },
   {
-    id: 'codex',
+    id: 'chatgpt',
     label: 'ChatGPT',
-    instruction: 'Add the server, then sign in',
+    instruction: 'Add as a custom MCP server in ChatGPT Developer Mode',
+    command: MCP_ENDPOINT,
+  },
+  {
+    id: 'codex',
+    label: 'Codex',
+    instruction: 'Paste into your terminal, then sign in',
     command: `codex mcp add clipsubtitles --url ${MCP_ENDPOINT}\ncodex mcp login clipsubtitles`,
   },
   {
@@ -50,7 +56,7 @@ export const MCP_INSTALL = [
   },
   {
     id: 'other',
-    label: 'Other AI tools',
+    label: 'MCP',
     instruction: "Add this to your client's MCP config",
     command: `{
   "mcpServers": {

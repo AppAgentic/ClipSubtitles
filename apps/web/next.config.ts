@@ -7,6 +7,10 @@ const apiOrigin = process.env.API_INTERNAL_URL ?? process.env.API_PUBLIC_URL ?? 
 const nextConfig: NextConfig = {
   output: 'standalone',
   reactStrictMode: true,
+  // Local reviews are exposed through Tailscale Serve. Next blocks its dev
+  // client bundle when the page origin differs from the loopback upstream,
+  // which leaves the rendered controls visible but inert.
+  allowedDevOrigins: ['*.tailf5ca79.ts.net'],
   transpilePackages: ['@clipsubtitles/contracts', '@clipsubtitles/core'],
   poweredByHeader: false,
   async rewrites() {

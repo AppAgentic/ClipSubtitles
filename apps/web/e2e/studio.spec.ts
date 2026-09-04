@@ -43,14 +43,23 @@ test('sign-in page renders without overflow', async ({ page }) => {
 });
 
 test('landing headline stays inside its column', async ({ page }) => {
+  if (test.info().project.name === 'desktop') {
+    await page.setViewportSize({ width: 1440, height: 1000 });
+  }
   await page.goto('/');
   await expect(page.getByRole('tab', { name: 'Connect your agent' })).toHaveAttribute(
     'aria-selected',
     'true',
   );
   const heroAgent = page.getByRole('region', { name: 'Connect ClipSubtitles to your agent' });
-  await expect(heroAgent.getByText(/claude mcp add --transport http/)).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Copy prompt' })).toBeVisible();
+  await expect(heroAgent.getByRole('button', { name: 'Copy setup prompt' })).toBeVisible();
+  await heroAgent.getByRole('radio', { name: 'MCP' }).click();
+  await expect(heroAgent.getByRole('radio', { name: 'MCP' })).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
+  await shot(page, 'landing-agent-mcp');
+  await heroAgent.getByRole('radio', { name: 'Claude' }).click();
   await shot(page, 'landing-agent');
   await page.getByRole('tab', { name: 'Use in browser' }).click();
   await expect(page.getByRole('button', { name: /Upload a video/ })).toBeVisible();
@@ -67,6 +76,55 @@ test('landing headline stays inside its column', async ({ page }) => {
     ).toBeLessThanOrEqual(dimensions.clientWidth);
   }
   await shot(page, 'landing');
+});
+
+test('brand icon switches cleanly between light and dark mode', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.goto('/');
+  const lightMark = page.locator('.cs-wordmark__mark-image--light').first();
+  const darkMark = page.locator('.cs-wordmark__mark-image--dark').first();
+  await expect(lightMark).toBeVisible();
+  await expect(darkMark).toBeHidden();
+
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await expect(lightMark).toBeHidden();
+  await expect(darkMark).toBeVisible();
+
+  await expect(
+    page.locator('link[rel~="icon"][media="(prefers-color-scheme: light)"]'),
+  ).toHaveAttribute('href', '/brand/clipsubtitles-mark-light.png');
+  await expect(
+    page.locator('link[rel~="icon"][media="(prefers-color-scheme: dark)"]'),
+  ).toHaveAttribute('href', '/brand/clipsubtitles-mark-dark.png');
+});
+
+test('every agent selector updates the visible setup and handoff', async ({ page }) => {
+  await page.goto('/');
+  const heroAgent = page.getByRole('region', { name: 'Connect ClipSubtitles to your agent' });
+  const cases = ['ChatGPT', 'Codex', 'MCP', 'Gemini', 'Cursor', 'VS Code', 'Claude'] as const;
+
+  for (const client of cases) {
+    const choice = heroAgent.getByRole('radio', { name: client });
+    await choice.click();
+    await expect(choice).toHaveAttribute('aria-checked', 'true');
+    await expect(heroAgent.getByRole('button', { name: 'Copy setup prompt' })).toBeVisible();
+  }
+});
+
+test('AI connections explains the first ChatGPT action after connecting', async ({ page }) => {
+  await signIn(page);
+  await page.goto('/app/connections');
+  const firstChatHeading = page.getByRole('heading', {
+    name: 'Start your first caption in ChatGPT',
+  });
+  await expect(firstChatHeading).toBeVisible();
+  await expect(page.getByText('What to do after connecting')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Copy request' })).toBeVisible();
+  await expect(page.getByText(/Use ClipSubtitles to caption this attached video/)).toBeVisible();
+  await noHorizontalOverflow(page, 'AI connections');
+  await firstChatHeading.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(500);
+  await shot(page, 'connections-first-chat');
 });
 
 test('library, editor, and render routes stay within the viewport and the caption workflow works', async ({

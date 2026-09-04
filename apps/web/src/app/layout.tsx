@@ -14,8 +14,17 @@ export const metadata: Metadata = {
   description:
     'Create accurate, styled video captions, preview the result and export the files you need.',
   icons: {
-    icon: '/brand/clipsubtitles-mark.png',
-    apple: '/brand/clipsubtitles-mark.png',
+    icon: [
+      {
+        url: '/brand/clipsubtitles-mark-light.png',
+        media: '(prefers-color-scheme: light)',
+      },
+      {
+        url: '/brand/clipsubtitles-mark-dark.png',
+        media: '(prefers-color-scheme: dark)',
+      },
+    ],
+    apple: '/brand/clipsubtitles-mark-light.png',
   },
   robots: { index: false },
 };
@@ -40,7 +49,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <div id="app">
           <GleapSupportProvider>
-            <ToastProvider><PaidFunnelTracker />{children}</ToastProvider>
+            <ToastProvider>
+              <PaidFunnelTracker />
+              {children}
+            </ToastProvider>
           </GleapSupportProvider>
         </div>
       </body>

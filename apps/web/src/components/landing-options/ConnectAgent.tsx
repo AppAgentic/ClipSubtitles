@@ -3,7 +3,13 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { MCP_ENDPOINT } from './facts';
-import { MCP_CLIENTS, McpClientTiles, McpInstallSlot, useMcpClient } from './McpClientBoard';
+import {
+  MCP_CLIENTS,
+  McpClientTiles,
+  McpGuidedSetup,
+  McpInstallSlot,
+  useMcpClient,
+} from './McpClientBoard';
 
 const AUTOMATION_PATHS = [
   {
@@ -78,23 +84,25 @@ export function ConnectAgent({ standalone = false }: { standalone?: boolean }) {
       <div className="tg-connect-board">
         <McpClientTiles activeId={activeId} choose={choose} scope="guide" rail />
         <div className="tg-connect-page">
-          <p className="lo-eyebrow tg-eyebrow">{activeId === 'codex' ? 'Connect' : 'Install'}</p>
+          <p className="lo-eyebrow tg-eyebrow">One guided prompt</p>
           <h3>{active.label}</h3>
-          <McpInstallSlot activeId={activeId} large />
-          <dl className="tg-connect-checks">
-            <div>
-              <dt>First use</dt>
-              <dd>{activeId === 'codex' ? 'Choose ClipSubtitles in ChatGPT' : 'Sign in through your browser'}</dd>
-            </div>
-            {activeId !== 'codex' ? (
+          <McpGuidedSetup activeId={activeId} large />
+          <details>
+            <summary>Manual setup</summary>
+            <McpInstallSlot activeId={activeId} large />
+            <dl className="tg-connect-checks">
+              <div>
+                <dt>First use</dt>
+                <dd>Sign in through your browser</dd>
+              </div>
               <div>
                 <dt>Endpoint</dt>
                 <dd>
                   <code className="lo-mono">{MCP_ENDPOINT}</code>
                 </dd>
               </div>
-            ) : null}
-          </dl>
+            </dl>
+          </details>
         </div>
       </div>
     </section>

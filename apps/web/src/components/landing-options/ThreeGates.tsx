@@ -115,7 +115,7 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
           <div className="tg-hero-copy">
             <p className="lo-eyebrow tg-eyebrow tg-hero-eyebrow">AI video caption generator</p>
             <h1 id="tg-h1">
-              <span>Add captions to your video</span>
+              <span>Add captions to your videos</span>
               <em>with ChatGPT or Claude.</em>
             </h1>
             <p className="tg-lede">
