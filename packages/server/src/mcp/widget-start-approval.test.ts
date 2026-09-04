@@ -64,6 +64,15 @@ describe('widget start and export approval', () => {
     await h.run(`uploadNativeVideo(${JSON.stringify(nativeFile)})`);
     expect(h.preparePrivateUpload.mock.calls[1]?.[0].projectId).toBe('proj_1');
   });
+  it('prepares a new project if a different file is chosen after an interrupted upload', async () => {
+    const h = harness(); h.run('renderStart()'); h.preparePrivateUpload.mockResolvedValue(upload());
+    h.fetch.mockRejectedValueOnce(new Error('response lost')).mockResolvedValue({ ok: true });
+    await expect(h.run(`uploadNativeVideo(${JSON.stringify(nativeFile)})`)).rejects.toThrow('interrupted');
+    h.callTool.mockResolvedValue({ task: { id: 'task_1' } });
+    await h.run(`uploadNativeVideo(${JSON.stringify({ ...nativeFile, name: 'Different.mp4' })})`);
+    expect(h.preparePrivateUpload.mock.calls[1]?.[0].projectId).toBeUndefined();
+    expect(h.fetch).toHaveBeenCalledTimes(2);
+  });
   it('rejects missing or cross-origin private targets and offers this project on the web', async () => {
     const h = harness(); h.run('renderStart()'); h.preparePrivateUpload.mockResolvedValue({ ...upload(), target: undefined });
     await expect(h.run(`uploadNativeVideo(${JSON.stringify(nativeFile)})`)).rejects.toThrow('secure upload connection');

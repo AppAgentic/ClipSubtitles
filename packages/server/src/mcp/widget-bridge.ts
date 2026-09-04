@@ -31,17 +31,43 @@ async function callToolEnvelope(name,args){
   ])}finally{clearTimeout(timer)}
 }
 async function callTool(name,args){return normalizeToolResult(await callToolEnvelope(name,args))}
+function uploadMetadataTargets(metadata){
+  if(!metadata||typeof metadata!=='object')return [];
+  const candidates=[];
+  if(metadata.uploadTarget)candidates.push({target:metadata.uploadTarget});
+  for(const envelope of [metadata.mcp_tool_result,metadata.call_tool_result]){
+    if(envelope&&envelope._meta&&envelope._meta.uploadTarget)candidates.push({target:envelope._meta.uploadTarget,envelope:true,projectId:envelope.structuredContent&&envelope.structuredContent.project&&envelope.structuredContent.project.id});
+  }
+  return candidates;
+}
 async function preparePrivateUpload(args){
   const host=window.openai,before=host&&host.toolResponseMetadata;
-  const result=await callToolEnvelope('prepare_caption_upload',args),data=normalizeToolResult(result);
-  let metadata=result&&result._meta;
-  if(!metadata&&host&&host.toolResponseMetadata!==before){
-    const canonical=host.toolResponseMetadata;
-    for(const envelope of [canonical&&canonical.mcp_tool_result,canonical&&canonical.call_tool_result]){
-      if(envelope&&envelope.structuredContent&&envelope.structuredContent.project&&data.project&&envelope.structuredContent.project.id===data.project.id)metadata=envelope._meta;
-    }
+  const oldTargets=uploadMetadataTargets(before).map(function(candidate){return candidate.target});
+  let projectId=null,resolveWaiting=null,waitTimer=null;const metadataEvents=[];
+  function matches(candidate){return candidate.target&&candidate.target.projectId===projectId&&(!candidate.envelope||candidate.projectId===projectId)}
+  function findFresh(metadata){
+    if(!projectId||!metadata||metadata===before)return;
+    const candidate=uploadMetadataTargets(metadata).find(function(entry){return matches(entry)&&!oldTargets.some(function(old){return old===entry.target||(old.uploadId&&old.uploadId===entry.target.uploadId)||(old.url&&old.url===entry.target.url)})});
+    return candidate&&candidate.target;
   }
-  return {data:data,target:metadata&&metadata.uploadTarget};
+  function onMetadata(event){
+    const globals=event.detail&&event.detail.globals;
+    const metadata=globals&&globals.toolResponseMetadata||(window.openai&&window.openai.toolResponseMetadata);
+    if(metadataEvents.length===8)metadataEvents.shift();metadataEvents.push(metadata);
+    const target=findFresh(metadata);if(target&&resolveWaiting)resolveWaiting(target);
+  }
+  window.addEventListener('openai:set_globals',onMetadata);
+  try{
+    const result=await callToolEnvelope('prepare_caption_upload',args),data=normalizeToolResult(result);
+    projectId=data.project&&data.project.id;
+    const direct=uploadMetadataTargets(result&&result._meta).find(matches);
+    if(direct||data.status==='already_uploaded'||!projectId)return {data:data,target:direct&&direct.target};
+    const fresh=metadataEvents.map(findFresh).find(Boolean)||findFresh(window.openai&&window.openai.toolResponseMetadata);
+    if(fresh)return {data:data,target:fresh};
+    // Host globals may arrive after callTool resolves. Never substitute a prior capability.
+    const target=await new Promise(function(resolve){resolveWaiting=resolve;waitTimer=setTimeout(function(){resolve(findFresh(window.openai&&window.openai.toolResponseMetadata))},2000)});
+    return {data:data,target:target};
+  }finally{clearTimeout(waitTimer);resolveWaiting=null;metadataEvents.length=0;window.removeEventListener('openai:set_globals',onMetadata)}
 }
 async function followUp(prompt){try{const host=window.openai;return await(host&&host.sendFollowUpMessage?host.sendFollowUpMessage({prompt:prompt}):bridgeRequest('ui/message',{role:'user',content:[{type:'text',text:prompt}]}))}catch(error){showError(error)}}
 function notifyHeight(){requestAnimationFrame(function(){if(bridgeDisposed)return;const height=document.documentElement.scrollHeight;if(window.openai&&window.openai.notifyIntrinsicHeight)window.openai.notifyIntrinsicHeight({height:height});else if(bridgeReady)bridgeNotify('ui/notifications/size-changed',{height:height})})}

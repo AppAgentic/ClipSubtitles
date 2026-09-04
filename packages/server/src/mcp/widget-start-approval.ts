@@ -2,7 +2,7 @@
 export const WIDGET_START_APPROVAL = String.raw`
 let approvalTimer=null,approvalBusy=false;
 function stopApprovalTimer(){clearTimeout(approvalTimer);approvalTimer=null}
-let nativeUploadProject=null,nativeUploadKey=null,autoReviewProjectId=null;
+let nativeUploadProject=null,nativeUploadKey=null,nativeUploadIdentity=null,autoReviewProjectId=null;
 function renderStart(){
   const host=window.openai||{},canSelect=typeof host.getFileDownloadUrl==='function'&&typeof host.selectFiles==='function';
   setStatus('Ready to begin');
@@ -17,6 +17,8 @@ function renderStart(){
 async function uploadNativeVideo(file){
   if(!file.type||!file.type.startsWith('video/'))throw new Error('Choose a video file.');
   if(!file.size||file.size>31457280)throw new Error('Choose a video up to 30 MB, or use Upload in ClipSubtitles for larger videos.');
+  const identity=JSON.stringify([file.name,file.type,file.size,file.lastModified]);
+  if(nativeUploadIdentity!==identity){nativeUploadProject=null;nativeUploadKey=null;nativeUploadIdentity=identity}
   const selection=document.getElementById('selection');
   if(!nativeUploadKey)nativeUploadKey='widget-upload:'+crypto.randomUUID();
   selection.textContent=file.name+' · preparing upload…';setStatus('Preparing upload');
@@ -43,7 +45,7 @@ async function uploadNativeVideo(file){
 async function startNativeCaptions(){
   autoReviewProjectId=nativeUploadProject;
   const generated=await callTool('generate_captions',{projectId:nativeUploadProject,idempotencyKey:nativeUploadKey+':captions'});
-  nativeUploadProject=null;nativeUploadKey=null;render(generated);
+  nativeUploadProject=null;nativeUploadKey=null;nativeUploadIdentity=null;render(generated);
 }
 async function createFromFile(file){
   const host=window.openai||{};
