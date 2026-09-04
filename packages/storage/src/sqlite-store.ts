@@ -1,6 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { openDatabase, type Db, type OpenDatabaseOptions } from './db';
 import * as assets from './repos/assets';
+import * as admin from './repos/admin';
 import * as audit from './repos/audit';
 import * as billing from './repos/billing';
 import * as credits from './repos/credits';
@@ -161,11 +162,7 @@ export class SqliteStore implements DataStore {
   commitProjectEdit(input: Parameters<DataStore['commitProjectEdit']>[0]) {
     return this.run((db) => projects.commitProjectEdit(db, input));
   }
-  updateProjectMeta(
-    id: string,
-    patch: Parameters<DataStore['updateProjectMeta']>[1],
-    now: string,
-  ) {
+  updateProjectMeta(id: string, patch: Parameters<DataStore['updateProjectMeta']>[1], now: string) {
     return this.run((db) => projects.updateProjectMeta(db, id, patch, now));
   }
   softDeleteProject(workspaceId: string, id: string, now: string) {
@@ -297,7 +294,9 @@ export class SqliteStore implements DataStore {
     now: string,
     errorCode: string,
   ): Promise<void> {
-    return this.run((db) => tasks.recordTaskDispatchFailure(db, taskId, generation, now, errorCode));
+    return this.run((db) =>
+      tasks.recordTaskDispatchFailure(db, taskId, generation, now, errorCode),
+    );
   }
 
   // --- quotes -----------------------------------------------------------------
@@ -409,6 +408,29 @@ export class SqliteStore implements DataStore {
   }
   findAuditByErrorRef(errorRef: string) {
     return this.run((db) => audit.findAuditByErrorRef(db, errorRef));
+  }
+
+  // --- analytics / read-only admin -------------------------------------------
+  recordAnalyticsEvent(input: admin.AnalyticsEventInput) {
+    return this.run((db) => admin.recordAnalyticsEvent(db, input));
+  }
+  getAdminOverview(now: string) {
+    return this.run((db) => admin.getAdminOverview(db, now));
+  }
+  listAdminUsers(limit?: number) {
+    return this.run((db) => admin.listAdminUsers(db, limit));
+  }
+  listAdminJobs(limit?: number) {
+    return this.run((db) => admin.listAdminJobs(db, limit));
+  }
+  listAdminUserTimeline(userId: string, limit?: number) {
+    return this.run((db) => admin.listAdminUserTimeline(db, userId, limit));
+  }
+  retryAdminTask(taskId: string, now: string) {
+    return this.transaction(async () => admin.retryAdminTask(this.raw, taskId, now));
+  }
+  maintainAnalytics(now: string, rawBefore: string) {
+    return this.transaction(async () => admin.maintainAnalytics(this.raw, now, rawBefore));
   }
 }
 

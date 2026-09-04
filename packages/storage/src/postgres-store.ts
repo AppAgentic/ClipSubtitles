@@ -53,6 +53,14 @@ import {
   type TaskRecord,
 } from './repos/tasks';
 import type { DataStore } from './store';
+import {
+  maskEmail,
+  type AdminJobSummary,
+  type AdminOverview,
+  type AdminTimelineEvent,
+  type AdminUserSummary,
+  type AnalyticsEventInput,
+} from './repos/admin';
 
 /**
  * `int8` columns arrive as strings from `pg` (they can exceed Number.MAX_SAFE_INTEGER).
@@ -182,7 +190,14 @@ export class PostgresStore implements DataStore {
         await this.run(
           `INSERT INTO credit_pools (id, workspace_id, kind, original_amount, available, reserved, idempotency_key, note, created_at)
            VALUES ($1, $2, 'free', $3, $3, 0, $4, $5, $6)`,
-          [newId('pool'), workspaceId, input.initialCredits, `grant:initial:${workspaceId}`, 'Free lifetime credit grant', input.now],
+          [
+            newId('pool'),
+            workspaceId,
+            input.initialCredits,
+            `grant:initial:${workspaceId}`,
+            'Free lifetime credit grant',
+            input.now,
+          ],
         );
         await this.run(
           `INSERT INTO credit_ledger (id, workspace_id, kind, amount, available_after, reserved_after, idempotency_key, note, created_at)
@@ -743,8 +758,12 @@ export class PostgresStore implements DataStore {
 
   async markUploadPurged(id: string, now: string): Promise<boolean> {
     return (
-      (await this.run('UPDATE uploads SET purged_at = $2 WHERE id = $1 AND purged_at IS NULL', [id, now]))
-        .changes > 0
+      (
+        await this.run('UPDATE uploads SET purged_at = $2 WHERE id = $1 AND purged_at IS NULL', [
+          id,
+          now,
+        ])
+      ).changes > 0
     );
   }
 
@@ -1315,7 +1334,16 @@ export class PostgresStore implements DataStore {
         await this.run(
           `INSERT INTO credit_pools (id, workspace_id, kind, original_amount, available, reserved, expires_at, idempotency_key, note, created_at)
            VALUES ($1, $2, $3, $4, $4, 0, $5, $6, $7, $8)`,
-          [newId('pool'), input.workspaceId, input.poolKind ?? 'admin', input.amount, input.expiresAt ?? null, input.idempotencyKey, input.note ?? null, input.now],
+          [
+            newId('pool'),
+            input.workspaceId,
+            input.poolKind ?? 'admin',
+            input.amount,
+            input.expiresAt ?? null,
+            input.idempotencyKey,
+            input.note ?? null,
+            input.now,
+          ],
         );
       }
       await this.writeLedger({
@@ -1365,11 +1393,18 @@ export class PostgresStore implements DataStore {
         if (remaining <= 0) break;
         const amount = Math.min(remaining, Number(pool.available ?? 0));
         if (amount <= 0) continue;
-        await this.run('UPDATE credit_pools SET available = available - $1, reserved = reserved + $1 WHERE id = $2', [amount, String(pool.id)]);
-        await this.run('INSERT INTO credit_reservation_allocations (reservation_id, pool_id, amount) VALUES ($1, $2, $3)', [id, String(pool.id), amount]);
+        await this.run(
+          'UPDATE credit_pools SET available = available - $1, reserved = reserved + $1 WHERE id = $2',
+          [amount, String(pool.id)],
+        );
+        await this.run(
+          'INSERT INTO credit_reservation_allocations (reservation_id, pool_id, amount) VALUES ($1, $2, $3)',
+          [id, String(pool.id), amount],
+        );
         remaining -= amount;
       }
-      if (remaining > 0) throw new StorageError('INVALID_STATE', 'Credit pools do not match the aggregate balance.');
+      if (remaining > 0)
+        throw new StorageError('INVALID_STATE', 'Credit pools do not match the aggregate balance.');
       const available = bal.available - input.amount;
       const reserved = bal.reserved + input.amount;
       await this.setBalance(input.workspaceId, available, reserved, input.now);
@@ -1425,12 +1460,18 @@ export class PostgresStore implements DataStore {
       const reserved = Math.max(0, bal.reserved - res.amount);
       const available = bal.available + (res.amount - actual);
       let actualRemaining = actual;
-      const allocations = await this.many<Sql>('SELECT * FROM credit_reservation_allocations WHERE reservation_id = $1 ORDER BY pool_id', [res.id]);
+      const allocations = await this.many<Sql>(
+        'SELECT * FROM credit_reservation_allocations WHERE reservation_id = $1 ORDER BY pool_id',
+        [res.id],
+      );
       for (const allocation of allocations) {
         const amount = Number(allocation.amount ?? 0);
         const consumed = Math.min(actualRemaining, amount);
         const refund = amount - consumed;
-        await this.run('UPDATE credit_pools SET reserved = GREATEST(0, reserved - $1), available = available + $2 WHERE id = $3', [amount, refund, String(allocation.pool_id)]);
+        await this.run(
+          'UPDATE credit_pools SET reserved = GREATEST(0, reserved - $1), available = available + $2 WHERE id = $3',
+          [amount, refund, String(allocation.pool_id)],
+        );
         actualRemaining -= consumed;
       }
       await this.setBalance(res.workspaceId, available, reserved, input.now);
@@ -1471,10 +1512,16 @@ export class PostgresStore implements DataStore {
       if (res.status !== 'reserved') return { reservation: res, changed: false };
       const reserved = Math.max(0, bal.reserved - res.amount);
       const available = bal.available + res.amount;
-      const allocations = await this.many<Sql>('SELECT * FROM credit_reservation_allocations WHERE reservation_id = $1', [res.id]);
+      const allocations = await this.many<Sql>(
+        'SELECT * FROM credit_reservation_allocations WHERE reservation_id = $1',
+        [res.id],
+      );
       for (const allocation of allocations) {
         const amount = Number(allocation.amount ?? 0);
-        await this.run('UPDATE credit_pools SET reserved = GREATEST(0, reserved - $1), available = available + $1 WHERE id = $2', [amount, String(allocation.pool_id)]);
+        await this.run(
+          'UPDATE credit_pools SET reserved = GREATEST(0, reserved - $1), available = available + $1 WHERE id = $2',
+          [amount, String(allocation.pool_id)],
+        );
       }
       await this.setBalance(res.workspaceId, available, reserved, input.now);
       const updated = await this.one<Sql>(
@@ -1510,10 +1557,15 @@ export class PostgresStore implements DataStore {
   // --- plans, entitlements, and provider events -------------------------------
 
   async getBillingAccount(workspaceId: string): Promise<BillingAccountRecord | null> {
-    return maybe(await this.one<Sql>('SELECT * FROM billing_accounts WHERE workspace_id = $1', [workspaceId]), toBillingAccount);
+    return maybe(
+      await this.one<Sql>('SELECT * FROM billing_accounts WHERE workspace_id = $1', [workspaceId]),
+      toBillingAccount,
+    );
   }
 
-  async upsertBillingAccount(input: Parameters<DataStore['upsertBillingAccount']>[0]): Promise<BillingAccountRecord> {
+  async upsertBillingAccount(
+    input: Parameters<DataStore['upsertBillingAccount']>[0],
+  ): Promise<BillingAccountRecord> {
     const changed = await this.one<Sql>(
       `INSERT INTO billing_accounts (workspace_id, plan_id, status, current_period_start, current_period_end, cancel_at_period_end, provider, provider_customer_id, provider_subscription_id, provider_event_at, updated_at)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
@@ -1523,28 +1575,62 @@ export class PostgresStore implements DataStore {
        provider_event_at=EXCLUDED.provider_event_at,updated_at=EXCLUDED.updated_at
        WHERE EXCLUDED.provider_event_at IS NULL OR billing_accounts.provider_event_at IS NULL
          OR EXCLUDED.provider_event_at >= billing_accounts.provider_event_at RETURNING *`,
-      [input.workspaceId,input.planId,input.status,input.currentPeriodStart ?? null,input.currentPeriodEnd ?? null,input.cancelAtPeriodEnd ? 1 : 0,input.provider ?? null,input.providerCustomerId ?? null,input.providerSubscriptionId ?? null,input.providerEventAt ?? null,input.now],
+      [
+        input.workspaceId,
+        input.planId,
+        input.status,
+        input.currentPeriodStart ?? null,
+        input.currentPeriodEnd ?? null,
+        input.cancelAtPeriodEnd ? 1 : 0,
+        input.provider ?? null,
+        input.providerCustomerId ?? null,
+        input.providerSubscriptionId ?? null,
+        input.providerEventAt ?? null,
+        input.now,
+      ],
     );
-    const row = changed ?? await this.one<Sql>('SELECT * FROM billing_accounts WHERE workspace_id=$1', [input.workspaceId]);
+    const row =
+      changed ??
+      (await this.one<Sql>('SELECT * FROM billing_accounts WHERE workspace_id=$1', [
+        input.workspaceId,
+      ]));
     if (!row) throw new StorageError('INVALID_STATE', 'Billing account was not saved.');
     return toBillingAccount(pgRow(row));
   }
 
   async listCreditPools(workspaceId: string, now: string): Promise<CreditPoolRecord[]> {
-    return pgRows(await this.many<Sql>(
-      `SELECT * FROM credit_pools WHERE workspace_id=$1 AND (expires_at IS NULL OR expires_at>$2) AND (available>0 OR reserved>0)
+    return pgRows(
+      await this.many<Sql>(
+        `SELECT * FROM credit_pools WHERE workspace_id=$1 AND (expires_at IS NULL OR expires_at>$2) AND (available>0 OR reserved>0)
        ORDER BY CASE kind WHEN 'subscription' THEN 0 WHEN 'free' THEN 1 WHEN 'admin' THEN 2 ELSE 3 END,
-       CASE WHEN expires_at IS NULL THEN 1 ELSE 0 END, expires_at, created_at`, [workspaceId, now],
-    )).map(toCreditPool);
+       CASE WHEN expires_at IS NULL THEN 1 ELSE 0 END, expires_at, created_at`,
+        [workspaceId, now],
+      ),
+    ).map(toCreditPool);
   }
 
-  async recordBillingEvent(input: Parameters<DataStore['recordBillingEvent']>[0]): Promise<{ event: BillingEventRecord; created: boolean }> {
+  async recordBillingEvent(
+    input: Parameters<DataStore['recordBillingEvent']>[0],
+  ): Promise<{ event: BillingEventRecord; created: boolean }> {
     const inserted = await this.one<Sql>(
       `INSERT INTO billing_events (provider,event_id,event_type,workspace_id,status,occurred_at,processed_at)
        VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(provider,event_id) DO NOTHING RETURNING *`,
-      [input.provider,input.eventId,input.eventType,input.workspaceId ?? null,input.status,input.occurredAt,input.processedAt],
+      [
+        input.provider,
+        input.eventId,
+        input.eventType,
+        input.workspaceId ?? null,
+        input.status,
+        input.occurredAt,
+        input.processedAt,
+      ],
     );
-    const row = inserted ?? await this.one<Sql>('SELECT * FROM billing_events WHERE provider=$1 AND event_id=$2', [input.provider,input.eventId]);
+    const row =
+      inserted ??
+      (await this.one<Sql>('SELECT * FROM billing_events WHERE provider=$1 AND event_id=$2', [
+        input.provider,
+        input.eventId,
+      ]));
     if (!row) throw new StorageError('INVALID_STATE', 'Billing event was not saved.');
     return { event: toBillingEvent(pgRow(row)), created: Boolean(inserted) };
   }
@@ -1747,5 +1833,272 @@ export class PostgresStore implements DataStore {
       await this.one<Sql>('SELECT * FROM audit_events WHERE error_ref = $1', [errorRef]),
       toEvent,
     );
+  }
+
+  // --- analytics / read-only admin -------------------------------------------
+
+  async recordAnalyticsEvent(input: AnalyticsEventInput): Promise<void> {
+    await this.transaction(async () => {
+      await this.run(
+        `INSERT INTO analytics_sessions
+          (id, user_id, workspace_id, source, medium, campaign_id, campaign_name, adset_id, ad_id, creative_id,
+           apprefer_click_id, landing_url, referrer, first_seen_at, last_seen_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14)
+         ON CONFLICT(id) DO UPDATE SET user_id=COALESCE(EXCLUDED.user_id, analytics_sessions.user_id),
+           workspace_id=COALESCE(EXCLUDED.workspace_id, analytics_sessions.workspace_id),
+           source=CASE WHEN analytics_sessions.source='direct' THEN EXCLUDED.source ELSE analytics_sessions.source END,
+           medium=COALESCE(EXCLUDED.medium,analytics_sessions.medium),
+           campaign_id=COALESCE(EXCLUDED.campaign_id,analytics_sessions.campaign_id),
+           campaign_name=COALESCE(EXCLUDED.campaign_name,analytics_sessions.campaign_name),
+           adset_id=COALESCE(EXCLUDED.adset_id,analytics_sessions.adset_id),
+           ad_id=COALESCE(EXCLUDED.ad_id,analytics_sessions.ad_id),
+           creative_id=COALESCE(EXCLUDED.creative_id,analytics_sessions.creative_id),
+           apprefer_click_id=COALESCE(EXCLUDED.apprefer_click_id,analytics_sessions.apprefer_click_id),
+           last_seen_at=EXCLUDED.last_seen_at`,
+        [
+          input.sessionId,
+          input.userId ?? null,
+          input.workspaceId ?? null,
+          input.source,
+          input.medium ?? null,
+          input.campaignId ?? null,
+          input.campaignName ?? null,
+          input.adsetId ?? null,
+          input.adId ?? null,
+          input.creativeId ?? null,
+          input.appreferClickId ?? null,
+          input.landingUrl ?? null,
+          input.referrer ?? null,
+          input.now,
+        ],
+      );
+      await this.run(
+        `INSERT INTO analytics_events
+          (id,session_id,user_id,workspace_id,event,surface,project_id,task_id,properties_json,occurred_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+         ON CONFLICT(session_id,event,project_id,task_id) DO NOTHING`,
+        [
+          newId('audit'),
+          input.sessionId,
+          input.userId ?? null,
+          input.workspaceId ?? null,
+          input.event,
+          input.surface,
+          input.projectId ?? null,
+          input.taskId ?? null,
+          input.properties ? JSON.stringify(input.properties) : null,
+          input.now,
+        ],
+      );
+    });
+  }
+
+  async getAdminOverview(now: string): Promise<AdminOverview> {
+    const rawCutoff = new Date(Date.parse(now) - 90 * 24 * 60 * 60 * 1000).toISOString();
+    const cutoffDay = rawCutoff.slice(0, 10);
+    const scalar = async (sql: string) => Number((await this.one<Sql>(sql))?.value ?? 0);
+    const jobRows = await this.many<Sql>(
+      'SELECT status, COUNT(*) AS count FROM tasks GROUP BY status',
+    );
+    const jobs = { queued: 0, running: 0, succeeded: 0, failed: 0 } as AdminOverview['jobs'];
+    for (const row of jobRows)
+      if (String(row.status) in jobs)
+        (jobs[String(row.status) as keyof typeof jobs] as number) = Number(row.count);
+    const oldest = (
+      await this.one<Sql>("SELECT MIN(created_at) AS value FROM tasks WHERE status='queued'")
+    )?.value;
+    if (typeof oldest === 'string') jobs.oldestQueuedAt = oldest;
+    const funnel = (
+      await this.many<Sql>(
+        `SELECT event,SUM(count)::int AS count FROM (
+          SELECT event,COUNT(DISTINCT session_id)::int AS count FROM analytics_events WHERE occurred_at>=$1 GROUP BY event
+          UNION ALL SELECT event,SUM(event_count)::int AS count FROM analytics_daily_rollups WHERE day<$2 GROUP BY event
+        ) totals GROUP BY event ORDER BY count DESC`,
+        [rawCutoff, cutoffDay],
+      )
+    ).map((r) => ({ event: String(r.event), count: Number(r.count) }));
+    const sources = (
+      await this.many<Sql>(
+        `SELECT source,SUM(sessions)::int AS sessions,SUM(registrations)::int AS registrations FROM (
+        SELECT s.source,COUNT(DISTINCT s.id)::int AS sessions,
+          COUNT(DISTINCT CASE WHEN e.event='signup_completed' THEN e.user_id END)::int AS registrations
+        FROM analytics_sessions s LEFT JOIN analytics_events e ON e.session_id=s.id AND e.occurred_at>=$1
+        WHERE s.source!='internal' AND s.last_seen_at>=$1 GROUP BY s.source
+        UNION ALL
+        SELECT source,SUM(session_count)::int,SUM(CASE WHEN event='signup_completed' THEN user_count ELSE 0 END)::int
+        FROM analytics_daily_rollups WHERE day<$2 AND source!='internal' GROUP BY source
+      ) totals GROUP BY source ORDER BY sessions DESC`,
+        [rawCutoff, cutoffDay],
+      )
+    ).map((r) => ({
+      source: String(r.source),
+      sessions: Number(r.sessions),
+      registrations: Number(r.registrations),
+    }));
+    const transcriptionMs = await scalar(
+      'SELECT COALESCE(SUM(duration_ms),0) AS value FROM transcript_revisions',
+    );
+    const storedBytes =
+      (await scalar(
+        'SELECT COALESCE(SUM(bytes),0) AS value FROM source_assets WHERE purged_at IS NULL',
+      )) +
+      (await scalar('SELECT COALESCE(SUM(bytes),0) AS value FROM exports WHERE purged_at IS NULL'));
+    return {
+      generatedAt: now,
+      totals: {
+        users: await scalar('SELECT COUNT(*) AS value FROM users'),
+        activatedUsers: await scalar(
+          'SELECT COUNT(DISTINCT p.workspace_id) AS value FROM projects p JOIN transcript_revisions tr ON tr.project_id=p.id',
+        ),
+        projects: await scalar('SELECT COUNT(*) AS value FROM projects WHERE deleted_at IS NULL'),
+        uploadedVideos: await scalar(
+          "SELECT COUNT(*) AS value FROM source_assets WHERE status='ready'",
+        ),
+        transcribedVideos: await scalar(
+          'SELECT COUNT(DISTINCT project_id) AS value FROM transcript_revisions',
+        ),
+        previews: await scalar(
+          "SELECT COUNT(*) AS value FROM exports WHERE kind='preview' AND status!='purged'",
+        ),
+        exports: await scalar(
+          "SELECT COUNT(*) AS value FROM exports WHERE kind!='preview' AND status!='purged'",
+        ),
+        purchases: await scalar(
+          "SELECT COUNT(*) AS value FROM billing_events WHERE status='processed' AND event_type LIKE '%payment%'",
+        ),
+      },
+      jobs,
+      funnel,
+      sources,
+      costs: {
+        transcriptionMinutes: Math.round(transcriptionMs / 6000) / 10,
+        estimatedTranscriptionUsd: Math.round((transcriptionMs / 3600000) * 0.22 * 100) / 100,
+        storedBytes,
+      },
+    };
+  }
+
+  async listAdminUsers(limit = 100): Promise<AdminUserSummary[]> {
+    const rows = await this.many<Sql>(
+      `SELECT u.id,u.email,u.created_at,COUNT(DISTINCT p.id) AS projects,
+      COUNT(DISTINCT tr.project_id) AS transcriptions,COUNT(DISTINCT ex.id) AS exports,MIN(ans.source) AS source,
+      MAX(COALESCE(ae.occurred_at,p.updated_at,u.created_at)) AS last_activity_at FROM users u
+      LEFT JOIN workspaces w ON w.owner_user_id=u.id LEFT JOIN projects p ON p.workspace_id=w.id
+      LEFT JOIN transcript_revisions tr ON tr.project_id=p.id LEFT JOIN exports ex ON ex.workspace_id=w.id AND ex.status!='purged'
+      LEFT JOIN analytics_sessions ans ON ans.user_id=u.id LEFT JOIN analytics_events ae ON ae.user_id=u.id
+      GROUP BY u.id,u.email,u.created_at ORDER BY u.created_at DESC LIMIT $1`,
+      [limit],
+    );
+    return rows.map((r) => {
+      const item: AdminUserSummary = {
+        id: String(r.id),
+        createdAt: String(r.created_at),
+        projects: Number(r.projects),
+        transcriptions: Number(r.transcriptions),
+        exports: Number(r.exports),
+      };
+      const email = maskEmail(r.email);
+      if (email) item.emailMasked = email;
+      if (typeof r.source === 'string') item.source = r.source;
+      if (typeof r.last_activity_at === 'string') item.lastActivityAt = r.last_activity_at;
+      return item;
+    });
+  }
+
+  async listAdminJobs(limit = 100): Promise<AdminJobSummary[]> {
+    const rows = await this.many<Sql>(
+      `SELECT t.*,u.email FROM tasks t LEFT JOIN workspaces w ON w.id=t.workspace_id
+      LEFT JOIN users u ON u.id=w.owner_user_id ORDER BY t.created_at DESC LIMIT $1`,
+      [limit],
+    );
+    return rows.map((r) => {
+      let errorCode: string | undefined;
+      try {
+        errorCode = JSON.parse(String(r.error_json ?? 'null'))?.code;
+      } catch {
+        // Malformed legacy provider detail is intentionally omitted from admin output.
+      }
+      const item: AdminJobSummary = {
+        id: String(r.id),
+        kind: String(r.kind),
+        status: String(r.status),
+        progress: Number(r.progress),
+        attempts: Number(r.attempts),
+        createdAt: String(r.created_at),
+      };
+      if (typeof r.stage === 'string') item.stage = r.stage;
+      if (typeof r.started_at === 'string') item.startedAt = r.started_at;
+      if (typeof r.finished_at === 'string') item.finishedAt = r.finished_at;
+      if (errorCode) item.errorCode = errorCode;
+      const email = maskEmail(r.email);
+      if (email) item.userEmailMasked = email;
+      return item;
+    });
+  }
+
+  async retryAdminTask(taskId: string, now: string): Promise<boolean> {
+    return this.transaction(async () => {
+      const changed = await this.run(
+        `UPDATE tasks SET status='queued',progress=0,stage='queued',attempts=0,error_json=NULL,
+        cancel_requested=0,lease_owner=NULL,lease_expires_at=NULL,run_after=$2,updated_at=$2,started_at=NULL,finished_at=NULL
+        WHERE id=$1 AND status='failed' AND kind IN ('import_source','finalize_upload','generate_captions','render_preview')`,
+        [taskId, now],
+      );
+      if (!changed.changes) return false;
+      await this.run(
+        `INSERT INTO task_dispatch_outbox (task_id,available_at,attempts,last_error_code,delivered_at,created_at,updated_at,generation)
+        VALUES ($1,$2,0,NULL,NULL,$2,$2,1) ON CONFLICT(task_id) DO UPDATE SET available_at=EXCLUDED.available_at,
+        attempts=0,last_error_code=NULL,delivered_at=NULL,updated_at=EXCLUDED.updated_at,generation=task_dispatch_outbox.generation+1`,
+        [taskId, now],
+      );
+      return true;
+    });
+  }
+
+  async listAdminUserTimeline(userId: string, limit = 100): Promise<AdminTimelineEvent[]> {
+    const rows = await this.many<Sql>(
+      `SELECT event,surface,occurred_at,project_id,task_id FROM analytics_events
+       WHERE user_id=$1 OR workspace_id IN (SELECT id FROM workspaces WHERE owner_user_id=$1)
+       ORDER BY occurred_at DESC LIMIT $2`,
+      [userId, limit],
+    );
+    return rows.map((row) => {
+      const item: AdminTimelineEvent = {
+        event: String(row.event),
+        surface: String(row.surface),
+        occurredAt: String(row.occurred_at),
+      };
+      if (typeof row.project_id === 'string') item.projectId = row.project_id;
+      if (typeof row.task_id === 'string') item.taskId = row.task_id;
+      return item;
+    });
+  }
+
+  async maintainAnalytics(
+    now: string,
+    rawBefore: string,
+  ): Promise<{ eventsPurged: number; sessionsPurged: number }> {
+    return this.transaction(async () => {
+      await this.run(
+        `INSERT INTO analytics_daily_rollups (day,event,source,event_count,session_count,user_count,updated_at)
+        SELECT substring(e.occurred_at from 1 for 10),e.event,s.source,COUNT(*)::int,COUNT(DISTINCT e.session_id)::int,
+          COUNT(DISTINCT e.user_id)::int,$1 FROM analytics_events e JOIN analytics_sessions s ON s.id=e.session_id
+        WHERE e.occurred_at < $2 GROUP BY substring(e.occurred_at from 1 for 10),e.event,s.source
+        ON CONFLICT(day,event,source) DO UPDATE SET event_count=EXCLUDED.event_count,session_count=EXCLUDED.session_count,
+          user_count=EXCLUDED.user_count,updated_at=EXCLUDED.updated_at`,
+        [now, `${now.slice(0, 10)}T00:00:00.000Z`],
+      );
+      const eventsPurged = (
+        await this.run('DELETE FROM analytics_events WHERE occurred_at < $1', [rawBefore])
+      ).changes;
+      const sessionsPurged = (
+        await this.run(
+          `DELETE FROM analytics_sessions s WHERE s.last_seen_at < $1
+        AND NOT EXISTS (SELECT 1 FROM analytics_events e WHERE e.session_id=s.id)`,
+          [rawBefore],
+        )
+      ).changes;
+      return { eventsPurged, sessionsPurged };
+    });
   }
 }

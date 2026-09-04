@@ -27,8 +27,11 @@ export async function getMe(ctx: AppContext, principal: Principal): Promise<Me> 
     workspace: workspaceView(ctx, ws),
     scopes: principal.scopes,
     authKind: principal.kind,
+    isAdmin: false,
     credits: await creditBalance(ctx, principal.workspaceId),
   };
+  const user = await ctx.db.getUser(principal.userId);
+  me.isAdmin = Boolean(user?.email && ctx.config.adminEmails.includes(user.email.toLowerCase()));
   if (principal.displayName) me.user.displayName = principal.displayName;
   if (principal.emailMasked) me.user.emailMasked = principal.emailMasked;
   return me;

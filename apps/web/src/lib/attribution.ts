@@ -50,7 +50,7 @@ export function readAttribution(): WebAttribution | undefined {
   }
 }
 
-export function captureAttribution(): WebAttribution | undefined {
+export function captureAttribution(): WebAttribution {
   const params = new URLSearchParams(window.location.search);
   const incoming: Partial<WebAttribution> = {};
   for (const [query, field] of Object.entries(QUERY_FIELDS)) {
@@ -59,7 +59,6 @@ export function captureAttribution(): WebAttribution | undefined {
   }
   const paidTouch = Boolean(incoming.appreferClickId || incoming.fbclid || incoming.utmSource);
   const existing = readAttribution();
-  if (!paidTouch && !existing) return undefined;
   const now = Date.now();
   const attribution: WebAttribution = {
     ...(existing ?? { sessionId: crypto.randomUUID(), capturedAt: now }),
@@ -83,8 +82,7 @@ export function trackPaidFunnelEvent(
   event: PaidFunnelEvent,
   properties?: Record<string, string | number | boolean>,
 ): void {
-  const attribution = readAttribution();
-  if (!attribution) return;
+  const attribution = readAttribution() ?? captureAttribution();
   void fetch('/v1/analytics/funnel', {
     method: 'POST',
     credentials: 'include',
@@ -99,8 +97,7 @@ export function trackPaidFunnelEventOnce(
   event: PaidFunnelEvent,
   properties?: Record<string, string | number | boolean>,
 ): void {
-  const attribution = readAttribution();
-  if (!attribution) return;
+  const attribution = readAttribution() ?? captureAttribution();
   const key = `${STORAGE_KEY}:event:${attribution.sessionId}:${event}`;
   if (sessionStorage.getItem(key)) return;
   sessionStorage.setItem(key, '1');

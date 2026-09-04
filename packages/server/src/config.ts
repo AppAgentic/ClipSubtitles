@@ -96,6 +96,8 @@ const EnvSchema = z.object({
   TASK_INVOKER_SERVICE_ACCOUNT: z.string().optional(),
   /** Comma-separated proxy IPs/CIDRs whose forwarding headers may be trusted. Empty = never trust X-Forwarded-For / X-Real-IP. */
   TRUSTED_PROXIES: z.string().default(''),
+  /** Comma-separated human administrators. Exact, case-insensitive email match. */
+  ADMIN_EMAILS: z.string().default(''),
 });
 
 export interface WorkOSConfig {
@@ -216,6 +218,7 @@ export interface AppConfig {
    * peer is always the client — forwarding headers are never trusted.
    */
   trustedProxies: string[];
+  adminEmails: string[];
 }
 
 export class ConfigError extends Error {
@@ -287,15 +290,24 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       topup_medium: e.WHOP_PLAN_TOPUP_MEDIUM,
       topup_large: e.WHOP_PLAN_TOPUP_LARGE,
     };
-    if (!e.WHOP_API_KEY || !e.WHOP_ACCOUNT_ID || !e.WHOP_WEBHOOK_SECRET || Object.values(planIds).some((value) => !value)) {
-      throw new ConfigError('BILLING_PROVIDER=whop requires the Whop API key, account ID, webhook secret, and all nine plan IDs.');
+    if (
+      !e.WHOP_API_KEY ||
+      !e.WHOP_ACCOUNT_ID ||
+      !e.WHOP_WEBHOOK_SECRET ||
+      Object.values(planIds).some((value) => !value)
+    ) {
+      throw new ConfigError(
+        'BILLING_PROVIDER=whop requires the Whop API key, account ID, webhook secret, and all nine plan IDs.',
+      );
     }
     billing = {
       provider: 'whop',
       apiKey: e.WHOP_API_KEY.trim(),
       accountId: e.WHOP_ACCOUNT_ID.trim(),
       webhookSecret: e.WHOP_WEBHOOK_SECRET.trim(),
-      planIds: Object.fromEntries(Object.entries(planIds).map(([key, value]) => [key, String(value).trim()])) as Record<BillingSku, string>,
+      planIds: Object.fromEntries(
+        Object.entries(planIds).map(([key, value]) => [key, String(value).trim()]),
+      ) as Record<BillingSku, string>,
     };
   }
   if (e.NODE_ENV === 'production' && e.AUTH_MODE !== 'workos') {
@@ -375,6 +387,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const trustedProxies = e.TRUSTED_PROXIES.split(',')
     .map((s) => s.trim())
     .filter(Boolean);
+  const adminEmails = e.ADMIN_EMAILS.split(',')
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean);
   try {
     createProxyTrust(trustedProxies);
   } catch (err) {
@@ -425,6 +440,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     worker: { pollMs: e.WORKER_POLL_MS, leaseMs: e.WORKER_LEASE_MS },
     tasks,
     trustedProxies,
+    adminEmails,
   };
 }
 

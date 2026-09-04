@@ -367,6 +367,10 @@ resource "google_cloud_run_v2_service" "api" {
         value = "workos"
       }
       env {
+        name  = "ADMIN_EMAILS"
+        value = var.admin_emails
+      }
+      env {
         name  = "BILLING_PROVIDER"
         value = var.enable_billing ? "whop" : "none"
       }
@@ -960,6 +964,19 @@ resource "google_compute_backend_service" "web" {
   protocol              = "HTTP"
   load_balancing_scheme = "EXTERNAL_MANAGED"
   enable_cdn            = true
+  cdn_policy {
+    cache_mode        = "CACHE_ALL_STATIC"
+    client_ttl        = 86400
+    default_ttl       = 3600
+    max_ttl           = 604800
+    negative_caching  = true
+    serve_while_stale = 2592000
+    cache_key_policy {
+      include_host         = true
+      include_protocol     = true
+      include_query_string = true
+    }
+  }
   backend {
     group = google_compute_region_network_endpoint_group.web[0].id
   }
@@ -1218,6 +1235,53 @@ resource "google_logging_metric" "worker_task_failure" {
   }
 
   depends_on = [google_project_service.required]
+}
+
+resource "google_logging_metric" "marketing_media_5xx" {
+  count = var.enable_monitoring ? 1 : 0
+
+  project = var.project_id
+  name    = "${local.name}-marketing-media-5xx"
+  filter  = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"${local.name}-web\" AND httpRequest.status>=500 AND httpRequest.requestUrl:\"/marketing/\""
+
+  metric_descriptor {
+    metric_kind = "DELTA"
+    value_type  = "INT64"
+    unit        = "1"
+  }
+
+  depends_on = [google_project_service.required]
+}
+
+resource "google_monitoring_alert_policy" "marketing_media_5xx" {
+  count = var.enable_monitoring ? 1 : 0
+
+  project               = var.project_id
+  display_name          = "${local.name}: marketing media delivery failures"
+  combiner              = "OR"
+  enabled               = true
+  notification_channels = var.alert_notification_channel_ids
+  user_labels           = local.labels
+
+  conditions {
+    display_name = "At least one marketing-media 5xx in five minutes"
+    condition_threshold {
+      filter          = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.marketing_media_5xx[0].name}\" AND resource.type=\"cloud_run_revision\""
+      comparison      = "COMPARISON_GT"
+      threshold_value = 0
+      duration        = "0s"
+      aggregations {
+        alignment_period   = "300s"
+        per_series_aligner = "ALIGN_SUM"
+      }
+    }
+  }
+
+  alert_strategy { auto_close = "1800s" }
+  documentation {
+    content   = "Landing-page or style-preview video delivery failed. Check Cloud CDN cache fill and the active web revision before increasing paid traffic."
+    mime_type = "text/markdown"
+  }
 }
 
 resource "google_monitoring_alert_policy" "cloud_run_5xx" {

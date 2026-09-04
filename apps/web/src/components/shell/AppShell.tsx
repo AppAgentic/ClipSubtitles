@@ -14,7 +14,7 @@ import {
 } from '@/components/support/GleapSupport';
 import { trackPaidFunnelEventOnce } from '@/lib/attribution';
 
-type NavIconName = 'home' | 'plus' | 'film' | 'spark' | 'settings' | 'help' | 'code';
+type NavIconName = 'home' | 'plus' | 'film' | 'spark' | 'settings' | 'help' | 'code' | 'pulse';
 
 const NAV: Array<{
   href: string;
@@ -112,13 +112,19 @@ export function AppShell({
   }
 
   return (
-    <div className="flex min-h-screen bg-bg">
+    <div className="flex min-h-screen max-w-full overflow-x-hidden bg-bg">
       <aside className="sticky top-0 hidden h-screen w-[220px] shrink-0 flex-col border-r border-line bg-panel/70 px-3 py-5 backdrop-blur-xl lg:flex">
         <Brand />
         <nav aria-label="Workspace" className="mt-8 flex flex-col gap-1">
           {NAV.map((n) => (
             <NavLink key={n.href} item={n} active={n.match(pathname)} />
           ))}
+          {me.isAdmin ? (
+            <NavLink
+              item={{ href: '/admin', label: 'Operations', icon: 'pulse' }}
+              active={pathname.startsWith('/admin')}
+            />
+          ) : null}
         </nav>
         <nav aria-label="Support" className="mt-auto flex flex-col gap-1 border-t border-line pt-4">
           {SECONDARY_NAV.map((n) => (
@@ -292,6 +298,12 @@ function NavIcon({ name, className }: { name: NavIconName; className?: string })
     code: (
       <>
         <path d="m8 9-4 3 4 3M16 9l4 3-4 3M14 5l-4 14" />
+      </>
+    ),
+    pulse: (
+      <>
+        <path d="M3 12h4l2.2-5 4.1 10 2.2-5H21" />
+        <path d="M4 4h16a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" />
       </>
     ),
   }[name];

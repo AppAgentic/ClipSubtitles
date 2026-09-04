@@ -18,7 +18,11 @@ export interface HandlerTools {
   workerId: string;
 }
 
-export type TaskHandler = (ctx: AppContext, task: TaskRecord, tools: HandlerTools) => Promise<TaskResult>;
+export type TaskHandler = (
+  ctx: AppContext,
+  task: TaskRecord,
+  tools: HandlerTools,
+) => Promise<TaskResult>;
 
 export interface WorkerOptions {
   workerId?: string;
@@ -40,7 +44,11 @@ export const DEFAULT_HANDLERS: Record<TaskKind, TaskHandler> = {
   render_export: renderExportHandler,
   retention_sweep: async (ctx) => {
     const r = await runRetentionSweep(ctx);
-    return { kind: 'retention_sweep', purgedAssets: r.purgedAssets, purgedExports: r.purgedExports };
+    return {
+      kind: 'retention_sweep',
+      purgedAssets: r.purgedAssets,
+      purgedExports: r.purgedExports,
+    };
   },
 };
 
@@ -94,7 +102,9 @@ export class TaskWorker {
       try {
         ran = await this.runOnce();
       } catch (err) {
-        this.ctx.logger.error('worker loop error', { error: err instanceof Error ? err.message : String(err) });
+        this.ctx.logger.error('worker loop error', {
+          error: err instanceof Error ? err.message : String(err),
+        });
       }
       if (!ran && this.running) await new Promise((r) => setTimeout(r, this.pollMs));
     }
@@ -121,7 +131,12 @@ export class TaskWorker {
     await this.maintenance();
     const existing = await this.ctx.db.getTaskById(taskId);
     if (!existing) return 'terminal';
-    if (existing.status === 'succeeded' || existing.status === 'failed' || existing.status === 'cancelled') return 'terminal';
+    if (
+      existing.status === 'succeeded' ||
+      existing.status === 'failed' ||
+      existing.status === 'cancelled'
+    )
+      return 'terminal';
     const task = await this.ctx.db.claimTaskById({
       id: taskId,
       workerId: this.workerId,
@@ -142,25 +157,46 @@ export class TaskWorker {
     this.lastMaintenance = now;
     const reclaimed = await this.ctx.db.reclaimExpiredLeases(this.ctx.clock.iso());
     for (const id of reclaimed.failed) await releaseForTask(this.ctx, id, 'worker lease lost');
-    for (const id of reclaimed.cancelled) await releaseForTask(this.ctx, id, 'cancelled after lease loss');
+    for (const id of reclaimed.cancelled)
+      await releaseForTask(this.ctx, id, 'cancelled after lease loss');
     // Terminal render tasks keep no outputs: rows and row-less blobs alike are removed.
-    for (const id of [...reclaimed.failed, ...reclaimed.cancelled]) await discardOutputsForTaskId(this.ctx, id);
+    for (const id of [...reclaimed.failed, ...reclaimed.cancelled])
+      await discardOutputsForTaskId(this.ctx, id);
     await this.ctx.db.expireOpenQuotes(this.ctx.clock.iso());
     if (force || now - this.lastRetention >= this.retentionEveryMs) {
       this.lastRetention = now;
-      await runRetentionSweep(this.ctx).catch((err) => this.ctx.logger.warn('retention sweep failed', { error: String(err) }));
+      await runRetentionSweep(this.ctx).catch((err) =>
+        this.ctx.logger.warn('retention sweep failed', { error: String(err) }),
+      );
+      const rawBefore = new Date(now - 90 * 24 * 60 * 60 * 1000).toISOString();
+      await this.ctx.db
+        .maintainAnalytics(this.ctx.clock.iso(), rawBefore)
+        .catch((err) =>
+          this.ctx.logger.warn('analytics maintenance failed', { error: String(err) }),
+        );
     }
   }
 
   private async execute(task: TaskRecord): Promise<void> {
     const controller = new AbortController();
     this.current = { task, controller };
-    const log = this.ctx.logger.child({ taskId: task.id, kind: task.kind, workerId: this.workerId });
+    const log = this.ctx.logger.child({
+      taskId: task.id,
+      kind: task.kind,
+      workerId: this.workerId,
+    });
     let progress = task.progress;
     let stage = task.stage;
     let leaseLost = false;
     const heartbeat = async (): Promise<void> => {
-      const hb = await this.ctx.db.heartbeatTask({ id: task.id, workerId: this.workerId, now: this.ctx.clock.iso(), leaseMs: this.leaseMs, progress, ...(stage ? { stage } : {}) });
+      const hb = await this.ctx.db.heartbeatTask({
+        id: task.id,
+        workerId: this.workerId,
+        now: this.ctx.clock.iso(),
+        leaseMs: this.leaseMs,
+        progress,
+        ...(stage ? { stage } : {}),
+      });
       if (!hb.owned) {
         leaseLost = true;
         controller.abort('lease-lost');
@@ -169,7 +205,9 @@ export class TaskWorker {
       }
     };
     const timer = setInterval(() => {
-      void heartbeat().catch((err) => log.warn('heartbeat failed', { error: err instanceof Error ? err.message : String(err) }));
+      void heartbeat().catch((err) =>
+        log.warn('heartbeat failed', { error: err instanceof Error ? err.message : String(err) }),
+      );
     }, this.heartbeatMs);
     const tools: HandlerTools = {
       signal: controller.signal,
@@ -194,7 +232,12 @@ export class TaskWorker {
       // Completion and billing settlement are one atomic step: credits are only
       // charged when THIS worker still owns the task and the completion is recorded.
       const done = await this.ctx.db.transaction(async () => {
-        const completed = await this.ctx.db.completeTask({ id: task.id, workerId: this.workerId, result, now: this.ctx.clock.iso() });
+        const completed = await this.ctx.db.completeTask({
+          id: task.id,
+          workerId: this.workerId,
+          result,
+          now: this.ctx.clock.iso(),
+        });
         if (completed && task.kind === 'render_export') await settleForTask(this.ctx, task.id);
         return completed;
       });
@@ -202,7 +245,31 @@ export class TaskWorker {
         log.warn('task completion rejected (lease no longer owned); billing untouched');
         return;
       }
-      await audit(this.ctx, { workspaceId: task.workspaceId, actorType: 'worker', actorId: this.workerId, action: `task.${task.kind}.succeeded`, targetType: 'task', targetId: task.id });
+      await audit(this.ctx, {
+        workspaceId: task.workspaceId,
+        actorType: 'worker',
+        actorId: this.workerId,
+        action: `task.${task.kind}.succeeded`,
+        targetType: 'task',
+        targetId: task.id,
+      });
+      await this.ctx.db
+        .recordAnalyticsEvent({
+          sessionId: `server-${task.workspaceId}`,
+          source: 'internal',
+          event: `${task.kind}_succeeded`,
+          surface: 'api',
+          workspaceId: task.workspaceId,
+          ...(task.projectId ? { projectId: task.projectId } : {}),
+          taskId: task.id,
+          properties: { attempts: task.attempts },
+          now: this.ctx.clock.iso(),
+        })
+        .catch((error) =>
+          log.warn('task analytics event not recorded', {
+            error: error instanceof Error ? error.message : String(error),
+          }),
+        );
       log.info('task succeeded');
     } catch (err) {
       clearInterval(timer);
@@ -216,15 +283,29 @@ export class TaskWorker {
         log.info('task interrupted by worker shutdown; lease left for retry');
         return;
       }
-      if (controller.signal.reason === 'cancel' || (controller.signal.aborted && isCancellation(err))) {
-        const cancelled = await this.ctx.db.markCancelled({ id: task.id, workerId: this.workerId, now: this.ctx.clock.iso() });
+      if (
+        controller.signal.reason === 'cancel' ||
+        (controller.signal.aborted && isCancellation(err))
+      ) {
+        const cancelled = await this.ctx.db.markCancelled({
+          id: task.id,
+          workerId: this.workerId,
+          now: this.ctx.clock.iso(),
+        });
         if (!cancelled) {
           log.warn('task cancellation rejected (lease no longer owned); billing untouched');
           return;
         }
         if (task.kind === 'render_export') await releaseForTask(this.ctx, task.id, 'cancelled');
         await discardOutputsForTaskId(this.ctx, task.id);
-        await audit(this.ctx, { workspaceId: task.workspaceId, actorType: 'worker', actorId: this.workerId, action: `task.${task.kind}.cancelled`, targetType: 'task', targetId: task.id });
+        await audit(this.ctx, {
+          workspaceId: task.workspaceId,
+          actorType: 'worker',
+          actorId: this.workerId,
+          action: `task.${task.kind}.cancelled`,
+          targetType: 'task',
+          targetId: task.id,
+        });
         log.info('task cancelled');
         return;
       }
@@ -235,10 +316,31 @@ export class TaskWorker {
         workerId: this.workerId,
         error: { ...error, errorRef },
         now: this.ctx.clock.iso(),
-        backoffMs: BACKOFF_MS[Math.min(BACKOFF_MS.length - 1, Math.max(0, task.attempts - 1))] ?? 2_000,
+        backoffMs:
+          BACKOFF_MS[Math.min(BACKOFF_MS.length - 1, Math.max(0, task.attempts - 1))] ?? 2_000,
       });
-      if (outcome.outcome === 'failed' && task.kind === 'render_export') await releaseForTask(this.ctx, task.id, 'render failed');
+      if (outcome.outcome === 'failed' && task.kind === 'render_export')
+        await releaseForTask(this.ctx, task.id, 'render failed');
       if (outcome.outcome === 'failed') await discardOutputsForTaskId(this.ctx, task.id);
+      if (outcome.outcome === 'failed')
+        await this.ctx.db
+          .recordAnalyticsEvent({
+            sessionId: `server-${task.workspaceId}`,
+            source: 'internal',
+            event: `${task.kind}_failed`,
+            surface: 'api',
+            workspaceId: task.workspaceId,
+            ...(task.projectId ? { projectId: task.projectId } : {}),
+            taskId: task.id,
+            properties: { code: error.code, attempts: task.attempts },
+            now: this.ctx.clock.iso(),
+          })
+          .catch((analyticsError) =>
+            log.warn('task analytics event not recorded', {
+              error:
+                analyticsError instanceof Error ? analyticsError.message : String(analyticsError),
+            }),
+          );
       await audit(this.ctx, {
         workspaceId: task.workspaceId,
         actorType: 'worker',
@@ -248,9 +350,23 @@ export class TaskWorker {
         targetId: task.id,
         outcome: 'error',
         errorRef,
-        metadata: { code: error.code, attempt: task.attempts, internal: internal instanceof Error ? internal.message : typeof internal === 'string' ? internal.slice(0, 500) : undefined },
+        metadata: {
+          code: error.code,
+          attempt: task.attempts,
+          internal:
+            internal instanceof Error
+              ? internal.message
+              : typeof internal === 'string'
+                ? internal.slice(0, 500)
+                : undefined,
+        },
       });
-      log.warn('task failed', { code: error.code, outcome: outcome.outcome, errorRef, internal: internal instanceof Error ? internal.message : undefined });
+      log.warn('task failed', {
+        code: error.code,
+        outcome: outcome.outcome,
+        errorRef,
+        internal: internal instanceof Error ? internal.message : undefined,
+      });
     } finally {
       this.current = null;
     }

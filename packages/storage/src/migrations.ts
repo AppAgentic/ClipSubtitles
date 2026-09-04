@@ -410,4 +410,60 @@ INSERT INTO credit_pools (id, workspace_id, kind, original_amount, available, re
 ALTER TABLE billing_accounts ADD COLUMN provider_event_at TEXT;
 `,
   },
+  {
+    version: 8,
+    name: 'identity_linked_analytics',
+    sql: `
+CREATE TABLE analytics_sessions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id),
+  workspace_id TEXT REFERENCES workspaces(id),
+  source TEXT NOT NULL,
+  medium TEXT,
+  campaign_id TEXT,
+  campaign_name TEXT,
+  adset_id TEXT,
+  ad_id TEXT,
+  creative_id TEXT,
+  apprefer_click_id TEXT,
+  landing_url TEXT,
+  referrer TEXT,
+  first_seen_at TEXT NOT NULL,
+  last_seen_at TEXT NOT NULL
+);
+CREATE INDEX analytics_sessions_user ON analytics_sessions(user_id, last_seen_at);
+CREATE INDEX analytics_sessions_source ON analytics_sessions(source, first_seen_at);
+
+CREATE TABLE analytics_events (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL REFERENCES analytics_sessions(id) ON DELETE CASCADE,
+  user_id TEXT REFERENCES users(id),
+  workspace_id TEXT REFERENCES workspaces(id),
+  event TEXT NOT NULL,
+  surface TEXT NOT NULL,
+  project_id TEXT,
+  task_id TEXT,
+  properties_json TEXT,
+  occurred_at TEXT NOT NULL,
+  UNIQUE(session_id, event, project_id, task_id)
+);
+CREATE INDEX analytics_events_time ON analytics_events(occurred_at, event);
+CREATE INDEX analytics_events_user ON analytics_events(user_id, occurred_at);
+CREATE INDEX analytics_events_workspace ON analytics_events(workspace_id, occurred_at);
+CREATE UNIQUE INDEX analytics_events_dedupe ON analytics_events(
+  session_id, event, COALESCE(project_id, ''), COALESCE(task_id, '')
+);
+
+CREATE TABLE analytics_daily_rollups (
+  day TEXT NOT NULL,
+  event TEXT NOT NULL,
+  source TEXT NOT NULL,
+  event_count INTEGER NOT NULL,
+  session_count INTEGER NOT NULL,
+  user_count INTEGER NOT NULL,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (day, event, source)
+);
+`,
+  },
 ];

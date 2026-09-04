@@ -17,6 +17,7 @@ import { registerExportRoutes } from './routes/exports';
 import { registerProjectRoutes } from './routes/projects';
 import { registerTaskRoutes } from './routes/tasks';
 import { registerWellKnownRoutes } from './routes/wellknown';
+import { registerAdminRoutes } from './routes/admin';
 
 export type App = Api;
 
@@ -26,7 +27,21 @@ export function createApp(ctx: AppContext): App {
 
   api.use('*', requestIdMiddleware());
   api.use('*', secureHeaders({ crossOriginResourcePolicy: 'cross-origin' }));
-  api.use('/api/mcp', cors({ origin: '*', allowHeaders: ['Authorization', 'Content-Type', 'Mcp-Session-Id', 'Mcp-Protocol-Version', 'Last-Event-ID'], exposeHeaders: ['Mcp-Session-Id', 'WWW-Authenticate'], allowMethods: ['GET', 'POST', 'DELETE', 'OPTIONS'] }));
+  api.use(
+    '/api/mcp',
+    cors({
+      origin: '*',
+      allowHeaders: [
+        'Authorization',
+        'Content-Type',
+        'Mcp-Session-Id',
+        'Mcp-Protocol-Version',
+        'Last-Event-ID',
+      ],
+      exposeHeaders: ['Mcp-Session-Id', 'WWW-Authenticate'],
+      allowMethods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+    }),
+  );
   api.use('/.well-known/*', cors({ origin: '*' }));
   api.use('*', async (c, next) => {
     // Uploads stream to the object store with their own byte cap; everything else is a small JSON body.
@@ -40,18 +55,21 @@ export function createApp(ctx: AppContext): App {
   });
   api.use('*', async (c, next) => {
     await next();
-    if (c.req.path.startsWith('/v1/') || c.req.path.startsWith('/api/')) c.header('Cache-Control', 'no-store');
+    if (c.req.path.startsWith('/v1/') || c.req.path.startsWith('/api/'))
+      c.header('Cache-Control', 'no-store');
   });
 
   registerWellKnownRoutes(api, ctx);
   registerAnalyticsRoutes(api, ctx);
   registerAuthRoutes(api, ctx);
-  if (ctx.config.auth.mode === 'mock' && ctx.config.env !== 'production') registerDevRoutes(api, ctx);
+  if (ctx.config.auth.mode === 'mock' && ctx.config.env !== 'production')
+    registerDevRoutes(api, ctx);
   registerProjectRoutes(api, ctx);
   registerTaskRoutes(api, ctx);
   registerExportRoutes(api, ctx);
   registerAccountRoutes(api, ctx);
   registerBillingRoutes(api, ctx);
+  registerAdminRoutes(api, ctx);
   registerMcpRoute(api, ctx);
 
   api.doc31('/openapi.json', {
@@ -66,6 +84,7 @@ export function createApp(ctx: AppContext): App {
       { name: 'Exports' },
       { name: 'Account' },
       { name: 'Billing' },
+      { name: 'Admin' },
     ],
   });
 
@@ -84,7 +103,14 @@ export function createApp(ctx: AppContext): App {
         method: c.req.method,
         path: c.req.path,
         requestId: c.get('requestId'),
-        internal: internal instanceof Error ? { name: internal.name, message: internal.message, stack: internal.stack?.split('\n').slice(0, 5).join('\n') } : internal,
+        internal:
+          internal instanceof Error
+            ? {
+                name: internal.name,
+                message: internal.message,
+                stack: internal.stack?.split('\n').slice(0, 5).join('\n'),
+              }
+            : internal,
       });
       // The response is already being written: record the audit alongside it.
       void audit(ctx, {

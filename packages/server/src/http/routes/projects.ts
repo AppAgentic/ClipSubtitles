@@ -21,16 +21,33 @@ import {
 } from '@clipsubtitles/contracts';
 import { authenticate, principalKey, rateLimit, requireScope } from '../../auth/middleware';
 import type { AppContext } from '../../context';
-import { createRenderQuote, startGeneration, startPreview, startRender } from '../../services/captions';
-import { createDirectUploadTarget, createProject, createUploadTarget, deleteProject, getProjectView, listProjects, patchProject } from '../../services/projects';
+import {
+  createRenderQuote,
+  startGeneration,
+  startPreview,
+  startRender,
+} from '../../services/captions';
+import {
+  createDirectUploadTarget,
+  createProject,
+  createUploadTarget,
+  deleteProject,
+  getProjectView,
+  listProjects,
+  patchProject,
+} from '../../services/projects';
 import { completeDirectUpload } from '../../services/uploads';
+import { recordLifecycle } from '../../services/analytics';
 import { idempotencyKeyFrom, withIdempotency } from '../idempotent';
 import { SECURITY, errorResponses, jsonBody, jsonResponse, type Api } from '../openapi';
 
 const ProjectParams = z.object({ projectId: ProjectIdSchema });
 const ProjectUploadParams = z.object({ projectId: ProjectIdSchema, uploadId: UploadIdSchema });
 
-function parseInclude(include: string | undefined): { includePages: boolean; includeWords: boolean } {
+function parseInclude(include: string | undefined): {
+  includePages: boolean;
+  includeWords: boolean;
+} {
   const parts = (include ?? 'pages').split(',').map((s) => s.trim());
   return { includePages: parts.includes('pages'), includeWords: parts.includes('words') };
 }
@@ -47,19 +64,26 @@ export function registerProjectRoutes(api: Api, ctx: AppContext): void {
       path: '/v1/projects',
       tags: ['Projects'],
       summary: 'Create a caption project',
-      description: 'Returns an upload target (single bounded PUT) or, when sourceUrl is given, starts a bounded remote import task.',
+      description:
+        'Returns an upload target (single bounded PUT) or, when sourceUrl is given, starts a bounded remote import task.',
       security: SECURITY,
       middleware: [auth, limited, write] as const,
       request: { body: jsonBody(CreateProjectRequestSchema) },
-      responses: { 201: jsonResponse(CreateProjectResponseSchema, 'Project created'), ...errorResponses('SOURCE_URL_REJECTED', 'IDEMPOTENCY_KEY_REUSED') },
+      responses: {
+        201: jsonResponse(CreateProjectResponseSchema, 'Project created'),
+        ...errorResponses('SOURCE_URL_REJECTED', 'IDEMPOTENCY_KEY_REUSED'),
+      },
     }),
     async (c) => {
       const body = c.req.valid('json');
       const principal = c.get('principal');
       const key = idempotencyKeyFrom(c, body);
-      const out = await withIdempotency(ctx, { workspaceId: principal.workspaceId, scope: 'projects.create', key, payload: body }, () =>
-        createProject(ctx, principal, body),
+      const out = await withIdempotency(
+        ctx,
+        { workspaceId: principal.workspaceId, scope: 'projects.create', key, payload: body },
+        () => createProject(ctx, principal, body),
       );
+      await recordLifecycle(ctx, principal, 'project_created', { projectId: out.body.project.id });
       return c.json(out.body, out.status as 201);
     },
   );
@@ -112,14 +136,15 @@ export function registerProjectRoutes(api: Api, ctx: AppContext): void {
     async (c) => {
       const { projectId, uploadId } = c.req.valid('param');
       const body = c.req.valid('json');
-      return c.json(
-        {
-          task: await completeDirectUpload(ctx, c.get('principal'), projectId, uploadId, {
-            ...(body.sha256 ? { sha256: body.sha256 } : {}),
-          }),
-        },
-        202,
-      );
+      const principal = c.get('principal');
+      const task = await completeDirectUpload(ctx, principal, projectId, uploadId, {
+        ...(body.sha256 ? { sha256: body.sha256 } : {}),
+      });
+      await recordLifecycle(ctx, principal, 'upload_finalization_started', {
+        projectId,
+        taskId: task.id,
+      });
+      return c.json({ task }, 202);
     },
   );
 
@@ -142,7 +167,8 @@ export function registerProjectRoutes(api: Api, ctx: AppContext): void {
       path: '/v1/projects/{projectId}',
       tags: ['Projects'],
       summary: 'Get a project',
-      description: 'include=pages,words selects caption pages and a bounded window of transcript words.',
+      description:
+        'include=pages,words selects caption pages and a bounded window of transcript words.',
       security: SECURITY,
       middleware: [auth, limited, read] as const,
       request: { params: ProjectParams, query: ProjectQuerySchema },
@@ -173,11 +199,17 @@ export function registerProjectRoutes(api: Api, ctx: AppContext): void {
       security: SECURITY,
       middleware: [auth, limited, write] as const,
       request: { params: ProjectParams, body: jsonBody(PatchProjectRequestSchema) },
-      responses: { 200: jsonResponse(PatchProjectResponseSchema, 'Updated project'), ...errorResponses('VERSION_CONFLICT', 'TRANSCRIPT_MISSING') },
+      responses: {
+        200: jsonResponse(PatchProjectResponseSchema, 'Updated project'),
+        ...errorResponses('VERSION_CONFLICT', 'TRANSCRIPT_MISSING'),
+      },
     }),
     async (c) => {
       const { projectId } = c.req.valid('param');
-      return c.json(await patchProject(ctx, c.get('principal'), projectId, c.req.valid('json')), 200);
+      return c.json(
+        await patchProject(ctx, c.get('principal'), projectId, c.req.valid('json')),
+        200,
+      );
     },
   );
 
@@ -208,7 +240,10 @@ export function registerProjectRoutes(api: Api, ctx: AppContext): void {
       security: SECURITY,
       middleware: [auth, limited, write] as const,
       request: { params: ProjectParams },
-      responses: { 201: jsonResponse(UploadTargetSchema, 'Upload target'), ...errorResponses('CONFLICT') },
+      responses: {
+        201: jsonResponse(UploadTargetSchema, 'Upload target'),
+        ...errorResponses('CONFLICT'),
+      },
     }),
     async (c) => {
       const { projectId } = c.req.valid('param');
@@ -226,7 +261,10 @@ export function registerProjectRoutes(api: Api, ctx: AppContext): void {
       middleware: [auth, limited, write] as const,
       request: { params: ProjectParams, body: jsonBody(GenerateCaptionsRequestSchema) },
       responses: {
-        202: jsonResponse(z.object({ task: TaskSchema, project: CaptionProjectSchema }), 'Generation task accepted'),
+        202: jsonResponse(
+          z.object({ task: TaskSchema, project: CaptionProjectSchema }),
+          'Generation task accepted',
+        ),
         ...errorResponses('SOURCE_NOT_READY', 'IDEMPOTENCY_KEY_REUSED'),
       },
     }),
@@ -235,9 +273,22 @@ export function registerProjectRoutes(api: Api, ctx: AppContext): void {
       const body = c.req.valid('json');
       const principal = c.get('principal');
       const key = idempotencyKeyFrom(c, body);
-      const out = await withIdempotency(ctx, { workspaceId: principal.workspaceId, scope: `captions:${projectId}`, key, payload: body, status: 202 }, () =>
-        startGeneration(ctx, principal, projectId, key ? { ...body, idempotencyKey: key } : body),
+      const out = await withIdempotency(
+        ctx,
+        {
+          workspaceId: principal.workspaceId,
+          scope: `captions:${projectId}`,
+          key,
+          payload: body,
+          status: 202,
+        },
+        () =>
+          startGeneration(ctx, principal, projectId, key ? { ...body, idempotencyKey: key } : body),
       );
+      await recordLifecycle(ctx, principal, 'transcription_started', {
+        projectId,
+        taskId: out.body.task.id,
+      });
       return c.json(out.body, out.status as 202);
     },
   );
@@ -251,16 +302,38 @@ export function registerProjectRoutes(api: Api, ctx: AppContext): void {
       security: SECURITY,
       middleware: [auth, limited, write, rateLimit(ctx, 'previews', principalKey)] as const,
       request: { params: ProjectParams, body: jsonBody(CreatePreviewRequestSchema) },
-      responses: { 202: jsonResponse(z.object({ task: TaskSchema }), 'Preview task accepted'), ...errorResponses('SOURCE_NOT_READY', 'TRANSCRIPT_MISSING') },
+      responses: {
+        202: jsonResponse(z.object({ task: TaskSchema }), 'Preview task accepted'),
+        ...errorResponses('SOURCE_NOT_READY', 'TRANSCRIPT_MISSING'),
+      },
     }),
     async (c) => {
       const { projectId } = c.req.valid('param');
       const body = c.req.valid('json');
       const principal = c.get('principal');
       const key = idempotencyKeyFrom(c, body);
-      const out = await withIdempotency(ctx, { workspaceId: principal.workspaceId, scope: `previews:${projectId}`, key, payload: body, status: 202 }, async () => ({
-        task: await startPreview(ctx, principal, projectId, key ? { ...body, idempotencyKey: key } : body),
-      }));
+      const out = await withIdempotency(
+        ctx,
+        {
+          workspaceId: principal.workspaceId,
+          scope: `previews:${projectId}`,
+          key,
+          payload: body,
+          status: 202,
+        },
+        async () => ({
+          task: await startPreview(
+            ctx,
+            principal,
+            projectId,
+            key ? { ...body, idempotencyKey: key } : body,
+          ),
+        }),
+      );
+      await recordLifecycle(ctx, principal, 'preview_started', {
+        projectId,
+        taskId: out.body.task.id,
+      });
       return c.json(out.body, out.status as 202);
     },
   );
@@ -270,15 +343,22 @@ export function registerProjectRoutes(api: Api, ctx: AppContext): void {
       method: 'post',
       path: '/v1/projects/{projectId}/render-quotes',
       tags: ['Rendering'],
-      summary: 'Create an immutable render quote (settings, version/hash, expected outputs, credit estimate)',
+      summary:
+        'Create an immutable render quote (settings, version/hash, expected outputs, credit estimate)',
       security: SECURITY,
       middleware: [auth, limited, write] as const,
       request: { params: ProjectParams, body: jsonBody(CreateRenderQuoteRequestSchema) },
-      responses: { 201: jsonResponse(RenderQuoteSchema, 'Quote'), ...errorResponses('SOURCE_NOT_READY', 'TRANSCRIPT_MISSING', 'VERSION_CONFLICT') },
+      responses: {
+        201: jsonResponse(RenderQuoteSchema, 'Quote'),
+        ...errorResponses('SOURCE_NOT_READY', 'TRANSCRIPT_MISSING', 'VERSION_CONFLICT'),
+      },
     }),
     async (c) => {
       const { projectId } = c.req.valid('param');
-      return c.json(await createRenderQuote(ctx, c.get('principal'), projectId, c.req.valid('json')), 201);
+      return c.json(
+        await createRenderQuote(ctx, c.get('principal'), projectId, c.req.valid('json')),
+        201,
+      );
     },
   );
 
@@ -288,13 +368,27 @@ export function registerProjectRoutes(api: Api, ctx: AppContext): void {
       path: '/v1/projects/{projectId}/renders',
       tags: ['Rendering'],
       summary: 'Consume an approved quote: reserve credits and start the final render',
-      description: 'Requires the quote id, the exact approved credit cost, and an idempotency key. Duplicate requests return the same task and never double-charge.',
+      description:
+        'Requires the quote id, the exact approved credit cost, and an idempotency key. Duplicate requests return the same task and never double-charge.',
       security: SECURITY,
       middleware: [auth, limited, write] as const,
       request: { params: ProjectParams, body: jsonBody(CreateRenderRequestSchema) },
       responses: {
-        202: jsonResponse(z.object({ task: TaskSchema, quote: RenderQuoteSchema, reservedCredits: z.number().int() }), 'Render task accepted'),
-        ...errorResponses('QUOTE_EXPIRED', 'QUOTE_INVALIDATED', 'QUOTE_MISMATCH', 'INSUFFICIENT_CREDITS', 'IDEMPOTENCY_KEY_REUSED'),
+        202: jsonResponse(
+          z.object({
+            task: TaskSchema,
+            quote: RenderQuoteSchema,
+            reservedCredits: z.number().int(),
+          }),
+          'Render task accepted',
+        ),
+        ...errorResponses(
+          'QUOTE_EXPIRED',
+          'QUOTE_INVALIDATED',
+          'QUOTE_MISMATCH',
+          'INSUFFICIENT_CREDITS',
+          'IDEMPOTENCY_KEY_REUSED',
+        ),
       },
     }),
     async (c) => {
@@ -302,9 +396,21 @@ export function registerProjectRoutes(api: Api, ctx: AppContext): void {
       const body = c.req.valid('json');
       const principal = c.get('principal');
       const key = idempotencyKeyFrom(c, body) ?? body.idempotencyKey;
-      const out = await withIdempotency(ctx, { workspaceId: principal.workspaceId, scope: `renders:${projectId}`, key, payload: body, status: 202 }, () =>
-        startRender(ctx, principal, projectId, { ...body, idempotencyKey: key }),
+      const out = await withIdempotency(
+        ctx,
+        {
+          workspaceId: principal.workspaceId,
+          scope: `renders:${projectId}`,
+          key,
+          payload: body,
+          status: 202,
+        },
+        () => startRender(ctx, principal, projectId, { ...body, idempotencyKey: key }),
       );
+      await recordLifecycle(ctx, principal, 'export_started_server', {
+        projectId,
+        taskId: out.body.task.id,
+      });
       return c.json(out.body, out.status as 202);
     },
   );

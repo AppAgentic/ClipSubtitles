@@ -8,7 +8,7 @@ import {
   trackPaidFunnelEventOnce,
 } from './attribution';
 
-describe('paid web attribution', () => {
+describe('all-source web attribution', () => {
   beforeEach(() => {
     sessionStorage.clear();
     localStorage.clear();
@@ -36,23 +36,23 @@ describe('paid web attribution', () => {
     expect(readAttribution()?.sessionId).toBe(attribution?.sessionId);
   });
 
-  it('does not create attribution state for direct traffic', () => {
-    expect(captureAttribution()).toBeUndefined();
-    expect(localStorage.length).toBe(0);
+  it('creates durable attribution state for direct traffic', () => {
+    expect(captureAttribution()).toMatchObject({ landingUrl: 'http://localhost:3000/' });
+    expect(localStorage.length).toBe(1);
   });
 
-  it('sends funnel events only when paid attribution exists', async () => {
+  it('sends funnel events for direct and paid attribution', async () => {
     const fetchMock = vi
       .spyOn(globalThis, 'fetch')
       .mockResolvedValue(new Response('{}', { status: 200 }));
     trackPaidFunnelEvent('pricing_viewed');
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
 
     history.replaceState({}, '', '/?ar_click_id=click_123&utm_source=meta');
     const attribution = captureAttribution();
     trackPaidFunnelEvent('plan_selected', { sku: 'plan_creator_annual' });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [, request] = fetchMock.mock.calls[0]!;
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const [, request] = fetchMock.mock.calls[1]!;
     expect(JSON.parse(String(request?.body))).toMatchObject({
       event: 'plan_selected',
       attribution: { sessionId: attribution?.sessionId, appreferClickId: 'click_123' },

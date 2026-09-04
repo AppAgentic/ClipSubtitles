@@ -16,6 +16,7 @@ const me: Me = {
   },
   scopes: ['captions:read', 'captions:write'],
   authKind: 'session',
+  isAdmin: false,
   credits: { available: 10, reserved: 0, total: 10, priceVersion: 'test' },
 };
 

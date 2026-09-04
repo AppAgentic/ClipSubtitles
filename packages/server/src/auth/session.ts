@@ -25,15 +25,25 @@ export function sessionCookieOptions(ctx: AppContext): CookieOptions {
 }
 
 /** Create the user/workspace on first sign-in and open a web session. */
-export async function establishSession(ctx: AppContext, user: IdentityUser): Promise<{ token: string; principal: Principal }> {
+export async function establishSession(
+  ctx: AppContext,
+  user: IdentityUser,
+): Promise<{ token: string; principal: Principal }> {
   const now = ctx.clock.iso();
-  const { user: record, workspace } = await ctx.db.ensureUserWorkspace({
+  const {
+    user: record,
+    workspace,
+    created,
+  } = await ctx.db.ensureUserWorkspace({
     subject: user.subject,
     ...(user.email ? { email: user.email } : {}),
     ...(user.displayName ? { displayName: user.displayName } : {}),
     now,
     initialCredits: ctx.config.limits.initialCreditGrant,
-    defaultRetention: { sourceDays: ctx.config.limits.sourceRetentionDays, exportDays: ctx.config.limits.exportRetentionDays },
+    defaultRetention: {
+      sourceDays: ctx.config.limits.sourceRetentionDays,
+      exportDays: ctx.config.limits.exportRetentionDays,
+    },
   });
   const token = randomToken(32);
   const session = await ctx.db.createSession({
@@ -55,10 +65,26 @@ export async function establishSession(ctx: AppContext, user: IdentityUser): Pro
   if (record.displayName) principal.displayName = record.displayName;
   const masked = maskEmail(record.email);
   if (masked) principal.emailMasked = masked;
+  if (created) {
+    await ctx.db.recordAnalyticsEvent({
+      sessionId: `server-${workspace.id}`,
+      source: 'internal',
+      event: 'registration_completed',
+      surface: 'web',
+      userId: record.id,
+      workspaceId: workspace.id,
+      now,
+    }).catch((error) => {
+      ctx.logger.warn('registration analytics event not recorded', { error: error instanceof Error ? error.message : String(error) });
+    });
+  }
   return { token, principal };
 }
 
-export async function principalFromSessionToken(ctx: AppContext, token: string): Promise<Principal | null> {
+export async function principalFromSessionToken(
+  ctx: AppContext,
+  token: string,
+): Promise<Principal | null> {
   if (!token || token.length > 256) return null;
   const now = ctx.clock.iso();
   const session = await ctx.db.findActiveSession(hashToken(token), now);

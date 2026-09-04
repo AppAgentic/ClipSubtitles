@@ -2,7 +2,8 @@ import type { NextConfig } from 'next';
 
 // The web app is a pure consumer of the API. Same-origin rewrites keep cookies,
 // signed asset URLs, and the MCP endpoint on one origin locally without CORS.
-const apiOrigin = process.env.API_INTERNAL_URL ?? process.env.API_PUBLIC_URL ?? 'http://localhost:3101';
+const apiOrigin =
+  process.env.API_INTERNAL_URL ?? process.env.API_PUBLIC_URL ?? 'http://localhost:3101';
 
 const nextConfig: NextConfig = {
   output: 'standalone',
@@ -28,6 +29,18 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
+      {
+        // Deployment-owned static media can be served stale while Cloud CDN
+        // refreshes it, preventing a transient web-revision error from leaving
+        // the landing page with a broken proof video.
+        source: '/marketing/:path*.mp4',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=2592000',
+          },
+        ],
+      },
       {
         source: '/(.*)',
         headers: [

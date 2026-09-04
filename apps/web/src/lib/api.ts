@@ -27,6 +27,53 @@ import {
   type Workspace,
 } from '@clipsubtitles/contracts';
 
+export interface AdminOverview {
+  generatedAt: string;
+  totals: {
+    users: number;
+    activatedUsers: number;
+    projects: number;
+    uploadedVideos: number;
+    transcribedVideos: number;
+    previews: number;
+    exports: number;
+    purchases: number;
+  };
+  jobs: {
+    queued: number;
+    running: number;
+    succeeded: number;
+    failed: number;
+    oldestQueuedAt?: string;
+  };
+  funnel: Array<{ event: string; count: number }>;
+  sources: Array<{ source: string; sessions: number; registrations: number }>;
+  costs: { transcriptionMinutes: number; estimatedTranscriptionUsd: number; storedBytes: number };
+}
+export interface AdminUser {
+  id: string;
+  emailMasked?: string;
+  createdAt: string;
+  projects: number;
+  transcriptions: number;
+  exports: number;
+  source?: string;
+  lastActivityAt?: string;
+}
+export interface AdminJob {
+  id: string;
+  kind: string;
+  status: string;
+  progress: number;
+  stage?: string;
+  attempts: number;
+  createdAt: string;
+  startedAt?: string;
+  finishedAt?: string;
+  errorCode?: string;
+  userEmailMasked?: string;
+}
+
 /** Public API error surfaced to the UI. Messages are already safe for display. */
 export class ApiClientError extends Error {
   readonly code: ErrorCode;
@@ -87,6 +134,11 @@ export const api = {
   connections: () => request<{ connections: Connection[] }>('/v1/connections'),
   revokeConnection: (id: string) =>
     request<Connection>(`/v1/connections/${id}/revoke`, { method: 'POST' }),
+  adminOverview: () => request<AdminOverview>('/v1/admin/overview'),
+  adminUsers: () => request<{ users: AdminUser[] }>('/v1/admin/users?limit=12'),
+  adminJobs: () => request<{ jobs: AdminJob[] }>('/v1/admin/jobs?limit=12'),
+  adminRetryJob: (taskId: string) =>
+    request<{ queued: true }>(`/v1/admin/jobs/${taskId}/retry`, json({ confirm: true })),
 
   listProjects: () => request<{ projects: ProjectSummary[] }>('/v1/projects'),
   getProject: (

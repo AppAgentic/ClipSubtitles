@@ -16,7 +16,13 @@ import type {
   TranscriptSource,
   TranscriptWord,
 } from '@clipsubtitles/contracts';
-import type { AssetPatch, AssetRecord, AssetOrigin, AssetStatus, UploadRecord } from './repos/assets';
+import type {
+  AssetPatch,
+  AssetRecord,
+  AssetOrigin,
+  AssetStatus,
+  UploadRecord,
+} from './repos/assets';
 import type { AuditEventInput, AuditEventRecord } from './repos/audit';
 import type { BillingAccountRecord, BillingEventRecord, CreditPoolRecord } from './repos/billing';
 import type { CreditBalanceRecord, ReservationRecord } from './repos/credits';
@@ -32,6 +38,13 @@ import type {
 import type { ProjectEditPatch, ProjectRecord, RevisionRecord } from './repos/projects';
 import type { QuoteRecord } from './repos/quotes';
 import type { DispatchOutboxRecord, TaskRecord } from './repos/tasks';
+import type {
+  AdminJobSummary,
+  AdminOverview,
+  AdminTimelineEvent,
+  AdminUserSummary,
+  AnalyticsEventInput,
+} from './repos/admin';
 
 export type DataStoreDriver = 'sqlite' | 'postgres';
 
@@ -383,4 +396,16 @@ export interface DataStore {
   recordAudit(input: AuditEventInput): Promise<AuditEventRecord>;
   listAudit(workspaceId: string, limit?: number): Promise<AuditEventRecord[]>;
   findAuditByErrorRef(errorRef: string): Promise<AuditEventRecord | null>;
+
+  // --- first-party analytics and read-only administration ---------------------
+  recordAnalyticsEvent(input: AnalyticsEventInput): Promise<void>;
+  getAdminOverview(now: string): Promise<AdminOverview>;
+  listAdminUsers(limit?: number): Promise<AdminUserSummary[]>;
+  listAdminJobs(limit?: number): Promise<AdminJobSummary[]>;
+  listAdminUserTimeline(userId: string, limit?: number): Promise<AdminTimelineEvent[]>;
+  retryAdminTask(taskId: string, now: string): Promise<boolean>;
+  maintainAnalytics(
+    now: string,
+    rawBefore: string,
+  ): Promise<{ eventsPurged: number; sessionsPurged: number }>;
 }

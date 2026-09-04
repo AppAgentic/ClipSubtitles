@@ -16,3 +16,4 @@ export * from './repos/idempotency';
 export * from './repos/exports';
 export * from './repos/audit';
 export * from './repos/billing';
+export * from './repos/admin';

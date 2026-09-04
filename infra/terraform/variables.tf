@@ -170,3 +170,9 @@ variable "alert_notification_channel_ids" {
   type        = list(string)
   default     = []
 }
+
+variable "admin_emails" {
+  description = "Comma-separated human administrators allowed to use the private read-only operations API."
+  type        = string
+  default     = "joe@appagentic.dev"
+}

@@ -43,6 +43,7 @@ export const MeSchema = z
     workspace: WorkspaceSchema,
     scopes: z.array(ScopeSchema),
     authKind: AuthKindSchema,
+    isAdmin: z.boolean(),
     credits: CreditBalanceSchema,
   })
   .meta({ id: 'Me' });
