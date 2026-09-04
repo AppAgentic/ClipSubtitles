@@ -24,3 +24,5 @@ asks before spending credits. **Not submitted.**
 - Never suggest the assistant can post the result anywhere; downloads only.
 - Prompts that edit text name the exact word: edits are explicit per-word
   operations, never "clean up the transcript".
+
+Use `open_caption_progress` once when presenting a live task card. It refreshes itself and shows the completed preview or the next editing action. Keep subsequent agent checks on the data-only `get_caption_task` tool to avoid duplicate progress cards.

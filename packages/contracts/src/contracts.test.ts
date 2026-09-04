@@ -59,7 +59,13 @@ describe('billing catalog', () => {
     expect(
       BILLING_CATALOG.plans.flatMap((plan) =>
         'annualSku' in plan
-          ? [{ id: plan.id, annualPriceCents: plan.annualPriceCents, annualCredits: plan.annualCredits }]
+          ? [
+              {
+                id: plan.id,
+                annualPriceCents: plan.annualPriceCents,
+                annualCredits: plan.annualCredits,
+              },
+            ]
           : [],
       ),
     ).toEqual([
@@ -191,7 +197,7 @@ describe('request schemas are strict and bounded', () => {
 describe('MCP registry', () => {
   it('exposes exactly the twelve contracted tools with annotations and scopes', () => {
     expect(MCP_TOOLS.map((t) => t.name)).toEqual([...MCP_TOOL_NAMES]);
-    expect(MCP_TOOLS).toHaveLength(12);
+    expect(MCP_TOOLS).toHaveLength(13);
     for (const tool of MCP_TOOLS) {
       expect(tool.description.length).toBeGreaterThan(40);
       expect(tool.annotations.title.length).toBeGreaterThan(0);

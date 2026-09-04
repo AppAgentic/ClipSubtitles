@@ -223,6 +223,12 @@ export const TOOL_HANDLERS: Handlers = {
     return { task: view.task, ...(view.exports ? { exports: view.exports } : {}) };
   },
 
+  async open_caption_progress(ctx, principal, raw) {
+    const input = MCP_TOOLS[12].inputSchema.parse(raw);
+    const view = await getTaskView(ctx, principal, input.taskId);
+    return { task: view.task, ...(view.exports ? { exports: view.exports } : {}) };
+  },
+
   async cancel_caption_task(ctx, principal, raw) {
     const input = MCP_TOOLS[7].inputSchema.parse(raw);
     return { task: await cancelTask(ctx, principal, input.taskId) };
@@ -303,6 +309,7 @@ function summarize(name: McpToolName, output: unknown): string {
         : `Render started (task ${(o.task as { id: string }).id}); ${q.creditCost} credits reserved.`;
     }
     case 'get_caption_task':
+    case 'open_caption_progress':
     case 'cancel_caption_task': {
       const t = o.task as { id: string; status: string; progress: number; stage?: string };
       return `Task ${t.id}: ${t.status} ${t.progress}%${t.stage ? ` (${t.stage})` : ''}.`;
@@ -341,6 +348,7 @@ export function createMcpServer(ctx: AppContext, principal: Principal): McpServe
         _meta: {
           'clipsubtitles/scope': tool.scope,
           'clipsubtitles/cost': tool.cost,
+          'openai/widgetAccessible': true,
           ui: {
             visibility: ['model', 'app'],
             ...(resourceUri ? { resourceUri } : {}),
@@ -348,7 +356,6 @@ export function createMcpServer(ctx: AppContext, principal: Principal): McpServe
           ...(resourceUri
             ? {
                 'openai/outputTemplate': resourceUri,
-                'openai/widgetAccessible': true,
               }
             : {}),
           ...(tool.name === 'create_caption_project' ? { 'openai/fileParams': ['file'] } : {}),
@@ -409,7 +416,8 @@ export function createMcpServer(ctx: AppContext, principal: Principal): McpServe
 export function llmInstructions(ctx: AppContext): string {
   return [
     'ClipSubtitles turns a short video into accurate, editable, styled captions and rendered exports.',
-    'Workflow: open_caption_start (when visual file selection helps) -> create_caption_project -> generate_captions -> get_caption_project -> (show_caption_style_picker or open_caption_editor) -> update_caption_project -> render_caption_preview (free) -> render_caption_export (quote, then explicit approval) -> get_caption_task.',
+    'Workflow: open_caption_start (when visual file selection helps) -> create_caption_project -> generate_captions -> open_caption_editor (immediately show video and caption styles together) -> update_caption_project -> render_caption_preview (free) -> render_caption_export (quote, then explicit approval) -> get_caption_task.',
+    'Open open_caption_progress once to show a live task card; use get_caption_task for data-only checks thereafter. The card polls automatically. Avoid repeated progress presentation calls.',
     'Never rewrite spoken words yourself; use explicit per-word edit ops only when the user asks.',
     'Paid renders: always show the quote (credits, outputs, project version, expiry) and get explicit approval before passing approval.',
     CONTENT_NOTICE,
@@ -425,7 +433,7 @@ function toolResourceUri(name: McpToolName): string | undefined {
       return UI_RESOURCES.styles;
     case 'render_caption_export':
       return UI_RESOURCES.approval;
-    case 'get_caption_task':
+    case 'open_caption_progress':
       return UI_RESOURCES.progress;
     case 'open_caption_editor':
       return UI_RESOURCES.editor;
@@ -441,6 +449,7 @@ function invocationLabel(name: McpToolName, active: boolean): string {
     open_caption_editor: ['Opening caption editor…', 'Caption editor ready'],
     render_caption_export: ['Preparing export…', 'Export details ready'],
     get_caption_task: ['Checking progress…', 'Progress updated'],
+    open_caption_progress: ['Opening progress…', 'Live progress ready'],
   };
   const pair = labels[name] ?? ['Working…', 'Done'];
   return pair[active ? 0 : 1];

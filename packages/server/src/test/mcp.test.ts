@@ -73,7 +73,7 @@ describe('MCP conformance', () => {
     expect(meta.authorization_servers.length).toBe(1);
   });
 
-  it('lists exactly the twelve contracted tools with annotations, schemas, and UI metadata', async () => {
+  it('lists exactly the thirteen contracted tools with annotations, schemas, and UI metadata', async () => {
     const client = await connect(await h.token());
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual([...MCP_TOOL_NAMES].sort());
@@ -93,6 +93,12 @@ describe('MCP conformance', () => {
     const start = tools.find((t) => t.name === 'open_caption_start')!;
     expect(start._meta?.['openai/outputTemplate']).toBe('ui://clipsubtitles/start-v1.html');
     expect((start._meta?.ui as { visibility?: string[] }).visibility).toEqual(['model', 'app']);
+    const progress = tools.find((t) => t.name === 'open_caption_progress')!;
+    const poll = tools.find((t) => t.name === 'get_caption_task')!;
+    expect(progress._meta?.['openai/outputTemplate']).toBe('ui://clipsubtitles/progress-v1.html');
+    expect(poll._meta?.['openai/outputTemplate']).toBeUndefined();
+    expect(poll._meta?.['openai/widgetAccessible']).toBe(true);
+    expect((poll._meta?.ui as { resourceUri?: string }).resourceUri).toBeUndefined();
     await client.close();
   });
 
@@ -259,6 +265,11 @@ describe('MCP conformance', () => {
     }>(await client.callTool({ name: 'get_caption_task', arguments: { taskId: preview.task.id } }));
     expect(previewDone.task.status).toBe('succeeded');
     expect(previewDone.exports?.[0]?.kind).toBe('preview');
+    const progressCard = structured<{ task: Task; exports?: Array<{ kind: string }> }>(
+      await client.callTool({ name: 'open_caption_progress', arguments: { taskId: preview.task.id } }),
+    );
+    expect(progressCard.task).toEqual(previewDone.task);
+    expect(progressCard.exports?.[0]?.kind).toBe('preview');
 
     const quoted = structured<{
       status: string;
@@ -283,10 +294,21 @@ describe('MCP conformance', () => {
     expect(quoted.approvalInstructions).toContain(String(quoted.quote.creditCost));
 
     const rawDb = (h.ctx.db as SqliteStore).raw;
-    const workspaceId = (await h.ctx.db.ensureUserWorkspace({ subject: 'mock|joe', now: h.clock.iso(), initialCredits: 10 })).workspace.id;
-    rawDb.prepare('UPDATE credit_accounts SET available = 0 WHERE workspace_id = ?').run(workspaceId);
+    const workspaceId = (
+      await h.ctx.db.ensureUserWorkspace({
+        subject: 'mock|joe',
+        now: h.clock.iso(),
+        initialCredits: 10,
+      })
+    ).workspace.id;
+    rawDb
+      .prepare('UPDATE credit_accounts SET available = 0 WHERE workspace_id = ?')
+      .run(workspaceId);
     rawDb.prepare('UPDATE credit_pools SET available = 0 WHERE workspace_id = ?').run(workspaceId);
-    const needsCheckout = structured<{ status: string; checkout: { shortfall: number; pricingUrl: string; quoteId: string } }>(
+    const needsCheckout = structured<{
+      status: string;
+      checkout: { shortfall: number; pricingUrl: string; quoteId: string };
+    }>(
       await client.callTool({
         name: 'render_caption_export',
         arguments: {
@@ -297,9 +319,14 @@ describe('MCP conformance', () => {
       }),
     );
     expect(needsCheckout.status).toBe('checkout_required');
-    expect(needsCheckout.checkout).toMatchObject({ quoteId: quoted.quote.id, shortfall: quoted.quote.creditCost });
+    expect(needsCheckout.checkout).toMatchObject({
+      quoteId: quoted.quote.id,
+      shortfall: quoted.quote.creditCost,
+    });
     expect(needsCheckout.checkout.pricingUrl).toContain('/pricing?source=agent');
-    rawDb.prepare('UPDATE credit_accounts SET available = 10 WHERE workspace_id = ?').run(workspaceId);
+    rawDb
+      .prepare('UPDATE credit_accounts SET available = 10 WHERE workspace_id = ?')
+      .run(workspaceId);
     rawDb.prepare('UPDATE credit_pools SET available = 10 WHERE workspace_id = ?').run(workspaceId);
 
     const wrong = await client.callTool({

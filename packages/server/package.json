@@ -11,19 +11,20 @@
     }
   },
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json",
+    "typecheck": "node build-widget.mjs && tsc -p tsconfig.json",
     "build": "node build.mjs",
-    "test": "vitest run",
-    "dev:api": "NODE_OPTIONS=--no-warnings=ExperimentalWarning tsx watch src/bin/api.ts",
-    "dev:worker": "NODE_OPTIONS=--no-warnings=ExperimentalWarning tsx watch src/bin/worker.ts",
-    "dev:token": "NODE_OPTIONS=--no-warnings=ExperimentalWarning tsx src/bin/dev-token.ts",
+    "test": "node build-widget.mjs && vitest run",
+    "dev:api": "node build-widget.mjs && NODE_OPTIONS=--no-warnings=ExperimentalWarning tsx watch src/bin/api.ts",
+    "dev:worker": "node build-widget.mjs && NODE_OPTIONS=--no-warnings=ExperimentalWarning tsx watch src/bin/worker.ts",
+    "dev:token": "node build-widget.mjs && NODE_OPTIONS=--no-warnings=ExperimentalWarning tsx src/bin/dev-token.ts",
     "start:api": "node --no-warnings=ExperimentalWarning dist/api.js",
     "start:worker": "node --no-warnings=ExperimentalWarning dist/worker.js",
     "start:worker-push": "node --no-warnings=ExperimentalWarning dist/worker-push.js",
-    "openapi:emit": "NODE_OPTIONS=--no-warnings=ExperimentalWarning tsx src/bin/openapi-emit.ts",
-    "mcp:conformance": "NODE_OPTIONS=--no-warnings=ExperimentalWarning tsx src/bin/mcp-conformance.ts",
-    "smoke:e2e": "NODE_OPTIONS=--no-warnings=ExperimentalWarning tsx src/bin/smoke-e2e.ts",
-    "whop:catalog": "NODE_OPTIONS=--no-warnings=ExperimentalWarning tsx src/bin/whop-catalog.ts"
+    "openapi:emit": "node build-widget.mjs && NODE_OPTIONS=--no-warnings=ExperimentalWarning tsx src/bin/openapi-emit.ts",
+    "mcp:conformance": "node build-widget.mjs && NODE_OPTIONS=--no-warnings=ExperimentalWarning tsx src/bin/mcp-conformance.ts",
+    "smoke:e2e": "node build-widget.mjs && NODE_OPTIONS=--no-warnings=ExperimentalWarning tsx src/bin/smoke-e2e.ts",
+    "whop:catalog": "NODE_OPTIONS=--no-warnings=ExperimentalWarning tsx src/bin/whop-catalog.ts",
+    "build:widget": "node build-widget.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1121.0",

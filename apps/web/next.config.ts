@@ -30,6 +30,12 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        // Caption widgets live on the host's isolated origin. These public,
+        // bundled fonts carry no account data and must load through FontFace.
+        source: '/fonts/:path*',
+        headers: [{ key: 'Access-Control-Allow-Origin', value: '*' }],
+      },
+      {
         // Deployment-owned static media can be served stale while Cloud CDN
         // refreshes it, preventing a transient web-revision error from leaving
         // the landing page with a broken proof video.

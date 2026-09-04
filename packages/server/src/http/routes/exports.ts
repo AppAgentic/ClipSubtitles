@@ -29,6 +29,8 @@ const SignedQuery = z.object({
   ws: z.string().max(64),
   sig: z.string().max(128),
   download: z.enum(['1', '0']).optional(),
+  // Inline host widgets cannot follow media redirects outside their resource origins.
+  stream: z.enum(['1', '0']).optional(),
 });
 
 function checkSignature(
@@ -125,7 +127,7 @@ export function registerExportRoutes(api: Api, ctx: AppContext): void {
       const e = await ctx.db.getExport(q.ws, exportId);
       if (!e) throw new ApiError('NOT_FOUND');
       if (e.status === 'purged') throw new ApiError('RETENTION_EXPIRED');
-      if (ctx.store.signedDownloadUrl) {
+      if (q.stream !== '1' && ctx.store.signedDownloadUrl) {
         const url = await ctx.store.signedDownloadUrl(e.storageKey, {
           expiresSeconds: Math.max(30, q.exp - Math.floor(ctx.clock.now() / 1000)),
           fileName: e.fileName,
@@ -141,6 +143,7 @@ export function registerExportRoutes(api: Api, ctx: AppContext): void {
         fileName: e.fileName,
         download: q.download === '1',
         rangeHeader: c.req.header('range'),
+        head: c.req.method === 'HEAD',
       });
     },
   );
@@ -166,7 +169,7 @@ export function registerExportRoutes(api: Api, ctx: AppContext): void {
       const asset = await ctx.db.getAssetById(assetId);
       if (!asset || asset.workspaceId !== q.ws) throw new ApiError('NOT_FOUND');
       if (asset.status === 'purged' || !asset.storageKey) throw new ApiError('RETENTION_EXPIRED');
-      if (ctx.store.signedDownloadUrl) {
+      if (q.stream !== '1' && ctx.store.signedDownloadUrl) {
         const url = await ctx.store.signedDownloadUrl(asset.storageKey, {
           expiresSeconds: Math.max(30, q.exp - Math.floor(ctx.clock.now() / 1000)),
           ...(asset.fileName ? { fileName: asset.fileName } : {}),
@@ -180,6 +183,7 @@ export function registerExportRoutes(api: Api, ctx: AppContext): void {
         key: asset.storageKey,
         mimeType: asset.mimeType ?? 'video/mp4',
         rangeHeader: c.req.header('range'),
+        head: c.req.method === 'HEAD',
       });
     },
   );

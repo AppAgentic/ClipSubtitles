@@ -31,6 +31,9 @@
     },
     {
       "name": "Billing"
+    },
+    {
+      "name": "Admin"
     }
   ],
   "components": {
@@ -39,7 +42,7 @@
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "JWT",
-        "description": "OAuth 2.1 access token issued by WorkOS/AuthKit (scopes: captions:read, captions:write)."
+        "description": "OAuth 2.1 access token issued by WorkOS/AuthKit. Standard OIDC scopes establish the connection; ClipSubtitles enforces tool permissions and paid-render approval inside the application."
       },
       "cookieAuth": {
         "type": "apiKey",
@@ -3127,6 +3130,9 @@
               "bearer"
             ]
           },
+          "isAdmin": {
+            "type": "boolean"
+          },
           "credits": {
             "$ref": "#/components/schemas/CreditBalance"
           }
@@ -3136,6 +3142,7 @@
           "workspace",
           "scopes",
           "authKind",
+          "isAdmin",
           "credits"
         ]
       },
@@ -5622,6 +5629,18 @@
             "required": false,
             "name": "download",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "0",
+                "1"
+              ]
+            },
+            "required": false,
+            "name": "stream",
+            "in": "query"
           }
         ],
         "responses": {
@@ -5762,6 +5781,18 @@
             "required": false,
             "name": "download",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "0",
+                "1"
+              ]
+            },
+            "required": false,
+            "name": "stream",
+            "in": "query"
           }
         ],
         "responses": {
@@ -5900,6 +5931,18 @@
             },
             "required": false,
             "name": "download",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "0",
+                "1"
+              ]
+            },
+            "required": false,
+            "name": "stream",
             "in": "query"
           }
         ],
@@ -6118,7 +6161,7 @@
         "tags": [
           "Account"
         ],
-        "summary": "Update workspace name and retention windows",
+        "summary": "Update workspace name",
         "security": [
           {
             "bearerAuth": []
@@ -6139,21 +6182,6 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 120
-                  },
-                  "retention": {
-                    "type": "object",
-                    "properties": {
-                      "sourceDays": {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 365
-                      },
-                      "exportDays": {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 90
-                      }
-                    }
                   }
                 },
                 "additionalProperties": false
@@ -7073,6 +7101,105 @@
                   "resume": {
                     "type": "string",
                     "maxLength": 500
+                  },
+                  "attribution": {
+                    "type": "object",
+                    "properties": {
+                      "sessionId": {
+                        "type": "string",
+                        "minLength": 8,
+                        "maxLength": 100
+                      },
+                      "capturedAt": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      },
+                      "appreferClickId": {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      "fbclid": {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      "fbp": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "fbc": {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      "campaignId": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "campaignName": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "adsetId": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "adsetName": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "adId": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "adName": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "creativeId": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "placement": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "siteSourceName": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "utmSource": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "utmMedium": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "utmCampaign": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "utmContent": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "utmTerm": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "landingUrl": {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      "referrer": {
+                        "type": "string",
+                        "maxLength": 500
+                      }
+                    },
+                    "required": [
+                      "sessionId",
+                      "capturedAt"
+                    ],
+                    "additionalProperties": false
                   }
                 },
                 "required": [
@@ -7306,6 +7433,1233 @@
           },
           "503": {
             "description": "PROVIDER_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/overview": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Read-only product, funnel, health and cost overview",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin overview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "generatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "totals": {
+                      "type": "object",
+                      "properties": {
+                        "users": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "activatedUsers": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "projects": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "uploadedVideos": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "transcribedVideos": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "previews": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "exports": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "purchases": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "users",
+                        "activatedUsers",
+                        "projects",
+                        "uploadedVideos",
+                        "transcribedVideos",
+                        "previews",
+                        "exports",
+                        "purchases"
+                      ]
+                    },
+                    "jobs": {
+                      "type": "object",
+                      "properties": {
+                        "queued": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "running": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "succeeded": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "failed": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "oldestQueuedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "queued",
+                        "running",
+                        "succeeded",
+                        "failed"
+                      ]
+                    },
+                    "funnel": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "event": {
+                            "type": "string"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "event",
+                          "count"
+                        ]
+                      }
+                    },
+                    "sources": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "source": {
+                            "type": "string"
+                          },
+                          "sessions": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "registrations": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "source",
+                          "sessions",
+                          "registrations"
+                        ]
+                      }
+                    },
+                    "costs": {
+                      "type": "object",
+                      "properties": {
+                        "transcriptionMinutes": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "estimatedTranscriptionUsd": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "storedBytes": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "transcriptionMinutes",
+                        "estimatedTranscriptionUsd",
+                        "storedBytes"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "generatedAt",
+                    "totals",
+                    "jobs",
+                    "funnel",
+                    "sources",
+                    "costs"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/users": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Recent users with masked identity and activation counts",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin users",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "users": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "emailMasked": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "projects": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "transcriptions": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "exports": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "source": {
+                            "type": "string"
+                          },
+                          "lastActivityAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "createdAt",
+                          "projects",
+                          "transcriptions",
+                          "exports"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "users"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/jobs": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Recent processing jobs and bounded failure codes",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin jobs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "jobs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "progress": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "stage": {
+                            "type": "string"
+                          },
+                          "attempts": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "startedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "finishedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "errorCode": {
+                            "type": "string"
+                          },
+                          "userEmailMasked": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "kind",
+                          "status",
+                          "progress",
+                          "attempts",
+                          "createdAt"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "jobs"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/users/{userId}/timeline": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Privacy-safe lifecycle timeline for one user",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 100
+            },
+            "required": true,
+            "name": "userId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User timeline",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "event": {
+                            "type": "string"
+                          },
+                          "surface": {
+                            "type": "string"
+                          },
+                          "occurredAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "projectId": {
+                            "type": "string"
+                          },
+                          "taskId": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "event",
+                          "surface",
+                          "occurredAt"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "events"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/funnel": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "All-source acquisition and conversion funnel",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin funnel",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "funnel": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "event": {
+                            "type": "string"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "event",
+                          "count"
+                        ]
+                      }
+                    },
+                    "sources": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "source": {
+                            "type": "string"
+                          },
+                          "sessions": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "registrations": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "source",
+                          "sessions",
+                          "registrations"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "funnel",
+                    "sources"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/system-health": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Queue and processing health",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "System health",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "generatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "jobs": {
+                      "type": "object",
+                      "properties": {
+                        "queued": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "running": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "succeeded": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "failed": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "oldestQueuedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "queued",
+                        "running",
+                        "succeeded",
+                        "failed"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "generatedAt",
+                    "jobs"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/costs": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Estimated transcription and storage cost inputs",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cost overview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "generatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "costs": {
+                      "type": "object",
+                      "properties": {
+                        "transcriptionMinutes": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "estimatedTranscriptionUsd": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "storedBytes": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "transcriptionMinutes",
+                        "estimatedTranscriptionUsd",
+                        "storedBytes"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "generatedAt",
+                    "costs"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/jobs/{taskId}/retry": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Retry one eligible failed non-billable task",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 100
+            },
+            "required": true,
+            "name": "taskId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Request body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "confirm": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  }
+                },
+                "required": [
+                  "confirm"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Task requeued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "queued": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "queued"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHENTICATED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL",
             "content": {
               "application/json": {
                 "schema": {

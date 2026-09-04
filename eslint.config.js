@@ -12,6 +12,7 @@ export default tseslint.config(
       '**/coverage/**',
       '**/.data/**',
       'fixtures/generated/**',
+      'packages/server/src/mcp/generated/**',
       '**/next-env.d.ts',
     ],
   },

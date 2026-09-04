@@ -31,9 +31,9 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
+    "test": "node packages/server/build-widget.mjs && vitest run",
+    "test:watch": "node packages/server/build-widget.mjs && vitest",
+    "test:coverage": "node packages/server/build-widget.mjs && vitest run --coverage",
     "fixtures:build": "pnpm --filter @clipsubtitles/transcription fixtures:build",
     "benchmark": "pnpm --filter @clipsubtitles/transcription benchmark",
     "benchmark:motion": "pnpm --filter @clipsubtitles/render-remotion benchmark:motion",
@@ -44,7 +44,8 @@
     "whop:catalog": "pnpm --filter @clipsubtitles/server whop:catalog",
     "release:gate": "bash scripts/paid-traffic-gate.sh",
     "openapi:emit": "pnpm --filter @clipsubtitles/server openapi:emit",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "postinstall": "test ! -f packages/server/build-widget.mjs || node packages/server/build-widget.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
