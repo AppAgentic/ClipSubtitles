@@ -51,6 +51,11 @@ export class TokenVerificationError extends Error {
   }
 }
 
+/** WorkOS Connect publishes its signing keys on the configured AuthKit domain. */
+export function workOSConnectJwksUrl(issuer: string): string {
+  return `${issuer.replace(/\/$/, '')}/oauth2/jwks`;
+}
+
 function claimsToVerified(payload: JWTPayload): VerifiedToken {
   const clientId =
     (typeof payload.client_id === 'string' && payload.client_id) ||

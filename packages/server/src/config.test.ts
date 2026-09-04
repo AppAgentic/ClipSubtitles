@@ -105,4 +105,15 @@ describe('production transcription configuration', () => {
     });
     expect(config.transcription.providers).toEqual(['elevenlabs', 'gemini']);
   });
+
+  it('rejects a User Management issuer where the Connect/AuthKit domain is required', () => {
+    expect(() =>
+      loadConfig({
+        ...productionBase,
+        WORKOS_AUTHKIT_ISSUER:
+          'https://api.workos.com/user_management/client_example',
+        TRANSCRIPTION_PROVIDERS: 'elevenlabs,gemini',
+      }),
+    ).toThrowError('must be the HTTPS WorkOS Connect/AuthKit domain root');
+  });
 });
