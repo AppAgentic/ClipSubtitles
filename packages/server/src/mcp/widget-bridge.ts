@@ -1,6 +1,6 @@
 /** Inline, dependency-free host adapter. Keep both MCP Apps and ChatGPT delivery asynchronous. */
 export const WIDGET_BRIDGE = String.raw`
-let output=null,input=null,displayMode='inline';
+let output=null,input=null,displayMode='inline',lastOpenAiToolOutput=null;
 let bridgeState={},bridgeDisposed=false,bridgeId=1,bridgeReady=false;
 const bridgePending=new Map();
 function normalizeToolResult(result){
@@ -85,7 +85,7 @@ function receiveSafeArea(context){
 }
 function receiveHostContext(context){if(!context)return;receiveSafeArea(context);if(context.displayMode)displayMode=context.displayMode;document.documentElement.dataset.displayMode=displayMode;if(context.theme==='light'||context.theme==='dark')document.documentElement.style.colorScheme=context.theme;if(typeof onHostContextChanged==='function')onHostContextChanged(context)}
 function receiveToolData(value){try{const data=normalizeToolResult(value);if((data.upload||data.status==='already_uploaded')&&data.project)return;if(Object.keys(data).length&&data!==output)render(data)}catch(error){showError(error)}}
-function receiveOpenAiGlobals(globals){if(!globals)return;if(globals.widgetState)bridgeState=globals.widgetState;if(globals.toolInput)input=globals.toolInput;receiveHostContext(globals);if(globals.toolOutput)receiveToolData(globals.toolOutput)}
+function receiveOpenAiGlobals(globals){if(!globals)return;if(globals.widgetState)bridgeState=globals.widgetState;if(globals.toolInput)input=globals.toolInput;receiveHostContext(globals);if(globals.toolOutput){const key=JSON.stringify(globals.toolOutput);if(key!==lastOpenAiToolOutput){lastOpenAiToolOutput=key;receiveToolData(globals.toolOutput)}}}
 function disposeBridge(){bridgeDisposed=true;if(typeof stopPolling==='function')stopPolling();if(typeof stopApprovalTimer==='function')stopApprovalTimer();if(typeof disposeWorkspace==='function')disposeWorkspace();bridgePending.forEach(function(entry){clearTimeout(entry.timer);entry.reject(new Error('This view has closed.'))});bridgePending.clear()}
 function initializeBridge(){
   window.addEventListener('openai:set_globals',function(event){receiveOpenAiGlobals(event.detail&&event.detail.globals||window.openai)});

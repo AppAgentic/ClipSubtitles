@@ -136,6 +136,14 @@ const task = {
 };
 
 describe('widget host lifecycle and task recovery', () => {
+  it('does not replay the original host output over a locally advanced view on a globals echo', () => {
+    const h = harness({ task });
+    const next = { ...task, id: 'task_new', progress: 70 };
+    vm.runInContext(`render(${JSON.stringify({ task: next })})`, h.context);
+    h.listeners.get('openai:set_globals')!({ detail: { globals: { toolOutput: JSON.parse(JSON.stringify({ task })), widgetState: { projectId: 'project_test' }, safeArea: { insets: { bottom: 96 } } } } });
+    expect(vm.runInContext('output.task.id', h.context)).toBe('task_new');
+    expect(h.cssProperties.get('--host-safe-bottom')).toBe('96px');
+  });
   it('keeps private upload metadata outside rendered tool output and widget state', async () => {
     const target = {
       projectId: 'proj_1',

@@ -48,7 +48,7 @@ describe('widget start and export approval', () => {
     expect(h.preparePrivateUpload.mock.calls[0]?.[0].title).toBe('Holiday.video');
     expect(h.fetch).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ method: 'PUT', credentials: 'omit', redirect: 'error', body: nativeFile }));
     expect(h.callTool).toHaveBeenCalledWith('generate_captions', { projectId: 'proj_1', idempotencyKey: 'widget-upload:upload-1:captions' });
-    expect(h.render).toHaveBeenCalledWith({ task: { id: 'task_1' } });
+    expect(h.render).toHaveBeenCalledWith({ task: { id: 'task_1', projectId: 'proj_1', kind: 'generate_captions' } });
     expect(h.followUp).not.toHaveBeenCalled();
   });
   it('rejects oversized files before creating a project', async () => {
