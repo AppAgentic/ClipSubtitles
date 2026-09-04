@@ -1,5 +1,6 @@
 import { expect, test, type Page, type Response } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
+import { MeSchema } from '@clipsubtitles/contracts';
 
 const SHOT_DIR = process.env.E2E_SHOT_DIR ?? 'e2e/.results/shots';
 
@@ -33,9 +34,16 @@ async function signIn(page: Page): Promise<void> {
     await page.goto('/auth/login?returnTo=/app');
     await expect(page.getByRole('heading', { name: 'Choose a local identity' })).toBeVisible();
     await page.getByRole('button', { name: /Joe \(mock\)/ }).click();
-    await expect(
-      page.getByRole('heading', { name: /Good (morning|afternoon|evening), Joe\./ }),
-    ).toBeVisible();
+    await expect(page).toHaveURL(/\/app$/);
+    await expect(page.getByRole('navigation', { name: 'Workspace' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
+    // A fresh workspace shows onboarding, while returning users see a greeting.
+    // Verify the cookie-backed identity independently of project-dependent home copy.
+    const identity = await page.request.get('/v1/me');
+    expect(identity.status()).toBe(200);
+    const me = MeSchema.parse(await identity.json());
+    expect(me.authKind).toBe('session');
+    expect(me.user.displayName).toBe('Joe (mock)');
   } catch (error) {
     // Paths/statuses distinguish callback, session and page-load failures without cookies or query values.
     const diagnostics = test.info().outputPath('sign-in-network.json');
