@@ -35,8 +35,17 @@ function notifyHeight(){requestAnimationFrame(function(){if(bridgeDisposed)retur
 function getWidgetState(){return bridgeState}
 function setWidgetState(next){bridgeState=Object.assign({},bridgeState,next);if(window.openai&&window.openai.setWidgetState)Promise.resolve(window.openai.setWidgetState(bridgeState)).catch(function(){});return bridgeState}
 async function requestDisplayMode(mode){const host=window.openai;const result=await(host&&host.requestDisplayMode?host.requestDisplayMode({mode:mode}):bridgeRequest('ui/request-display-mode',{mode:mode}));displayMode=result&&result.mode||mode;document.documentElement.dataset.displayMode=displayMode;notifyHeight();return result}
-function receiveHostContext(context){if(!context)return;if(context.displayMode)displayMode=context.displayMode;document.documentElement.dataset.displayMode=displayMode;if(context.theme==='light'||context.theme==='dark')document.documentElement.style.colorScheme=context.theme;if(typeof onHostContextChanged==='function')onHostContextChanged(context)}
-function receiveToolData(value){try{const data=normalizeToolResult(value);if(Object.keys(data).length)render(data)}catch(error){showError(error)}}
+function receiveSafeArea(context){
+  const insets=context.safeAreaInsets||(context.safeArea&&context.safeArea.insets);
+  if(!insets||typeof insets!=='object'||Array.isArray(insets))return;
+  ['top','right','bottom','left'].forEach(function(edge){
+    if(!Object.prototype.hasOwnProperty.call(insets,edge))return;
+    const value=insets[edge];const pixels=typeof value==='number'&&Number.isFinite(value)?Math.min(2048,Math.max(0,value)):0;
+    document.documentElement.style.setProperty('--host-safe-'+edge,pixels+'px');
+  });
+}
+function receiveHostContext(context){if(!context)return;receiveSafeArea(context);if(context.displayMode)displayMode=context.displayMode;document.documentElement.dataset.displayMode=displayMode;if(context.theme==='light'||context.theme==='dark')document.documentElement.style.colorScheme=context.theme;if(typeof onHostContextChanged==='function')onHostContextChanged(context)}
+function receiveToolData(value){try{const data=normalizeToolResult(value);if(Object.keys(data).length&&data!==output)render(data)}catch(error){showError(error)}}
 function receiveOpenAiGlobals(globals){if(!globals)return;if(globals.widgetState)bridgeState=globals.widgetState;if(globals.toolInput)input=globals.toolInput;receiveHostContext(globals);if(globals.toolOutput)receiveToolData(globals.toolOutput)}
 function disposeBridge(){bridgeDisposed=true;if(typeof stopPolling==='function')stopPolling();if(typeof stopApprovalTimer==='function')stopApprovalTimer();if(typeof disposeWorkspace==='function')disposeWorkspace();bridgePending.forEach(function(entry){clearTimeout(entry.timer);entry.reject(new Error('This view has closed.'))});bridgePending.clear()}
 function initializeBridge(){

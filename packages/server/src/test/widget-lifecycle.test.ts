@@ -30,6 +30,7 @@ function harness(initial?: object, responses: unknown[] = []) {
   const posts: { id: number; method: string }[] = [];
   const calls: string[] = [];
   const errors: string[] = [];
+  const cssProperties = new Map<string, string>();
   let nextTimer = 1;
   const openai = {
     toolOutput: initial,
@@ -57,7 +58,15 @@ function harness(initial?: object, responses: unknown[] = []) {
     document: {
       getElementById: node,
       createElement: element,
-      documentElement: { dataset: {}, style: {}, scrollHeight: 100 },
+      documentElement: {
+        dataset: {},
+        style: {
+          setProperty(name: string, value: string) {
+            cssProperties.set(name, value);
+          },
+        },
+        scrollHeight: 100,
+      },
     },
     setTimeout(fn: () => Promise<void> | void) {
       const id = nextTimer++;
@@ -91,6 +100,7 @@ function harness(initial?: object, responses: unknown[] = []) {
     calls,
     errors,
     context,
+    cssProperties,
     async tick() {
       const entry = timers.entries().next().value;
       if (entry) {
@@ -112,6 +122,47 @@ const task = {
 };
 
 describe('widget host lifecycle and task recovery', () => {
+  it('consumes MCP safe-area insets at initialization and preserves edges during partial updates', async () => {
+    const h = harness();
+    h.message({
+      id: h.posts[0]!.id,
+      result: { hostContext: { safeAreaInsets: { top: 20, right: 8, bottom: 180, left: 6 } } },
+    });
+    await Promise.resolve();
+    expect(Object.fromEntries(h.cssProperties)).toEqual({
+      '--host-safe-top': '20px',
+      '--host-safe-right': '8px',
+      '--host-safe-bottom': '180px',
+      '--host-safe-left': '6px',
+    });
+    h.message({
+      method: 'ui/notifications/host-context-changed',
+      params: { safeAreaInsets: { bottom: 240 } },
+    });
+    expect(h.cssProperties.get('--host-safe-bottom')).toBe('240px');
+    expect(h.cssProperties.get('--host-safe-top')).toBe('20px');
+    h.message({ method: 'ui/notifications/host-context-changed', params: { theme: 'dark' } });
+    expect(h.cssProperties.get('--host-safe-bottom')).toBe('240px');
+  });
+  it('normalizes OpenAI insets to finite bounded nonnegative pixel values', () => {
+    const h = harness({ task });
+    h.listeners.get('openai:set_globals')!({
+      detail: {
+        globals: { safeArea: { insets: { top: Infinity, right: -3, bottom: 100000, left: '25' } } },
+      },
+    });
+    expect(Object.fromEntries(h.cssProperties)).toEqual({
+      '--host-safe-top': '0px',
+      '--host-safe-right': '0px',
+      '--host-safe-bottom': '2048px',
+      '--host-safe-left': '0px',
+    });
+    h.listeners.get('openai:set_globals')!({
+      detail: { globals: { safeArea: { insets: { bottom: NaN } } } },
+    });
+    expect(h.cssProperties.get('--host-safe-bottom')).toBe('0px');
+  });
+
   it('retains loading before output, accepts delayed OpenAI globals, and does not invent failure', () => {
     const h = harness();
     expect(h.node('content').innerHTML).toBe('');
