@@ -82,10 +82,17 @@ describe('auth boundaries', () => {
       resource: string;
       authorization_servers: string[];
       resource_documentation: string;
+      scopes_supported: string[];
     }>('GET', '/.well-known/oauth-protected-resource');
     expect(meta.status).toBe(200);
     expect(meta.body.resource).toContain('/api/mcp');
     expect(meta.body.resource_documentation).toBe('http://127.0.0.1:3100/developers');
+    expect(meta.body.scopes_supported).toEqual([
+      'openid',
+      'profile',
+      'email',
+      'offline_access',
+    ]);
   });
 
   it('derives identity and a personal workspace from the token, never from input', async () => {
