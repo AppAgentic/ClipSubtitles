@@ -8,15 +8,23 @@ import { readAttribution, trackPaidFunnelEvent } from '@/lib/attribution';
 
 const FEATURES: Record<string, string[]> = {
   free: ['A complete first captioned clip', 'Agent and API access', 'Caption styles and exports'],
-  creator: ['Agent and API access', 'Credits with a rollover grace period', 'Buy extra credits when needed'],
+  creator: [
+    'Agent and API access',
+    'Credits with a rollover grace period',
+    'Buy extra credits when needed',
+  ],
   pro: ['Agent and API access', 'Higher monthly capacity', 'More simultaneous renders'],
   studio: ['Agent and API access', 'Team controls', 'Highest included render capacity'],
 };
 
 export function PricingSection({ compact = false }: { compact?: boolean }) {
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('annual');
-  const [checkoutContext, setCheckoutContext] = useState<{ source: CheckoutSource; resume?: string }>({ source: 'web' });
+  const [checkoutContext, setCheckoutContext] = useState<{
+    source: CheckoutSource;
+    resume?: string;
+  }>({ source: 'web' });
   const [resumeSku, setResumeSku] = useState<BillingSku>();
+  const Heading = compact ? 'h1' : 'h2';
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -29,27 +37,46 @@ export function PricingSection({ compact = false }: { compact?: boolean }) {
   }, []);
 
   return (
-    <section id="pricing" className={`tg-pricing lo-wrap${compact ? ' is-compact' : ''}`} aria-labelledby="tg-pricing-title">
+    <section
+      id="pricing"
+      className={`tg-pricing lo-wrap${compact ? ' is-compact' : ''}`}
+      aria-labelledby="tg-pricing-title"
+    >
       <div className="tg-pricing-head">
         <div>
           <p className="lo-eyebrow tg-eyebrow">Simple pricing</p>
-          <h2 id="tg-pricing-title">Start free. Pay when captions become part of your workflow.</h2>
+          <Heading id="tg-pricing-title">
+            Start free. Pay when captions become part of your workflow.
+          </Heading>
         </div>
-        <p>No card for your first clip. Choose monthly flexibility or save up to 20% annually; add credits only when you need them.</p>
+        <p>
+          No card for your first clip. Choose monthly flexibility or save up to 20% annually; add
+          credits only when you need them.
+        </p>
       </div>
       <div className="tg-price-body">
         <div className="tg-billing-toggle" role="group" aria-label="Billing period">
-          <button type="button" aria-pressed={billingPeriod === 'monthly'} onClick={() => setBillingPeriod('monthly')}>
+          <button
+            type="button"
+            aria-pressed={billingPeriod === 'monthly'}
+            onClick={() => setBillingPeriod('monthly')}
+          >
             Monthly
           </button>
-          <button type="button" aria-pressed={billingPeriod === 'annual'} onClick={() => setBillingPeriod('annual')}>
+          <button
+            type="button"
+            aria-pressed={billingPeriod === 'annual'}
+            onClick={() => setBillingPeriod('annual')}
+          >
             Annual <span>Save up to 20%</span>
           </button>
         </div>
         <div className="tg-price-grid">
           {BILLING_CATALOG.plans.map((plan) => {
             const annual = billingPeriod === 'annual' && 'annualSku' in plan;
-            const priceCents = annual ? Math.round(plan.annualPriceCents / 12) : plan.monthlyPriceCents;
+            const priceCents = annual
+              ? Math.round(plan.annualPriceCents / 12)
+              : plan.monthlyPriceCents;
             const credits = annual ? plan.annualCredits : plan.monthlyCredits;
             return (
               <article key={plan.id} className={plan.id === 'pro' ? 'is-featured' : ''}>
@@ -67,10 +94,14 @@ export function PricingSection({ compact = false }: { compact?: boolean }) {
                       : `Includes ${credits.toLocaleString()} credits each month.`}
                 </p>
                 <ul>
-                  {FEATURES[plan.id]?.map((feature) => <li key={feature}>{feature}</li>)}
+                  {FEATURES[plan.id]?.map((feature) => (
+                    <li key={feature}>{feature}</li>
+                  ))}
                 </ul>
                 {plan.id === 'free' || !('sku' in plan) ? (
-                  <Link href="/sign-in?returnTo=/app/new" className="lo-btn tg-price-action">Try for $0</Link>
+                  <Link href="/sign-in?returnTo=/app/new" className="lo-btn tg-price-action">
+                    Try for $0
+                  </Link>
                 ) : (
                   <CheckoutButton
                     sku={annual ? plan.annualSku : plan.sku}
@@ -84,7 +115,10 @@ export function PricingSection({ compact = false }: { compact?: boolean }) {
           })}
         </div>
       </div>
-      <p className="tg-pricing-note">Credits are used for finished video renders. Previewing, editing, and subtitle files do not use credits.</p>
+      <p className="tg-pricing-note">
+        Credits are used for finished video renders. Previewing, editing, and subtitle files do not
+        use credits.
+      </p>
     </section>
   );
 }
@@ -111,40 +145,45 @@ function CheckoutButton({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const autoStarted = useRef(false);
-  const start = useCallback(async (resumingAfterSignIn = false) => {
-    setBusy(true);
-    setError('');
-    try {
-      const attribution = readAttribution();
-      trackPaidFunnelEvent('plan_selected', { sku });
-      const completion = new URLSearchParams({ checkout: 'complete', source: context.source });
-      if (context.resume) completion.set('resume', context.resume);
-      const checkout = await api.createCheckout({
-        sku,
-        source: context.source,
-        returnTo: `/app/settings?${completion.toString()}`,
-        ...(context.resume ? { resume: context.resume } : {}),
-        ...(attribution ? { attribution } : {}),
-      });
-      trackPaidFunnelEvent('checkout_started', { sku });
-      window.location.assign(checkout.url);
-    } catch (err) {
-      if (isUnauthenticated(err)) {
-        if (resumingAfterSignIn) {
-          setError('Your sign-in did not complete. Sign in again, then choose this plan.');
+  const start = useCallback(
+    async (resumingAfterSignIn = false) => {
+      setBusy(true);
+      setError('');
+      try {
+        const attribution = readAttribution();
+        trackPaidFunnelEvent('plan_selected', { sku });
+        const completion = new URLSearchParams({ checkout: 'complete', source: context.source });
+        if (context.resume) completion.set('resume', context.resume);
+        const checkout = await api.createCheckout({
+          sku,
+          source: context.source,
+          returnTo: `/app/settings?${completion.toString()}`,
+          ...(context.resume ? { resume: context.resume } : {}),
+          ...(attribution ? { attribution } : {}),
+        });
+        trackPaidFunnelEvent('checkout_started', { sku });
+        window.location.assign(checkout.url);
+      } catch (err) {
+        if (isUnauthenticated(err)) {
+          if (resumingAfterSignIn) {
+            setError('Your sign-in did not complete. Sign in again, then choose this plan.');
+            return;
+          }
+          const returnParams = new URLSearchParams(window.location.search);
+          returnParams.set('plan', sku);
+          window.location.assign(
+            `/sign-in?returnTo=${encodeURIComponent(`/pricing?${returnParams.toString()}`)}`,
+          );
           return;
         }
-        const returnParams = new URLSearchParams(window.location.search);
-        returnParams.set('plan', sku);
-        window.location.assign(`/sign-in?returnTo=${encodeURIComponent(`/pricing?${returnParams.toString()}`)}`);
-        return;
+        setError('Checkout is not available yet. Your free workspace is still ready to use.');
+        trackPaidFunnelEvent('checkout_failed', { sku });
+      } finally {
+        setBusy(false);
       }
-      setError('Checkout is not available yet. Your free workspace is still ready to use.');
-      trackPaidFunnelEvent('checkout_failed', { sku });
-    } finally {
-      setBusy(false);
-    }
-  }, [context.resume, context.source, sku]);
+    },
+    [context.resume, context.source, sku],
+  );
 
   useEffect(() => {
     if (!autoStart || autoStarted.current) return;
@@ -154,23 +193,35 @@ function CheckoutButton({
 
   return (
     <>
-      <button type="button" className="lo-btn tg-price-action" onClick={() => void start(false)} disabled={busy}>
+      <button
+        type="button"
+        className="lo-btn tg-price-action"
+        onClick={() => void start(false)}
+        disabled={busy}
+      >
         {busy ? 'Opening…' : label}
       </button>
-      {error ? <p className="tg-price-error" role="status">{error}</p> : null}
+      {error ? (
+        <p className="tg-price-error" role="status">
+          {error}
+        </p>
+      ) : null}
     </>
   );
 }
 
 function checkoutSource(value: string | null): CheckoutSource {
-  return value === 'chatgpt' || value === 'claude' || value === 'codex' || value === 'agent' ? value : 'web';
+  return value === 'chatgpt' || value === 'claude' || value === 'codex' || value === 'agent'
+    ? value
+    : 'web';
 }
 
 function billingSku(value: string | null): BillingSku | undefined {
   if (!value) return undefined;
   for (const plan of BILLING_CATALOG.plans) {
     if (!('sku' in plan)) continue;
-    if (value === plan.sku || ('annualSku' in plan && value === plan.annualSku)) return value as BillingSku;
+    if (value === plan.sku || ('annualSku' in plan && value === plan.annualSku))
+      return value as BillingSku;
   }
   return undefined;
 }

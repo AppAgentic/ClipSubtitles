@@ -16,6 +16,8 @@ describe('SEO intent pages', () => {
       expect(page.benefits).toHaveLength(3);
       expect(page.faqs.length).toBeGreaterThanOrEqual(3);
       expect(page.lede.length).toBeGreaterThan(80);
+      expect(page.answerTitle.length).toBeGreaterThan(20);
+      expect(page.answerBody.length).toBeGreaterThan(120);
     }
   });
 

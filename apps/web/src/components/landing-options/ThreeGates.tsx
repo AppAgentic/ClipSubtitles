@@ -63,6 +63,9 @@ const RELATED_PAGES = [
   ['/animated-video-captions', 'Animated video captions'],
   ['/video-caption-api', 'Video caption API'],
   ['/transparent-caption-overlay', 'Transparent caption overlays'],
+  ['/captions-for-tiktok', 'Captions for TikTok'],
+  ['/captions-for-instagram-reels', 'Captions for Instagram Reels'],
+  ['/captions-for-youtube-shorts', 'Captions for YouTube Shorts'],
 ] as const;
 
 const START_HREF = '/auth/login?returnTo=%2Fapp%2Fnew';
@@ -72,13 +75,42 @@ export function ThreeGates({ showSwitcher = true }: { showSwitcher?: boolean }) 
     '@context': 'https://schema.org',
     '@graph': [
       {
+        '@type': 'Organization',
+        '@id': new URL('/#organization', SITE_URL).toString(),
+        name: 'ClipSubtitles',
+        url: new URL('/', SITE_URL).toString(),
+        logo: new URL('/brand/clipsubtitles-mark-light.png', SITE_URL).toString(),
+      },
+      {
+        '@type': 'WebSite',
+        '@id': new URL('/#website', SITE_URL).toString(),
+        name: 'ClipSubtitles',
+        url: new URL('/', SITE_URL).toString(),
+        description: 'AI video caption generator for creators, teams and agent workflows.',
+        publisher: { '@id': new URL('/#organization', SITE_URL).toString() },
+        inLanguage: 'en',
+      },
+      {
         '@type': 'SoftwareApplication',
+        '@id': new URL('/#software', SITE_URL).toString(),
         name: 'ClipSubtitles',
         applicationCategory: 'MultimediaApplication',
         operatingSystem: 'Web',
         url: new URL('/', SITE_URL).toString(),
         description:
           'Generate automatic video captions, correct the transcript, choose a style and export a polished video or subtitle file.',
+        provider: { '@id': new URL('/#organization', SITE_URL).toString() },
+      },
+      {
+        '@type': 'VideoObject',
+        '@id': new URL('/#caption-demo', SITE_URL).toString(),
+        name: 'Animated video captions made with ClipSubtitles',
+        description:
+          'A short creator video demonstrating timed, animated Bold Pop captions generated with ClipSubtitles.',
+        thumbnailUrl: new URL('/marketing/hero-bold-pop-poster.jpg', SITE_URL).toString(),
+        contentUrl: new URL('/marketing/hero-bold-pop.mp4', SITE_URL).toString(),
+        uploadDate: '2026-09-03T00:00:00+01:00',
+        duration: 'PT12.042S',
       },
       {
         '@type': 'FAQPage',

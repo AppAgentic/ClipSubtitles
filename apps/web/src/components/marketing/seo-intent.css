@@ -56,6 +56,30 @@
   border-top: 1px solid var(--line);
 }
 
+[data-lo='three-gates'] .si-answer {
+  display: grid;
+  grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
+  gap: clamp(24px, 8vw, 120px);
+  align-items: start;
+  padding-block: clamp(52px, 7vw, 88px);
+  border-top: 1px solid var(--line);
+}
+
+[data-lo='three-gates'] .si-answer h2 {
+  max-width: 16ch;
+  font-size: clamp(30px, 4vw, 50px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-weight: 500;
+}
+
+[data-lo='three-gates'] .si-answer > p:last-child {
+  max-width: 62ch;
+  color: var(--dim);
+  font-size: clamp(17px, 1.7vw, 20px);
+  line-height: 1.6;
+}
+
 [data-lo='three-gates'] .si-section-copy {
   display: grid;
   align-content: start;
@@ -157,7 +181,8 @@
 
 @media (max-width: 860px) {
   [data-lo='three-gates'] .si-hero,
-  [data-lo='three-gates'] .si-section {
+  [data-lo='three-gates'] .si-section,
+  [data-lo='three-gates'] .si-answer {
     grid-template-columns: minmax(0, 1fr);
   }
   [data-lo='three-gates'] .si-proof {

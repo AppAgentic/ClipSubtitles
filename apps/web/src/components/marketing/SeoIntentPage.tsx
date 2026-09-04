@@ -16,7 +16,17 @@ export function SeoIntentPage({ page }: { page: SeoPage }) {
     '@context': 'https://schema.org',
     '@graph': [
       {
+        '@type': 'WebPage',
+        '@id': new URL(`/${page.slug}#webpage`, SITE_URL).toString(),
+        url: new URL(`/${page.slug}`, SITE_URL).toString(),
+        name: page.title,
+        description: page.description,
+        inLanguage: 'en',
+        isPartOf: { '@id': new URL('/#website', SITE_URL).toString() },
+      },
+      {
         '@type': 'SoftwareApplication',
+        '@id': new URL('/#software', SITE_URL).toString(),
         name: 'ClipSubtitles',
         applicationCategory: 'MultimediaApplication',
         operatingSystem: 'Web',
@@ -25,6 +35,7 @@ export function SeoIntentPage({ page }: { page: SeoPage }) {
       },
       {
         '@type': 'FAQPage',
+        '@id': new URL(`/${page.slug}#faq`, SITE_URL).toString(),
         mainEntity: page.faqs.map((faq) => ({
           '@type': 'Question',
           name: faq.question,
@@ -78,6 +89,12 @@ export function SeoIntentPage({ page }: { page: SeoPage }) {
             />
             <figcaption>{page.proof}</figcaption>
           </figure>
+        </section>
+
+        <section className="si-answer lo-wrap" aria-labelledby="si-answer-title">
+          <p className="lo-eyebrow tg-eyebrow">Quick answer</p>
+          <h2 id="si-answer-title">{page.answerTitle}</h2>
+          <p>{page.answerBody}</p>
         </section>
 
         <section id="how" className="si-section lo-wrap" aria-labelledby="si-how-title">

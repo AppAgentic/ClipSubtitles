@@ -2081,6 +2081,7 @@
   display: grid;
   gap: 16px;
 }
+[data-lo='three-gates'] .tg-pricing-head h1,
 [data-lo='three-gates'] .tg-pricing-head h2 {
   max-width: 16ch;
   font-size: clamp(38px, 5.2vw, 68px);

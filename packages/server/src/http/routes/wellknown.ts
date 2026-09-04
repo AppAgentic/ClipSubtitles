@@ -29,6 +29,25 @@ export function llmsTxt(ctx: AppContext): string {
 - Scopes: ${SCOPES.join(', ')}
 - REST/OpenAPI: ${ctx.config.apiPublicUrl}/openapi.json
 
+## Product guides
+- Add captions to video: ${ctx.config.webPublicUrl}/add-captions-to-video
+- Automatic video captions: ${ctx.config.webPublicUrl}/automatic-video-captions
+- Animated video captions: ${ctx.config.webPublicUrl}/animated-video-captions
+- Caption videos for TikTok: ${ctx.config.webPublicUrl}/captions-for-tiktok
+- Caption Instagram Reels: ${ctx.config.webPublicUrl}/captions-for-instagram-reels
+- Caption YouTube Shorts: ${ctx.config.webPublicUrl}/captions-for-youtube-shorts
+- Transparent caption overlays: ${ctx.config.webPublicUrl}/transparent-caption-overlay
+- Video caption API: ${ctx.config.webPublicUrl}/video-caption-api
+- Pricing: ${ctx.config.webPublicUrl}/pricing
+- Help: ${ctx.config.webPublicUrl}/help
+
+## Direct answers
+- To add captions to a video: upload the clip, generate timed captions, correct the transcript, choose a style, preview, then export a captioned MP4 or subtitle file.
+- Automatic captions are timed words generated from speech; ClipSubtitles keeps the user in control of corrections before export.
+- Animated captions change the presentation of approved timed words without rewriting the transcript.
+- A transparent caption overlay is a ProRes 4444 video layer with an alpha channel for compositing over source footage.
+- Use a burned-in MP4 when the exact caption design must always show; use SRT or VTT when a player should control subtitle display.
+
 ## Workflow
 create_caption_project -> (upload via web link or remote URL import) -> generate_captions -> get_caption_project -> update_caption_project (optional) -> render_caption_preview (optional, free) -> render_caption_export (quote, then approval) -> get_caption_task -> download exports
 

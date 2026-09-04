@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { ThreeGates } from '@/components/landing-options/ThreeGates';
 
 export const metadata: Metadata = {
-  title: { absolute: 'Add Captions to Video with ChatGPT or Claude | ClipSubtitles' },
+  title: { absolute: 'AI Video Caption Generator for ChatGPT & Claude | ClipSubtitles' },
   description:
     'Upload a clip, create accurate animated captions with ChatGPT or Claude, review every word and export a publish-ready video.',
   alternates: { canonical: '/' },
@@ -11,13 +11,13 @@ export const metadata: Metadata = {
     type: 'website',
     url: '/',
     siteName: 'ClipSubtitles',
-    title: 'Add Captions to Video with ChatGPT or Claude | ClipSubtitles',
+    title: 'AI Video Caption Generator for ChatGPT & Claude | ClipSubtitles',
     description:
       'Upload a clip, create accurate animated captions with ChatGPT or Claude, review every word and export a publish-ready video.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Add Captions to Video with ChatGPT or Claude | ClipSubtitles',
+    title: 'AI Video Caption Generator for ChatGPT & Claude | ClipSubtitles',
     description:
       'Upload a clip, create accurate animated captions with ChatGPT or Claude, review every word and export a publish-ready video.',
   },
