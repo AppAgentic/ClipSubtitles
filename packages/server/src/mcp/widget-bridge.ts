@@ -23,12 +23,25 @@ function bridgeRequest(method,params){
   });
 }
 function bridgeNotify(method,params){if(!bridgeDisposed)window.parent.postMessage({jsonrpc:'2.0',method:method,params:params},'*')}
-async function callTool(name,args){
+async function callToolEnvelope(name,args){
   const host=window.openai;let timer;
-  try{return normalizeToolResult(await Promise.race([
+  try{return await Promise.race([
     host&&host.callTool?host.callTool(name,args):bridgeRequest('tools/call',{name:name,arguments:args}),
     new Promise(function(_,reject){timer=setTimeout(function(){reject(new Error('The connection took too long. Please try again.'))},15000)})
-  ]))}finally{clearTimeout(timer)}
+  ])}finally{clearTimeout(timer)}
+}
+async function callTool(name,args){return normalizeToolResult(await callToolEnvelope(name,args))}
+async function preparePrivateUpload(args){
+  const host=window.openai,before=host&&host.toolResponseMetadata;
+  const result=await callToolEnvelope('prepare_caption_upload',args),data=normalizeToolResult(result);
+  let metadata=result&&result._meta;
+  if(!metadata&&host&&host.toolResponseMetadata!==before){
+    const canonical=host.toolResponseMetadata;
+    for(const envelope of [canonical&&canonical.mcp_tool_result,canonical&&canonical.call_tool_result]){
+      if(envelope&&envelope.structuredContent&&envelope.structuredContent.project&&data.project&&envelope.structuredContent.project.id===data.project.id)metadata=envelope._meta;
+    }
+  }
+  return {data:data,target:metadata&&metadata.uploadTarget};
 }
 async function followUp(prompt){try{const host=window.openai;return await(host&&host.sendFollowUpMessage?host.sendFollowUpMessage({prompt:prompt}):bridgeRequest('ui/message',{role:'user',content:[{type:'text',text:prompt}]}))}catch(error){showError(error)}}
 function notifyHeight(){requestAnimationFrame(function(){if(bridgeDisposed)return;const height=document.documentElement.scrollHeight;if(window.openai&&window.openai.notifyIntrinsicHeight)window.openai.notifyIntrinsicHeight({height:height});else if(bridgeReady)bridgeNotify('ui/notifications/size-changed',{height:height})})}
@@ -45,7 +58,7 @@ function receiveSafeArea(context){
   });
 }
 function receiveHostContext(context){if(!context)return;receiveSafeArea(context);if(context.displayMode)displayMode=context.displayMode;document.documentElement.dataset.displayMode=displayMode;if(context.theme==='light'||context.theme==='dark')document.documentElement.style.colorScheme=context.theme;if(typeof onHostContextChanged==='function')onHostContextChanged(context)}
-function receiveToolData(value){try{const data=normalizeToolResult(value);if(Object.keys(data).length&&data!==output)render(data)}catch(error){showError(error)}}
+function receiveToolData(value){try{const data=normalizeToolResult(value);if((data.upload||data.status==='already_uploaded')&&data.project)return;if(Object.keys(data).length&&data!==output)render(data)}catch(error){showError(error)}}
 function receiveOpenAiGlobals(globals){if(!globals)return;if(globals.widgetState)bridgeState=globals.widgetState;if(globals.toolInput)input=globals.toolInput;receiveHostContext(globals);if(globals.toolOutput)receiveToolData(globals.toolOutput)}
 function disposeBridge(){bridgeDisposed=true;if(typeof stopPolling==='function')stopPolling();if(typeof stopApprovalTimer==='function')stopApprovalTimer();if(typeof disposeWorkspace==='function')disposeWorkspace();bridgePending.forEach(function(entry){clearTimeout(entry.timer);entry.reject(new Error('This view has closed.'))});bridgePending.clear()}
 function initializeBridge(){

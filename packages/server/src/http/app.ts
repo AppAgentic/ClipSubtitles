@@ -43,6 +43,9 @@ export function createApp(ctx: AppContext): App {
     }),
   );
   api.use('/.well-known/*', cors({ origin: '*' }));
+  // Native widget uploads use a signed single-use capability, never cookies.
+  // Opaque host iframes may send Origin: null; authorize the PUT by its signature.
+  api.use('/v1/uploads/*', cors({ origin: '*', allowMethods: ['PUT', 'OPTIONS'], allowHeaders: ['Content-Type'], maxAge: 600 }));
   api.use('*', async (c, next) => {
     // Uploads stream to the object store with their own byte cap; everything else is a small JSON body.
     if (c.req.method === 'PUT' && c.req.path.startsWith('/v1/uploads/')) return next();

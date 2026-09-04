@@ -63,6 +63,7 @@ async function main(): Promise<void> {
     const { tools } = await client.listTools();
     check(
       tools
+        .filter((t) => t._meta?.['openai/visibility'] !== 'private')
         .map((t) => t.name)
         .sort()
         .join(',') === [...MCP_TOOL_NAMES].sort().join(','),

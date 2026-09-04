@@ -73,10 +73,13 @@ describe('MCP conformance', () => {
     expect(meta.authorization_servers.length).toBe(1);
   });
 
-  it('lists exactly the thirteen contracted tools with annotations, schemas, and UI metadata', async () => {
+  it('lists thirteen model tools and a private upload tool with strict metadata', async () => {
     const client = await connect(await h.token());
     const { tools } = await client.listTools();
-    expect(tools.map((t) => t.name).sort()).toEqual([...MCP_TOOL_NAMES].sort());
+    expect(tools.filter((t) => t._meta?.['openai/visibility'] !== 'private').map((t) => t.name).sort()).toEqual([...MCP_TOOL_NAMES].sort());
+    const upload = tools.find((t) => t.name === 'prepare_caption_upload')!;
+    expect(upload._meta?.['openai/visibility']).toBe('private');
+    expect((upload._meta?.ui as { visibility: string[] }).visibility).toEqual(['app']);
     for (const tool of tools) {
       expect(tool.inputSchema.type).toBe('object');
       expect(tool.outputSchema).toBeDefined();

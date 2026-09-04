@@ -122,6 +122,22 @@ const task = {
 };
 
 describe('widget host lifecycle and task recovery', () => {
+  it('keeps private upload metadata outside rendered tool output and widget state', async () => {
+    const target = { projectId: 'proj_1', url: 'https://api.example.test/v1/uploads/private?signature=secret' };
+    const response = { structuredContent: { project: { id: 'proj_1' }, upload: { maxBytes: 30 } }, _meta: { uploadTarget: target } };
+    const h = harness({ task }, [response]);
+    const result = await vm.runInContext('preparePrivateUpload({})', h.context);
+    expect(result.target).toEqual(target);
+    expect(result.data).toEqual(response.structuredContent);
+    h.message({ method: 'ui/notifications/tool-result', params: response });
+    expect(vm.runInContext('output', h.context)).toEqual({ task });
+    expect(JSON.stringify(vm.runInContext('getWidgetState()', h.context))).not.toContain('signature');
+  });
+  it('does not reuse stale host metadata when an upload call returns only structured data', async () => {
+    const h = harness({ task }, [{ project: { id: 'proj_1' }, upload: {} }]);
+    vm.runInContext("window.openai.toolResponseMetadata={mcp_tool_result:{structuredContent:{project:{id:'proj_1'}},_meta:{uploadTarget:{url:'stale'}}}}", h.context);
+    expect((await vm.runInContext('preparePrivateUpload({})', h.context)).target).toBeUndefined();
+  });
   it('consumes MCP safe-area insets at initialization and preserves edges during partial updates', async () => {
     const h = harness();
     h.message({
