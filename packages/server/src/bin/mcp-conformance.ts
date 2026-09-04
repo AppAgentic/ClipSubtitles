@@ -45,7 +45,9 @@ async function main(): Promise<void> {
       (r) => r.json(),
     )) as { resource: string; scopes_supported: string[] };
     check(
-      meta.resource.endsWith('/api/mcp') && meta.scopes_supported.length === 2,
+      meta.resource.endsWith('/api/mcp') &&
+        meta.scopes_supported.includes('openid') &&
+        meta.scopes_supported.includes('offline_access'),
       'protected resource metadata (RFC 9728)',
     );
 

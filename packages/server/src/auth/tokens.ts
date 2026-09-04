@@ -29,6 +29,26 @@ export function parseScopes(value: unknown): Scope[] {
   return raw.filter((s): s is Scope => (SCOPES as readonly string[]).includes(s));
 }
 
+function rawScopes(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.map(String)
+    : typeof value === 'string'
+      ? value.split(/[\s,]+/).filter(Boolean)
+      : [];
+}
+
+/**
+ * WorkOS Connect currently issues standard OIDC scopes rather than the
+ * product's internal tool labels. A validated, correctly-audienced token with
+ * `openid` represents an authenticated ClipSubtitles connection; application
+ * read/write policy (including paid-render approval) remains enforced here.
+ */
+export function workOSInternalScopes(value: unknown): Scope[] {
+  const explicit = parseScopes(value);
+  if (explicit.length > 0) return explicit;
+  return rawScopes(value).includes('openid') ? [...SCOPES] : [];
+}
+
 export interface VerifiedToken {
   subject: string;
   clientId: string;
@@ -56,13 +76,12 @@ export function workOSConnectJwksUrl(issuer: string): string {
   return `${issuer.replace(/\/$/, '')}/oauth2/jwks`;
 }
 
-function claimsToVerified(payload: JWTPayload): VerifiedToken {
+function claimsToVerified(payload: JWTPayload, scopes = parseScopes(payload.scope ?? payload.scp ?? payload.scopes)): VerifiedToken {
   const clientId =
     (typeof payload.client_id === 'string' && payload.client_id) ||
     (typeof payload.azp === 'string' && payload.azp) ||
     (typeof payload.aud === 'string' && payload.aud) ||
     'unknown-client';
-  const scopes = parseScopes(payload.scope ?? payload.scp ?? payload.scopes);
   return {
     subject: String(payload.sub ?? ''),
     clientId,
@@ -145,7 +164,8 @@ export class WorkOSTokenVerifier implements TokenVerifier {
         ...(this.audience ? { audience: this.audience } : {}),
       });
       if (!payload.sub) throw new TokenVerificationError('missing sub');
-      return claimsToVerified(payload);
+      const scopeClaim = payload.scope ?? payload.scp ?? payload.scopes;
+      return claimsToVerified(payload, workOSInternalScopes(scopeClaim));
     } catch (err) {
       throw new TokenVerificationError(err instanceof Error ? err.message : 'invalid token');
     }

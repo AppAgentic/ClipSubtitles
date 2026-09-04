@@ -8,7 +8,7 @@ export function protectedResourceMetadata(ctx: AppContext) {
   return {
     resource: `${ctx.config.apiPublicUrl}/api/mcp`,
     authorization_servers: [issuer],
-    scopes_supported: [...SCOPES],
+    scopes_supported: ['openid', 'profile', 'email', 'offline_access'],
     bearer_methods_supported: ['header'],
     resource_name: MCP_SERVER_INFO.title,
     resource_documentation: `${ctx.config.webPublicUrl}/developers`,

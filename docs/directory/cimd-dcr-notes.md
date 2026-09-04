@@ -2,8 +2,8 @@
 
 How an MCP client (ChatGPT, Claude, an IDE) obtains a client id for the
 ClipSubtitles authorization server, what the repository implements, and what is
-a WorkOS dashboard setting rather than code. **Nothing here has been enabled in
-production; there is no production client yet (gate 2).**
+a WorkOS dashboard setting rather than code. Production DCR and CIMD are
+enabled; public directory submission remains a separate gate.
 
 ## What the resource server publishes (implemented)
 
@@ -15,7 +15,9 @@ production; there is no production client yet (gate 2).**
   Connect/AuthKit domain root when `AUTH_MODE=workos`). Do not use WorkOS's
   `api.workos.com/user_management/client_…` issuer here: it is the web-login
   identity issuer and does not publish the MCP Connect registration endpoint.
-- `scopes_supported` — `captions:read`, `captions:write`
+- `scopes_supported` — the WorkOS-supported OIDC scopes `openid`, `profile`,
+  `email`, and `offline_access`. `captions:read` and `captions:write` remain
+  internal application permissions, not authorization-server scopes.
 - `bearer_methods_supported` — `header`
 - `resource_name` — the MCP server title
 
@@ -52,7 +54,10 @@ can get a client id — choose one before gate 3:
 Either way the API only sees a bearer JWT: verification is RS256 against the
 WorkOS Connect JWKS at `<AuthKit issuer>/oauth2/jwks`
 (`packages/server/src/auth/tokens.ts`), audience/issuer pinned
-from config, scopes required per route. Revocation is per client via
+from config. A correctly audienced WorkOS token carrying `openid` establishes
+an authenticated connection and maps to the application's read/write policy;
+the API still enforces every tool permission and the immutable quote plus
+explicit approval required for paid renders. Revocation is per client via
 `oauth_grants`, so a directory client can be cut off without touching users.
 
 ## Verification steps (staging, before submission)
@@ -63,13 +68,13 @@ from config, scopes required per route. Revocation is per client via
    `registration_endpoint` (DCR) — or the CIMD capability if that option is chosen.
 3. From a clean MCP client (e.g. the MCP Inspector), connect to
    `https://api.clipsubtitles.com/api/mcp`, complete the browser sign-in, and run
-   `initialize` + `tools/list`; expect eight tools.
+   `initialize` + `tools/list`; expect twelve tools.
 4. Revoke the client's grant in the account page and confirm the next call is
    `401 unauthenticated` (grant revocation test exists in `packages/server/src/test/mcp.test.ts`).
 
 ## Things to decide (owner: auth/infra)
 
-- DCR vs CIMD (table above).
 - Token lifetime and refresh policy in AuthKit.
-- Whether directory clients may request `captions:write` by default or must
-  ask for it (the API enforces the scope either way).
+- Whether a future authorization provider should expose granular caption
+  scopes; WorkOS Connect currently uses standard identity scopes while the API
+  keeps tool and cost authorization internal.

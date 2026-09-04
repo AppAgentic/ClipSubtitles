@@ -53,7 +53,7 @@ export function registerSecuritySchemes(api: Api): void {
     type: 'http',
     scheme: 'bearer',
     bearerFormat: 'JWT',
-    description: 'OAuth 2.1 access token issued by WorkOS/AuthKit (scopes: captions:read, captions:write).',
+    description: 'OAuth 2.1 access token issued by WorkOS/AuthKit. Standard OIDC scopes establish the connection; ClipSubtitles enforces tool permissions and paid-render approval inside the application.',
   });
   api.openAPIRegistry.registerComponent('securitySchemes', 'cookieAuth', {
     type: 'apiKey',
