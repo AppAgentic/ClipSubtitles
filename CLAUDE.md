@@ -29,6 +29,7 @@ Read and follow `AGENTS.md`; it is the canonical project instruction file.
 - Export rows are written ONLY through `packages/server/src/services/outputs.ts` (`publishOutputs`): blobs under `<ws>/exports/<taskId>/` first, then all rows in one transaction; any failure discards rows + every blob under the prefix. Terminal task states (failed/cancelled/lease-reclaimed) call `discardOutputsForTaskId`. Don't add a second `createExport` call site.
 - `credit_ledger.idempotency_key` is unique per **workspace** (migration 2 rebuilt the table). `grantCredits` looks up `(workspace_id, idempotency_key)`; never query by key alone.
 - Client IPs for rate limiting come from the socket unless the peer is in `TRUSTED_PROXIES` (`auth/client-ip.ts`); in-process test requests (no socket) share one `unknown` bucket. Forwarding headers are never trusted by default.
+- SEO intent pages (`apps/web/src/components/marketing/SeoIntentPage.tsx`) are a shorter cut of the Three Gates landing page: they reuse its classes (`tg-how`/`tg-steps`, `tg-section`, `tg-faq`, `tg-related`, `tg-bottom-cta`) and its `workflow-*.webp` step art, and `seo-intent.css` only sizes the hero frame, frames the quick answer and tightens rhythm. Restyle them through those shared classes, not with new card systems, so they stay cohesive with the homepage.
 - Vitest must be run per package (`pnpm --filter @clipsubtitles/web test`); running the root `vitest` binary with a path filter skips the package config (aliases, jsx runtime).
 
 ### Common operations

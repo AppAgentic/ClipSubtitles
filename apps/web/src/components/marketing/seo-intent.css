@@ -1,203 +1,230 @@
+/*
+ * SEO intent pages — a shorter cut of the Three Gates landing page.
+ * Everything here inherits that page's tokens, type and components; this
+ * sheet only sizes the hero for a static frame, frames the quick answer,
+ * and tightens the section rhythm one step below the homepage.
+ */
+
 [data-lo='three-gates'].si {
   min-height: 100svh;
 }
 
+/* ---------------------------------------------------------------- Hero */
 [data-lo='three-gates'] .si-hero {
-  min-height: calc(100svh - 72px);
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+  grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);
   align-items: center;
-  gap: clamp(40px, 7vw, 108px);
-  padding-block: clamp(48px, 7vw, 96px);
+  gap: clamp(32px, 6vw, 96px);
+  padding-block: clamp(28px, 5vw, 64px) clamp(40px, 6vw, 80px);
 }
 
 [data-lo='three-gates'] .si-hero-copy {
   display: grid;
-  gap: 24px;
-}
-
-[data-lo='three-gates'] .si-eyebrow {
-  margin-bottom: -8px;
-  color: var(--warm);
+  gap: 22px;
+  min-width: 0;
 }
 
 [data-lo='three-gates'] .si-hero h1 {
-  max-width: 13ch;
-  font-size: clamp(44px, 7vw, 96px);
-  line-height: 0.94;
-  letter-spacing: -0.05em;
-  font-weight: 500;
-  font-variation-settings: 'opsz' 96;
+  max-width: 16ch;
+  font-size: clamp(38px, 4.6vw, 64px);
+  line-height: 0.98;
+  letter-spacing: -0.025em;
+  font-weight: 700;
 }
 
-[data-lo='three-gates'] .si-lede {
-  max-width: 55ch;
-  color: var(--dim);
-  font-size: clamp(17px, 1.7vw, 20px);
+[data-lo='three-gates'] .si-hero .tg-cta {
+  margin-top: 4px;
 }
 
 [data-lo='three-gates'] .si-proof {
   display: grid;
   justify-items: center;
-  gap: 20px;
+  gap: 12px;
+  min-width: 0;
+}
+
+[data-lo='three-gates'] .si-proof-label {
+  color: var(--mute);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+[data-lo='three-gates'] .si-proof .tg-frame-hero {
+  width: min(100%, 320px);
+  border-radius: 28px;
+  box-shadow: 0 36px 90px -46px rgb(0 0 0 / 0.5);
 }
 
 [data-lo='three-gates'] .si-proof figcaption {
   max-width: 34ch;
+  margin-top: 4px;
   color: var(--dim);
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
 }
 
-[data-lo='three-gates'] .si-section {
-  display: grid;
-  grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
-  gap: clamp(44px, 8vw, 120px);
-  padding-block: clamp(76px, 11vw, 150px);
-  border-top: 1px solid var(--line);
+/* -------------------------------------------------------- Quick answer */
+[data-lo='three-gates'] .si-answer-wrap {
+  padding-bottom: clamp(48px, 7vw, 88px);
 }
 
 [data-lo='three-gates'] .si-answer {
   display: grid;
-  grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
-  gap: clamp(24px, 8vw, 120px);
+  grid-template-columns: minmax(0, 0.84fr) minmax(0, 1.16fr);
+  gap: clamp(24px, 5vw, 72px);
   align-items: start;
-  padding-block: clamp(52px, 7vw, 88px);
-  border-top: 1px solid var(--line);
+  padding: clamp(24px, 3.4vw, 44px);
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  background:
+    radial-gradient(70% 60% at 0% 0%, rgb(var(--warm-rgb) / 0.09), transparent 70%),
+    var(--ink-2);
+}
+
+[data-lo='three-gates'] .si-answer-head {
+  display: grid;
+  gap: 14px;
 }
 
 [data-lo='three-gates'] .si-answer h2 {
   max-width: 16ch;
-  font-size: clamp(30px, 4vw, 50px);
-  line-height: 1;
-  letter-spacing: -0.04em;
-  font-weight: 500;
+  font-size: clamp(26px, 3vw, 40px);
+  line-height: 1.02;
+  letter-spacing: -0.025em;
 }
 
-[data-lo='three-gates'] .si-answer > p:last-child {
-  max-width: 62ch;
+[data-lo='three-gates'] .si-answer > p {
+  max-width: 60ch;
   color: var(--dim);
-  font-size: clamp(17px, 1.7vw, 20px);
+  font-size: clamp(16px, 1.5vw, 18px);
   line-height: 1.6;
 }
 
-[data-lo='three-gates'] .si-section-copy {
-  display: grid;
-  align-content: start;
-  gap: 20px;
+/* --------------------------------------------------------- Section rhythm */
+/* One step tighter than the homepage: these pages have more sections and
+ * shorter copy, so the homepage's widest gaps would read as dead space. */
+[data-lo='three-gates'].si .tg-section,
+[data-lo='three-gates'].si .tg-related,
+[data-lo='three-gates'].si .tg-reel,
+[data-lo='three-gates'].si .tg-connect-standalone {
+  padding-block: clamp(56px, 8vw, 104px);
 }
 
-[data-lo='three-gates'] .si-section-copy h2,
-[data-lo='three-gates'] .si-related h2 {
+[data-lo='three-gates'].si .tg-section-copy h2,
+[data-lo='three-gates'].si .tg-related h2,
+[data-lo='three-gates'].si .tg-reel-head h2 {
   max-width: 14ch;
-  font-size: clamp(36px, 5.2vw, 68px);
+  font-size: clamp(34px, 4.4vw, 56px);
   line-height: 0.98;
-  letter-spacing: -0.045em;
-  font-weight: 500;
+  letter-spacing: -0.025em;
+  font-weight: 700;
 }
 
-[data-lo='three-gates'] .si-section-copy > p:last-child {
-  max-width: 44ch;
+[data-lo='three-gates'].si .tg-related ul {
+  margin-top: 8px;
+}
+
+[data-lo='three-gates'].si .tg-bottom-cta {
+  margin-top: clamp(56px, 8vw, 104px);
+}
+
+/* How it works: the landing's step strip, with the page's own lede. */
+[data-lo='three-gates'] .si-how .tg-section-head > p:last-child {
+  max-width: 48ch;
   color: var(--dim);
   font-size: 17px;
 }
 
-[data-lo='three-gates'] .si-steps,
+[data-lo='three-gates'] .si-how .tg-step {
+  grid-template-rows: 156px auto minmax(0, 1fr);
+  min-height: 0;
+}
+
+/* Benefits: hairline rows with the pricing tick, no extra cards. */
 [data-lo='three-gates'] .si-benefit-list {
   border-top: 1px solid var(--line);
 }
 
-[data-lo='three-gates'] .si-steps li {
+[data-lo='three-gates'] .si-benefit-list li {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
-  gap: 20px;
-  padding-block: 28px;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 14px;
+  padding-block: 22px;
   border-bottom: 1px solid var(--line);
 }
 
-[data-lo='three-gates'] .si-steps > li > span {
-  padding-top: 5px;
+[data-lo='three-gates'] .si-benefit-mark {
+  padding-top: 3px;
   color: var(--warm);
-  font-size: 11px;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
 }
 
-[data-lo='three-gates'] .si-steps h3,
 [data-lo='three-gates'] .si-benefit-list h3 {
-  font-size: clamp(22px, 2.5vw, 32px);
-  line-height: 1.05;
-  letter-spacing: -0.035em;
-  font-weight: 500;
+  font-size: 21px;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
 }
 
-[data-lo='three-gates'] .si-steps p,
 [data-lo='three-gates'] .si-benefit-list p {
   max-width: 48ch;
-  margin-top: 9px;
+  margin-top: 6px;
   color: var(--dim);
+  font-size: 15.5px;
 }
 
-[data-lo='three-gates'] .si-benefit-list li {
-  padding-block: 28px;
-  border-bottom: 1px solid var(--line);
-}
-
-[data-lo='three-gates'] .si-related {
-  display: grid;
-  gap: 22px;
-  padding-block: clamp(76px, 11vw, 150px);
-  border-top: 1px solid var(--line);
-}
-
-[data-lo='three-gates'] .si-related ul {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin-top: 16px;
-  border-top: 1px solid var(--line);
-}
-
-[data-lo='three-gates'] .si-related li {
-  border-bottom: 1px solid var(--line);
-}
-
-[data-lo='three-gates'] .si-related li:nth-child(even) {
-  border-left: 1px solid var(--line);
-}
-
-[data-lo='three-gates'] .si-related a {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  min-height: 72px;
-  padding-inline: clamp(0px, 2.6vw, 34px);
-  color: var(--dim);
-  font-size: clamp(16px, 1.8vw, 21px);
-  text-decoration: none;
-  transition: color 160ms ease;
-}
-
-[data-lo='three-gates'] .si-related a:hover {
-  color: var(--warm);
-}
-
+/* -------------------------------------------------------- Responsive */
 @media (max-width: 860px) {
-  [data-lo='three-gates'] .si-hero,
-  [data-lo='three-gates'] .si-section,
+  [data-lo='three-gates'] .si-hero {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+    padding-top: 20px;
+  }
+  [data-lo='three-gates'] .si-hero-copy {
+    gap: 18px;
+  }
+  [data-lo='three-gates'] .si-proof .tg-frame-hero {
+    width: min(100%, 260px);
+    border-radius: 24px;
+  }
   [data-lo='three-gates'] .si-answer {
     grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
   }
-  [data-lo='three-gates'] .si-proof {
-    justify-items: start;
+  [data-lo='three-gates'] .si-how .tg-step {
+    grid-template-rows: 170px auto auto;
   }
 }
 
 @media (max-width: 560px) {
-  [data-lo='three-gates'] .si-related ul {
-    grid-template-columns: minmax(0, 1fr);
+  [data-lo='three-gates'] .si-hero {
+    padding-top: 12px;
+    padding-bottom: 40px;
   }
-  [data-lo='three-gates'] .si-related li:nth-child(even) {
-    border-left: 0;
+  [data-lo='three-gates'] .si-hero h1 {
+    font-size: clamp(36px, 10.4vw, 46px);
   }
-  [data-lo='three-gates'] .si-related a {
-    padding-inline: 0;
+  [data-lo='three-gates'] .si-hero .tg-lede {
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  [data-lo='three-gates'] .si-hero .tg-cta .lo-btn {
+    flex: 1 1 auto;
+  }
+  [data-lo='three-gates'] .si-proof .tg-frame-hero {
+    width: min(100%, 210px);
+    border-radius: 21px;
+  }
+  [data-lo='three-gates'] .si-answer {
+    padding: 22px 20px;
+    border-radius: 22px;
+  }
+  [data-lo='three-gates'] .si-benefit-list li {
+    grid-template-columns: 22px minmax(0, 1fr);
+    gap: 12px;
+    padding-block: 18px;
   }
 }
