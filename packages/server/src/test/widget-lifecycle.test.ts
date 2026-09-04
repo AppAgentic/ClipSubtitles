@@ -26,10 +26,13 @@ function harness(initial?: object, responses: unknown[] = []) {
     return elements.get(id)!;
   };
   const listeners = new Map<string, (event: unknown) => void>();
+  const listenerGroups = new Map<string, Set<(event: unknown) => void>>();
   const timers = new Map<number, () => Promise<void> | void>();
+  const timerDelays = new Map<number, number>();
   const posts: { id: number; method: string }[] = [];
   const calls: string[] = [];
   const errors: string[] = [];
+  const cssProperties = new Map<string, string>();
   let nextTimer = 1;
   const openai = {
     toolOutput: initial,
@@ -49,7 +52,14 @@ function harness(initial?: object, responses: unknown[] = []) {
     parent,
     openai: initial ? openai : undefined,
     addEventListener(name: string, listener: (event: unknown) => void) {
-      listeners.set(name, listener);
+      if (!listenerGroups.has(name)) listenerGroups.set(name, new Set());
+      listenerGroups.get(name)!.add(listener);
+      listeners.set(name, (event) => {
+        for (const handler of listenerGroups.get(name)!) handler(event);
+      });
+    },
+    removeEventListener(name: string, listener: (event: unknown) => void) {
+      listenerGroups.get(name)?.delete(listener);
     },
   };
   const context = vm.createContext({
@@ -57,15 +67,25 @@ function harness(initial?: object, responses: unknown[] = []) {
     document: {
       getElementById: node,
       createElement: element,
-      documentElement: { dataset: {}, style: {}, scrollHeight: 100 },
+      documentElement: {
+        dataset: {},
+        style: {
+          setProperty(name: string, value: string) {
+            cssProperties.set(name, value);
+          },
+        },
+        scrollHeight: 100,
+      },
     },
-    setTimeout(fn: () => Promise<void> | void) {
+    setTimeout(fn: () => Promise<void> | void, delay = 0) {
       const id = nextTimer++;
       timers.set(id, fn);
+      timerDelays.set(id, delay);
       return id;
     },
     clearTimeout(id: number) {
       timers.delete(id);
+      timerDelays.delete(id);
     },
     requestAnimationFrame(fn: () => void) {
       fn();
@@ -87,14 +107,18 @@ function harness(initial?: object, responses: unknown[] = []) {
     window,
     listeners,
     timers,
+    timerDelays,
     posts,
     calls,
     errors,
     context,
+    cssProperties,
+    listenerCount: (event: string) => listenerGroups.get(event)?.size ?? 0,
     async tick() {
       const entry = timers.entries().next().value;
       if (entry) {
         timers.delete(entry[0]);
+        timerDelays.delete(entry[0]);
         await entry[1]();
       }
     },
@@ -112,6 +136,162 @@ const task = {
 };
 
 describe('widget host lifecycle and task recovery', () => {
+  it('keeps private upload metadata outside rendered tool output and widget state', async () => {
+    const target = {
+      projectId: 'proj_1',
+      url: 'https://api.example.test/v1/uploads/private?signature=secret',
+    };
+    const response = {
+      structuredContent: { project: { id: 'proj_1' }, upload: { maxBytes: 30 } },
+      _meta: { uploadTarget: target },
+    };
+    const h = harness({ task }, [response]);
+    const result = await vm.runInContext('preparePrivateUpload({})', h.context);
+    expect(result.target).toEqual(target);
+    expect(result.data).toEqual(response.structuredContent);
+    h.message({ method: 'ui/notifications/tool-result', params: response });
+    expect(vm.runInContext('output', h.context)).toEqual({ task });
+    expect(JSON.stringify(vm.runInContext('getWidgetState()', h.context))).not.toContain(
+      'signature',
+    );
+  });
+  it.each(['mcp_tool_result', 'call_tool_result', 'direct'])(
+    'waits for delayed matching %s upload metadata and cleans up its listener',
+    async (shape) => {
+      const data = { status: 'upload_required', project: { id: 'proj_1' }, upload: {} };
+      const target = {
+        projectId: 'proj_1',
+        uploadId: 'upload_new',
+        url: 'https://example.com/new',
+      };
+      const h = harness({ task }, [{ structuredContent: data }]);
+      vm.runInContext('stopPolling()', h.context);
+      let settled = false;
+      const pending = vm
+        .runInContext('preparePrivateUpload({})', h.context)
+        .then((result: unknown) => {
+          settled = true;
+          return result;
+        });
+      for (let i = 0; i < 10; i++) await Promise.resolve();
+      expect(settled).toBe(false);
+      expect(h.listenerCount('openai:set_globals')).toBe(2);
+      const metadata =
+        shape === 'direct'
+          ? { uploadTarget: target }
+          : { [shape]: { structuredContent: data, _meta: { uploadTarget: target } } };
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      Object.assign(h.window.openai!, { toolResponseMetadata: metadata });
+      h.listeners.get('openai:set_globals')!({
+        detail: { globals: { toolResponseMetadata: metadata } },
+      });
+      expect(await pending).toEqual({ data, target });
+      expect(h.listenerCount('openai:set_globals')).toBe(1);
+      expect(h.timers.size).toBe(0);
+    },
+  );
+  it('rejects stale and wrong-project metadata until the two-second deadline', async () => {
+    const data = { status: 'upload_required', project: { id: 'proj_1' }, upload: {} };
+    const target = {
+      projectId: 'proj_1',
+      uploadId: 'old_upload',
+      url: 'https://example.com/stale',
+    };
+    const h = harness({ task }, [{ structuredContent: data }]);
+    vm.runInContext('stopPolling()', h.context);
+    Object.assign(h.window.openai!, { toolResponseMetadata: { uploadTarget: target } });
+    const pending = vm.runInContext('preparePrivateUpload({})', h.context);
+    for (let i = 0; i < 10; i++) await Promise.resolve();
+    for (const metadata of [
+      { uploadTarget: { ...target } },
+      {
+        uploadTarget: {
+          ...target,
+          uploadId: 'new',
+          url: 'https://example.com/new',
+          projectId: 'proj_other',
+        },
+      },
+      {
+        mcp_tool_result: {
+          structuredContent: { project: { id: 'proj_other' } },
+          _meta: { uploadTarget: { ...target, uploadId: 'new', url: 'https://example.com/new' } },
+        },
+      },
+    ])
+      h.listeners.get('openai:set_globals')!({
+        detail: { globals: { toolResponseMetadata: metadata } },
+      });
+    expect([...h.timerDelays.values()]).toEqual([2000]);
+    await h.tick();
+    expect((await pending).target).toBeUndefined();
+    expect(h.listenerCount('openai:set_globals')).toBe(1);
+    expect(h.timers.size).toBe(0);
+  });
+  it('cleans up when upload metadata never arrives or the tool errors', async () => {
+    const h = harness({ task }, [
+      { structuredContent: { status: 'upload_required', project: { id: 'proj_1' }, upload: {} } },
+    ]);
+    vm.runInContext('stopPolling()', h.context);
+    const pending = vm.runInContext('preparePrivateUpload({})', h.context);
+    for (let i = 0; i < 10; i++) await Promise.resolve();
+    await h.tick();
+    expect((await pending).target).toBeUndefined();
+    expect(h.listenerCount('openai:set_globals')).toBe(1);
+    const failed = harness({ task }, [
+      {
+        isError: true,
+        content: [{ type: 'text', text: '{"error":{"message":"Upload not allowed"}}' }],
+      },
+    ]);
+    vm.runInContext('stopPolling()', failed.context);
+    await expect(vm.runInContext('preparePrivateUpload({})', failed.context)).rejects.toThrow(
+      'Upload not allowed',
+    );
+    expect(failed.listenerCount('openai:set_globals')).toBe(1);
+    expect(failed.timers.size).toBe(0);
+  });
+  it('consumes MCP safe-area insets at initialization and preserves edges during partial updates', async () => {
+    const h = harness();
+    h.message({
+      id: h.posts[0]!.id,
+      result: { hostContext: { safeAreaInsets: { top: 20, right: 8, bottom: 180, left: 6 } } },
+    });
+    await Promise.resolve();
+    expect(Object.fromEntries(h.cssProperties)).toEqual({
+      '--host-safe-top': '20px',
+      '--host-safe-right': '8px',
+      '--host-safe-bottom': '180px',
+      '--host-safe-left': '6px',
+    });
+    h.message({
+      method: 'ui/notifications/host-context-changed',
+      params: { safeAreaInsets: { bottom: 240 } },
+    });
+    expect(h.cssProperties.get('--host-safe-bottom')).toBe('240px');
+    expect(h.cssProperties.get('--host-safe-top')).toBe('20px');
+    h.message({ method: 'ui/notifications/host-context-changed', params: { theme: 'dark' } });
+    expect(h.cssProperties.get('--host-safe-bottom')).toBe('240px');
+  });
+  it('normalizes OpenAI insets to finite bounded nonnegative pixel values', () => {
+    const h = harness({ task });
+    h.listeners.get('openai:set_globals')!({
+      detail: {
+        globals: { safeArea: { insets: { top: Infinity, right: -3, bottom: 100000, left: '25' } } },
+      },
+    });
+    expect(Object.fromEntries(h.cssProperties)).toEqual({
+      '--host-safe-top': '0px',
+      '--host-safe-right': '0px',
+      '--host-safe-bottom': '2048px',
+      '--host-safe-left': '0px',
+    });
+    h.listeners.get('openai:set_globals')!({
+      detail: { globals: { safeArea: { insets: { bottom: NaN } } } },
+    });
+    expect(h.cssProperties.get('--host-safe-bottom')).toBe('0px');
+  });
+
   it('retains loading before output, accepts delayed OpenAI globals, and does not invent failure', () => {
     const h = harness();
     expect(h.node('content').innerHTML).toBe('');

@@ -1,39 +1,49 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Script } from 'node:vm';
-import { STYLE_PRESETS } from '@clipsubtitles/core';
+import {
+  STYLE_PRESETS,
+  segmentWords,
+  segmentationForStyle,
+  wordsFromText,
+} from '@clipsubtitles/core';
+import { CaptionPageSchema, TranscriptWordSchema } from '@clipsubtitles/contracts';
 import { widgetHtmlForPreview } from '../mcp/ui';
 
-function project(wordCount = 12) {
-  const words = Array.from({ length: wordCount }, (_, i) => ({
-    id: `word_${i}`,
-    text: `Word${i}`,
-    startMs: i * 1000,
-    endMs: (i + 1) * 1000,
-  }));
+function captionWords(wordCount: number) {
+  return wordsFromText(Array.from({ length: wordCount }, (_, i) => `Word${i}`).join(' ')).map(
+    (word, i) =>
+      TranscriptWordSchema.strict().parse({ ...word, startMs: i * 1000, endMs: (i + 1) * 1000 }),
+  );
+}
+function project(wordCount = 12, maxWordsPerPage = 1) {
+  const words = captionWords(wordCount);
+  const pages = segmentWords(words, {
+    ...segmentationForStyle(STYLE_PRESETS.minimal),
+    maxWordsPerPage,
+    tailPaddingMs: 0,
+  }).map((page) => CaptionPageSchema.strict().parse(page));
   return {
     id: 'project_test',
     title: 'Synthetic review',
     version: 1,
     style: STYLE_PRESETS.minimal,
-    pages: words.map((word, i) => ({
-      id: `page_${i}`,
-      text: word.text,
-      wordIds: [word.id],
-      startMs: word.startMs,
-      endMs: word.endMs,
-    })),
+    pages,
     transcript: {
       words: words.slice(0, 500),
       wordCount,
-      wordsWindow: { offset: 0, total: wordCount },
+      wordsWindow: { offset: 0, limit: 500, total: wordCount },
     },
     source: { playbackUrl: 'https://clipsubtitles.com/v1/source/test' },
   };
 }
 type TestProject = ReturnType<typeof project>;
 const frames: HTMLIFrameElement[] = [];
-function mount(data: { project: TestProject }, responses: unknown[] = []) {
+function mount(
+  data: { project: TestProject },
+  responses: unknown[] = [],
+  globals: Record<string, unknown> = {},
+) {
   const frame = document.createElement('iframe');
   document.body.appendChild(frame);
   frames.push(frame);
@@ -58,6 +68,7 @@ function mount(data: { project: TestProject }, responses: unknown[] = []) {
   for (const script of scripts) {
     new Script(script);
     if (script.includes('const KIND=')) {
+      Object.assign(win.openai, globals);
       win.openai.callTool = callTool;
       win.openai.requestDisplayMode = requestMode;
       win.ClipSubtitlesOverlay = {
@@ -75,7 +86,9 @@ function mount(data: { project: TestProject }, responses: unknown[] = []) {
 async function settle() {
   for (let i = 0; i < 20; i++) await Promise.resolve();
 }
-afterEach(() => {
+afterEach(async () => {
+  // Let queued native details-toggle events finish before destroying their document.
+  await new Promise((resolve) => setTimeout(resolve, 0));
   for (const frame of frames.splice(0)) {
     frame.contentWindow?.dispatchEvent(new Event('pagehide'));
     frame.remove();
@@ -83,6 +96,46 @@ afterEach(() => {
 });
 
 describe('assembled caption workspace', () => {
+  it('updates host safe areas without remounting playback or losing an unsaved correction', () => {
+    const h = mount({ project: project() }, [], {
+      displayMode: 'fullscreen',
+      safeArea: { insets: { top: 20, right: 8, bottom: 160, left: 8 } },
+    });
+    const style = h.win.document.documentElement.style;
+    expect(style.getPropertyValue('--host-safe-bottom')).toBe('160px');
+    h.el('words').querySelector('button')!.click();
+    const input = h.el<HTMLInputElement>('word-input');
+    input.value = 'Unsaved correction';
+    input.focus();
+    const video = h.el<HTMLVideoElement>('source-video');
+    video.currentTime = 3;
+    const notify = (globals: Record<string, unknown>) =>
+      h.win.dispatchEvent(new h.win.CustomEvent('openai:set_globals', { detail: { globals } }));
+    notify({ safeArea: { insets: { bottom: 240 } } });
+    expect(style.getPropertyValue('--host-safe-bottom')).toBe('240px');
+    notify({ toolOutput: h.win.openai.toolOutput, safeArea: { insets: { bottom: 280 } } });
+    expect(style.getPropertyValue('--host-safe-bottom')).toBe('280px');
+    h.win.dispatchEvent(
+      new h.win.MessageEvent('message', {
+        source: h.win.parent,
+        data: {
+          jsonrpc: '2.0',
+          method: 'ui/notifications/host-context-changed',
+          params: { safeAreaInsets: { bottom: 320, left: 12 } },
+        },
+      }),
+    );
+    expect(style.getPropertyValue('--host-safe-bottom')).toBe('320px');
+    expect(style.getPropertyValue('--host-safe-left')).toBe('12px');
+    expect(h.el<HTMLInputElement>('word-input')).toBe(input);
+    expect(input.value).toBe('Unsaved correction');
+    expect(h.win.document.activeElement).toBe(input);
+    expect(h.el<HTMLVideoElement>('source-video')).toBe(video);
+    expect(video.currentTime).toBe(3);
+    expect(h.destroy).not.toHaveBeenCalled();
+    expect(h.callTool).not.toHaveBeenCalled();
+  });
+
   it('compiles the shipped scripts, immediately shows styles, and seeks through every caption', () => {
     const h = mount({ project: project() });
     expect(h.el('styles').querySelectorAll('button')).toHaveLength(
@@ -163,15 +216,32 @@ describe('assembled caption workspace', () => {
     expect(preview.src).toContain('stream=1');
     expect(h.el<HTMLVideoElement>('source-video').controls).toBe(false);
   });
+  it('uses the complete inclusive word range of a real multiword caption page', () => {
+    const data = project(12, 3);
+    const index = data.pages.findIndex((page) => page.endWordIndex > page.startWordIndex);
+    expect(index).toBeGreaterThanOrEqual(0);
+    const page = data.pages[index]!;
+    const expected = data.transcript.words.slice(page.startWordIndex, page.endWordIndex + 1);
+    const h = mount({ project: data });
+    (h.el('pages').querySelectorAll('button')[index] as HTMLButtonElement).click();
+    const buttons = [...h.el('words').querySelectorAll('button')];
+    expect(buttons.map((button) => button.textContent)).toEqual(expected.map((word) => word.text));
+    buttons.at(-1)!.click();
+    expect(h.el<HTMLInputElement>('word-input').value).toBe(expected.at(-1)!.text);
+  });
   it('saves one word then rereads the authoritative word window before showing saved', async () => {
     const fresh = project();
     fresh.version = 2;
-    fresh.transcript.words[0]!.text = 'Corrected';
-    fresh.pages[0]!.text = 'Corrected';
+    fresh.transcript.words[4]!.text = 'Corrected';
+    fresh.pages[4]!.text = 'Corrected';
+    fresh.pages[4]!.lines[0]!.text = 'Corrected';
     const h = mount({ project: project() }, [
       { structuredContent: { project: { id: fresh.id, version: 2 } } },
       { structuredContent: { project: fresh } },
     ]);
+    h.el<HTMLDetailsElement>('corrections').open = true;
+    (h.el('pages').querySelectorAll('button')[4] as HTMLButtonElement).click();
+    h.el<HTMLVideoElement>('source-video').currentTime = 4.25;
     h.el('words').querySelector('button')!.click();
     h.el<HTMLInputElement>('word-input').value = 'Corrected';
     h.el('edit').dispatchEvent(new h.win.Event('submit', { cancelable: true }));
@@ -179,7 +249,7 @@ describe('assembled caption workspace', () => {
     expect(h.callTool).toHaveBeenNthCalledWith(1, 'update_caption_project', {
       projectId: fresh.id,
       expectedVersion: 1,
-      ops: [{ op: 'replace_word_text', wordId: 'word_0', text: 'Corrected' }],
+      ops: [{ op: 'replace_word_text', wordId: fresh.transcript.words[4]!.id, text: 'Corrected' }],
     });
     expect(h.callTool).toHaveBeenNthCalledWith(2, 'get_caption_project', {
       projectId: fresh.id,
@@ -188,10 +258,19 @@ describe('assembled caption workspace', () => {
       wordsOffset: 0,
       wordsLimit: 500,
     });
+    expect(h.el<HTMLDetailsElement>('corrections').open).toBe(true);
+    const restoredVideo = h.el<HTMLVideoElement>('source-video');
+    Object.defineProperty(restoredVideo, 'duration', { value: 12 });
+    restoredVideo.dispatchEvent(new h.win.Event('loadedmetadata'));
+    restoredVideo.dispatchEvent(new h.win.Event('timeupdate'));
+    expect(restoredVideo.currentTime).toBe(4.25);
+    expect(h.el('scene-count').textContent).toBe('Caption 5 of 12');
+    expect(h.el('pages').querySelector('[aria-current="true"]')?.textContent).toBe('5. Corrected');
     expect(h.el('words').textContent).toBe('Corrected');
     expect(h.el('save-status').textContent).toBe('Saved');
     h.el('next-page').click();
-    expect(h.el('words').textContent).toBe('Word1');
+    expect(h.el('words').textContent).toBe('Word5');
+    expect(h.el<HTMLDetailsElement>('corrections').open).toBe(true);
   });
   it('saves styles using normalized results and exposes a public failure without changing selection', async () => {
     const nextStyle = Object.values(STYLE_PRESETS).find((preset) => preset.preset !== 'minimal')!;
@@ -324,15 +403,14 @@ describe('assembled caption workspace', () => {
   });
   it('loads words beyond the first 500 and makes the last caption editable', async () => {
     const original = project(503);
-    const all = Array.from({ length: 3 }, (_, i) => ({
-      id: `word_${500 + i}`,
-      text: `Word${500 + i}`,
-      startMs: (500 + i) * 1000,
-      endMs: (501 + i) * 1000,
-    }));
+    const all = captionWords(503).slice(500);
     const chunk = {
       ...original,
-      transcript: { ...original.transcript, words: all, wordsWindow: { offset: 500, total: 503 } },
+      transcript: {
+        ...original.transcript,
+        words: all,
+        wordsWindow: { offset: 500, limit: 500, total: 503 },
+      },
     };
     const h = mount({ project: original }, [{ structuredContent: { project: chunk } }]);
     await settle();

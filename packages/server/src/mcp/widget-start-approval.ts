@@ -2,17 +2,50 @@
 export const WIDGET_START_APPROVAL = String.raw`
 let approvalTimer=null,approvalBusy=false;
 function stopApprovalTimer(){clearTimeout(approvalTimer);approvalTimer=null}
+let nativeUploadProject=null,nativeUploadKey=null,nativeUploadIdentity=null,autoReviewProjectId=null;
 function renderStart(){
-  const host=window.openai||{},canDownload=typeof host.getFileDownloadUrl==='function';
-  const canUpload=canDownload&&typeof host.uploadFile==='function',canSelect=canDownload&&typeof host.selectFiles==='function';
+  const host=window.openai||{},canSelect=typeof host.getFileDownloadUrl==='function'&&typeof host.selectFiles==='function';
   setStatus('Ready to begin');
-  content.innerHTML='<div class="stack"><div><p class="eyebrow">Start with a video</p><h1>Caption your video</h1><p class="muted">Choose a video here or upload securely in ClipSubtitles.</p></div><div id="selection" class="notice" aria-live="polite">'+(canUpload||canSelect?'No video selected yet.':'This host does not support direct video selection. Upload in ClipSubtitles, then return to this conversation.')+'</div><div class="row">'+(canUpload?'<button id="choose" class="btn primary">Choose video</button>':'')+(canSelect?'<button id="library" class="btn">File library</button>':'')+'<button id="web-upload" class="btn">Upload in ClipSubtitles</button></div><input id="fallback" type="file" accept="video/*" hidden></div>';
-  document.getElementById('web-upload').onclick=function(){openExternal(WEB+'/app/new')};
+  content.innerHTML='<div class="stack"><div><p class="eyebrow">Start with a video</p><h1>Caption your video</h1><p class="muted">Choose your video, then review captions and styles together.</p></div><div id="selection" class="notice" aria-live="polite">Upload a video up to 30 MB here. For larger videos, use ClipSubtitles.</div><div class="row"><button id="choose" class="btn primary">Choose video</button>'+(canSelect?'<button id="library" class="btn">File library</button>':'')+'<button id="web-upload" class="btn">Upload in ClipSubtitles</button></div><input id="fallback" type="file" accept="video/*" hidden></div>';
+  document.getElementById('web-upload').onclick=function(){openExternal(nativeUploadProject?WEB+'/studio/'+nativeUploadProject+'/upload':WEB+'/app/new')};
   const choose=document.getElementById('choose'),library=document.getElementById('library'),fallback=document.getElementById('fallback');
   let busy=false;
-  async function select(action){if(busy)return;busy=true;if(choose)choose.disabled=true;if(library)library.disabled=true;try{await action()}catch(error){showError(error)}finally{busy=false;if(choose)choose.disabled=false;if(library)library.disabled=false;fallback.value=''}}
-  if(choose){choose.onclick=function(){fallback.click()};fallback.onchange=function(){const file=fallback.files&&fallback.files[0];if(!file)return;select(async function(){if(file.type&&!file.type.startsWith('video/'))throw new Error('Choose a video file.');const uploaded=await host.uploadFile(file,{library:true});if(!uploaded||!uploaded.fileId)throw new Error('The host did not return an uploaded file. Please use Upload in ClipSubtitles.');await createFromFile({fileId:uploaded.fileId,fileName:file.name,mimeType:file.type})})}}
+  async function select(action){if(busy)return;busy=true;choose.disabled=true;if(library)library.disabled=true;try{await action()}catch(error){showError(error)}finally{busy=false;choose.disabled=false;if(library)library.disabled=false;fallback.value=''}}
+  choose.onclick=function(){fallback.click()};fallback.onchange=function(){const file=fallback.files&&fallback.files[0];if(file)select(function(){return uploadNativeVideo(file)})};
   if(library)library.onclick=function(){select(async function(){const selected=await host.selectFiles();const files=Array.isArray(selected)?selected:selected&&selected.files;if(files&&files[0])await createFromFile(files[0])})};
+}
+async function uploadNativeVideo(file){
+  if(!file.type||!file.type.startsWith('video/'))throw new Error('Choose a video file.');
+  if(!file.size||file.size>31457280)throw new Error('Choose a video up to 30 MB, or use Upload in ClipSubtitles for larger videos.');
+  const identity=JSON.stringify([file.name,file.type,file.size,file.lastModified]);
+  if(nativeUploadIdentity!==identity){nativeUploadProject=null;nativeUploadKey=null;nativeUploadIdentity=identity}
+  const selection=document.getElementById('selection');
+  if(!nativeUploadKey)nativeUploadKey='widget-upload:'+crypto.randomUUID();
+  selection.textContent=file.name+' · preparing upload…';setStatus('Preparing upload');
+  const prepared=await preparePrivateUpload({title:file.name.replace(/\.[^.]+$/,''),fileName:file.name,mimeType:file.type,bytes:file.size,idempotencyKey:nativeUploadProject?'widget-upload:'+crypto.randomUUID():nativeUploadKey,...(nativeUploadProject?{projectId:nativeUploadProject}:{})});
+  const data=prepared.data,target=prepared.target;
+  if(data.project&&data.project.id)nativeUploadProject=data.project.id;
+  if(!nativeUploadProject)throw new Error('The project could not be prepared. Please try again.');
+  if(data.status==='already_uploaded'){await startNativeCaptions();return}
+  if(!target)throw new Error('This host could not provide the secure upload connection. Use Upload in ClipSubtitles to continue with this project.');
+  let url;try{url=new URL(target.url)}catch(_){throw new Error('The secure upload connection is unavailable. Please try again.')}
+  const expiry=Date.parse(target.expiresAt);
+  if(target.projectId!==nativeUploadProject||url.origin!==API||!url.pathname.startsWith('/v1/uploads/')||target.method!=='PUT'||!Number.isFinite(target.maxBytes)||file.size>target.maxBytes||!Number.isFinite(expiry)||expiry<=Date.now())throw new Error('The secure upload connection is unavailable. Choose your video again or use Upload in ClipSubtitles.');
+  selection.textContent=file.name+' · uploading and checking video…';setStatus('Uploading video');
+  const controller=new AbortController(),timer=setTimeout(function(){controller.abort()},120000);
+  let response;
+  try{response=await fetch(url.href,{method:'PUT',headers:{'Content-Type':file.type},body:file,credentials:'omit',signal:controller.signal,redirect:'error'})}catch(_){throw new Error('The upload connection was interrupted. Choose your video again to retry this project, or use Upload in ClipSubtitles.')}finally{clearTimeout(timer)}
+  if(!response.ok)throw new Error(response.status===413?'This video is too large for an embedded upload. Use Upload in ClipSubtitles.':'The video could not be accepted. Choose your video again or continue in ClipSubtitles.');
+  selection.textContent='Video uploaded. Creating your captions…';setStatus('Creating captions');
+  const choose=document.getElementById('choose');
+  choose.textContent='Create captions';choose.onclick=async function(){choose.disabled=true;try{await startNativeCaptions()}catch(error){showError(error)}finally{choose.disabled=false}};
+  document.getElementById('web-upload').onclick=function(){openExternal(WEB+'/studio/'+nativeUploadProject)};
+  await startNativeCaptions();
+}
+async function startNativeCaptions(){
+  autoReviewProjectId=nativeUploadProject;
+  const generated=await callTool('generate_captions',{projectId:nativeUploadProject,idempotencyKey:nativeUploadKey+':captions'});
+  nativeUploadProject=null;nativeUploadKey=null;nativeUploadIdentity=null;render(generated);
 }
 async function createFromFile(file){
   const host=window.openai||{};

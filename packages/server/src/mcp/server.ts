@@ -24,6 +24,7 @@ import {
 import { createProject, getProjectView, patchProject } from '../services/projects';
 import { cancelTask, getTaskView } from '../services/tasks';
 import { registerClipSubtitlesUi, UI_RESOURCES } from './ui';
+import { registerUploadTool } from './upload-tool';
 
 type Handlers = {
   [K in McpToolName]: (ctx: AppContext, principal: Principal, input: unknown) => Promise<unknown>;
@@ -329,6 +330,7 @@ export function createMcpServer(ctx: AppContext, principal: Principal): McpServe
     { capabilities: { tools: {} }, instructions: llmInstructions(ctx) },
   );
   registerClipSubtitlesUi(server, ctx);
+  registerUploadTool(server, ctx, principal);
   for (const tool of MCP_TOOLS) {
     const resourceUri = toolResourceUri(tool.name);
     server.registerTool(

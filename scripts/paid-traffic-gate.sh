@@ -23,10 +23,16 @@ gate_tmp="$(mktemp -d "${TMPDIR:-/tmp}/clipsubtitles-paid-gate.XXXXXX")"
 stack_pid=""
 
 cleanup() {
+  local gate_exit_code=$?
   if [[ -n "$stack_pid" ]] && kill -0 "$stack_pid" 2>/dev/null; then
     kill "$stack_pid" 2>/dev/null || true
     wait "$stack_pid" 2>/dev/null || true
   fi
+  if [[ -f "$gate_tmp/stack.log" && "${AUTH_MODE:-}" == "mock" && "${CI:-}" == "true" ]]; then
+    mkdir -p apps/web/e2e/.results/gate
+    python3 -B scripts/collect-ci-diagnostics.py --stack-log-only "$gate_tmp/stack.log" apps/web/e2e/.results/gate/stack.log || true
+  fi
+  return "$gate_exit_code"
 }
 trap cleanup EXIT INT TERM
 
