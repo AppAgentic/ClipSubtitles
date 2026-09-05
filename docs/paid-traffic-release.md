@@ -5,6 +5,46 @@ candidate, not permission to deploy or enable billing.
 
 ## Immutable candidate gate
 
+### Fast production packaging after CI
+
+Use the successful GitHub **Paid traffic gate** run as the single full release
+gate. Its final `release-proof` job runs only after application and infrastructure
+checks succeed and records the actual tested Git tree (including the synthetic
+merge tree on pull requests). A green PR head SHA by itself is insufficient.
+
+From the clean, pushed release worktree:
+
+```bash
+pnpm release:build --ci-run RUN_ID --services api,web --dry-run
+pnpm release:build --ci-run RUN_ID --services api,web --receipt /tmp/clipsubtitles-release.json
+```
+
+The command verifies the authenticated GitHub run, workflow, repository, attempt,
+unexpired artifact and exact source tree before any build submission. It derives
+the image commit from Git and archives that commit; no local ignored files or
+credentials enter the source archive. A merge commit with the same tested tree
+is accepted. A changed tree requires a new successful CI run.
+
+Select the services the change affects. The default is all three; use `api,web`
+for a widget/web change, `web` for web-only changes, and include `worker` when
+worker logic or shared runtime inputs change. When uncertain, use the default.
+The fast lane is scoped to ClipSubtitles production under the existing AppAgentic
+identity. Keep the standalone full build below for staging or when a valid CI
+receipt is unavailable.
+
+Image packaging uses trusted registry cache tags as build inputs, never release
+identities. API and web builds can run concurrently. A missing cache falls back
+to a cold build. The public web SDK value stays a BuildKit secret; the command
+resolves its immutable Secret Manager version as a non-secret web cache key.
+Never reuse CI `.next` output: production API rewrites and SDK inputs differ.
+
+Wait for the returned Cloud Build ID to report `SUCCESS`, verify its source
+commit substitution, then deploy the selected **commit-tagged image digests**
+through the zero-traffic/canary procedure below. Cache tags are mutable and must
+never be deployed. Keep the non-secret receipt and timing results with the release.
+
+### Standalone full gate
+
 1. Work on an isolated branch and commit every intended change.
 2. Run `REQUIRE_CLEAN_GIT=1 pnpm release:gate` from that exact commit. The gate
    covers lint, types, unit/integration tests, production builds, dependency
