@@ -4,7 +4,7 @@ Prepared review material; this does not record a directory submission or approva
 
 ## Reviewer links
 
-- Guided recording: https://clipsubtitles.com/marketing/clipsubtitles-reviewer-guided-20260905-v2.mp4
+- Concise recording: https://clipsubtitles.com/marketing/clipsubtitles-reviewer-punchy-20260905-v3.mp4
 - Viewing page: https://clipsubtitles.com/review/caption-workflow-20260905/index.html
 - Plain recording: https://clipsubtitles.com/marketing/clipsubtitles-reviewer-workflow-20260905-v1.mp4
 - Actual output: https://clipsubtitles.com/marketing/clipsubtitles-reviewer-result-20260905-v1.mp4
@@ -61,8 +61,17 @@ prerequisites or guarantee review approval.
 
 ## Guided second pass
 
-The primary player now shows the 233.7-second, 1920×1080 guided edit requested by the operator. Eleven numbered explanations sit outside the source footage. Eased zooms focus on localized controls; quote and download views retain their full width. Highlights mark observed controls, not reconstructed UI. The final 12 seconds show the actual exported file with its saved correction. The original plain edit remains linked. Chapter buttons allow reviewers to jump to each step. Both walkthrough versions are silent; the separately linked exported MP4 retains its original audio.
+The previous guided version is the 233.7-second, 1920×1080 guided edit requested by the operator. Eleven numbered explanations sit outside the source footage. Eased zooms focus on localized controls; quote and download views retain their full width. Highlights mark observed controls, not reconstructed UI. The final 12 seconds show the actual exported file with its saved correction. The original plain edit remains linked. Chapter buttons allow reviewers to jump to each step. Both walkthrough versions are silent; the separately linked exported MP4 retains its original audio.
 
 The host banner obscures part of the correction input in the source recording. The guided edit highlights the visible word selection and independently verified result; it does not claim the hidden input is visible. Independent visual recheck confirmed quote, approval and download controls remain in frame.
 
 Guided artifact: 12069433 bytes; SHA-256 `61757faabc93ca69f7343776d998c40bd99cf11186d2dcb5f876f7f91361814f`.
+
+
+## Concise overlay edit (v3)
+
+The primary player now shows a 109.7-second, 1324×968 edit rebuilt from the plain source footage. Transient on-footage labels replace the permanent sidebar. Local focus moves and control highlights guide the viewer; the style highlight starts only after the scrolling grid settles. Retained actions and playback remain at normal speed. The upload transition, readable 3-credit quote and explicit approval, completed MP4 download, SRT request and actual corrected export are preserved. Chapter buttons use the new edit times.
+
+The walkthrough is silent until the appended actual exported clip, whose speech audio is audible. The separately linked output remains the original MP4. The host-banner and SRT-readback limitations above still apply. The longer plain recording remains available.
+
+Concise artifact: 8130574 bytes; SHA-256 `ae691dc3be2b702c65c53e35a6a8e883d6720016a44bff26de9d76021ab09bdb`.
