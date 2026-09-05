@@ -1,0 +1,35 @@
+# INACTIVE PREPARATION TEMPLATE. Do not rename/apply without the cutover review in
+# docs/directory/whisper-provider-preparation.md. No secret value belongs here.
+# These declarations belong in variables.tf after authorization. The secret must
+# already exist in this project's Secret Manager; do not create a provider key.
+variable "openai_api_key_secret_id" {
+  type        = string
+  description = "Existing authorized AppAgentic OpenAI API secret ID (not its value)"
+}
+variable "openai_api_key_secret_version" {
+  type        = string
+  description = "Pinned numeric Secret Manager version approved for the worker"
+  validation {
+    condition     = can(regex("^[1-9][0-9]*$", var.openai_api_key_secret_version))
+    error_message = "Pin an explicit numeric version."
+  }
+}
+# Add a narrowly scoped secretAccessor IAM binding for the existing worker service
+# account, using the same project/account pattern as the runtime secret bindings.
+# Insert only these env blocks inside the worker container (not the web or API):
+# env {
+#   name  = "OPENAI_TRANSCRIBE_MODEL"
+#   value = "whisper-1"
+# }
+# env {
+#   name = "OPENAI_API_KEY"
+#   value_source {
+#     secret_key_ref {
+#       secret  = var.openai_api_key_secret_id
+#       version = var.openai_api_key_secret_version
+#     }
+#   }
+# }
+# Revise transcription_providers validation in the same reviewed cutover, then
+# set transcription_providers = "openai-whisper". Existing guard/default remains
+# unchanged in this preparation. Update provider consent/disclosures first.

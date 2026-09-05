@@ -16,3 +16,4 @@ export * from './benchmark/fixtures';
 export * from './benchmark/scoring';
 export * from './benchmark/runner';
 export * from './benchmark/report';
+export * from './adapters/openai-whisper';
