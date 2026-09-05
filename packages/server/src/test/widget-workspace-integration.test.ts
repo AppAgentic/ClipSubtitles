@@ -442,22 +442,34 @@ describe('assembled caption workspace', () => {
       'Video could not play. Reload the video to try again.',
     );
   });
-  it('keeps native controls for a baked rendered preview', async () => {
+  it('continues from instant preview to a quote without starting a render', async () => {
     const h = mount({ project: project() }, [
       {
         structuredContent: {
-          task: { id: 'task_preview', status: 'succeeded' },
-          exports: [{ kind: 'preview', downloadUrl: 'https://clipsubtitles.com/v1/export/test' }],
+          status: 'quote_required',
+          quote: {
+            id: 'quote_test',
+            projectId: 'project_test',
+            status: 'open',
+            creditCost: 2,
+            expiresAt: new Date(Date.now() + 60_000).toISOString(),
+            settings: { outputs: ['mp4'], resolution: '1080p' },
+            durationMs: 12000,
+          },
         },
       },
     ]);
-    h.el('free-preview').click();
+    expect(h.el('free-preview')).toBeNull();
+    expect(h.el<HTMLVideoElement>('source-video')).not.toBeNull();
+    h.el('continue-export').click();
     await settle();
-    const preview = h.el('preview-result').querySelector('video')!;
-    expect(preview.controls).toBe(true);
-    expect(preview.playsInline).toBe(true);
-    expect(preview.src).toContain('stream=1');
-    expect(h.el<HTMLVideoElement>('source-video').controls).toBe(false);
+    expect(h.callTool).toHaveBeenCalledExactlyOnceWith('render_caption_export', {
+      projectId: 'project_test',
+    });
+    expect(h.el('approve').textContent).toContain('Approve 2 credits');
+    expect(h.win.document.body.textContent).toContain(
+      'Nothing is exported or charged until you approve',
+    );
   });
   it('uses the complete inclusive word range of a real multiword caption page', () => {
     const data = project(12, 3);

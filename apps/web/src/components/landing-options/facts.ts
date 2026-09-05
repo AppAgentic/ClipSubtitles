@@ -11,7 +11,7 @@ export const MCP_TOOLS = [
   { name: 'generate_captions', role: 'agent', does: 'word-level transcript, segmented into pages' },
   { name: 'get_caption_project', role: 'agent', does: 'reads words, pages, style, version, hash' },
   { name: 'update_caption_project', role: 'shared', does: 'explicit per-word patch ops against expectedVersion' },
-  { name: 'render_caption_preview', role: 'agent', does: 'low-res preview of the exact current version' },
+  { name: 'open_caption_editor', role: 'agent', does: 'instant video, caption styles and corrections' },
   { name: 'render_caption_export', role: 'shared', does: 'quote first; render only with approval' },
   { name: 'get_caption_task', role: 'agent', does: 'polls a durable task; exports carry short-lived URLs' },
   { name: 'cancel_caption_task', role: 'agent', does: 'cooperative cancel; reservation released' },

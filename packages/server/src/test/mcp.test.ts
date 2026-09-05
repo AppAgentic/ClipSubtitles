@@ -73,10 +73,16 @@ describe('MCP conformance', () => {
     expect(meta.authorization_servers.length).toBe(1);
   });
 
-  it('lists thirteen model tools and a private upload tool with strict metadata', async () => {
+  it('lists twelve model tools and a private upload tool with strict metadata', async () => {
     const client = await connect(await h.token());
     const { tools } = await client.listTools();
-    expect(tools.filter((t) => t._meta?.['openai/visibility'] !== 'private').map((t) => t.name).sort()).toEqual([...MCP_TOOL_NAMES].sort());
+    expect(
+      tools
+        .filter((t) => t._meta?.['openai/visibility'] !== 'private')
+        .map((t) => t.name)
+        .sort(),
+    ).toEqual([...MCP_TOOL_NAMES].sort());
+    expect(tools.some((t) => t.name === 'render_caption_preview')).toBe(false);
     const upload = tools.find((t) => t.name === 'prepare_caption_upload')!;
     expect(upload._meta?.['openai/visibility']).toBe('private');
     expect((upload._meta?.ui as { visibility: string[] }).visibility).toEqual(['app']);
@@ -255,25 +261,11 @@ describe('MCP conformance', () => {
     expect(edited.project.version).toBe(view.project.version + 1);
     expect(edited.project.pages![0]!.text.startsWith('Welcome,')).toBe(true);
 
-    const preview = structured<{ task: { id: string } }>(
-      await client.callTool({
-        name: 'render_caption_preview',
-        arguments: { projectId, durationMs: 1500, resolution: '360p' },
-      }),
-    );
-    await h.runTasks();
-    const previewDone = structured<{
-      task: Task;
-      exports?: Array<{ kind: string; downloadUrl?: string }>;
-    }>(await client.callTool({ name: 'get_caption_task', arguments: { taskId: preview.task.id } }));
-    expect(previewDone.task.status).toBe('succeeded');
-    expect(previewDone.exports?.[0]?.kind).toBe('preview');
-    const progressCard = structured<{ task: Task; exports?: Array<{ kind: string }> }>(
-      await client.callTool({ name: 'open_caption_progress', arguments: { taskId: preview.task.id } }),
-    );
-    expect(progressCard.task).toEqual(previewDone.task);
-    expect(progressCard.exports?.[0]?.kind).toBe('preview');
-
+    const rawDb = (h.ctx.db as SqliteStore).raw;
+    const creditsBeforeQuote = rawDb
+      .prepare('SELECT available, reserved FROM credit_accounts')
+      .all();
+    const tasksBeforeQuote = rawDb.prepare('SELECT id FROM tasks').all();
     const quoted = structured<{
       status: string;
       quote: RenderQuote;
@@ -293,10 +285,15 @@ describe('MCP conformance', () => {
       }),
     );
     expect(quoted.status).toBe('quote_required');
+    expect(quoted.quote.projectVersion).toBe(edited.project.version);
+    expect(quoted.quote.contentHash).toBe(edited.project.contentHash);
+    expect(rawDb.prepare('SELECT available, reserved FROM credit_accounts').all()).toEqual(
+      creditsBeforeQuote,
+    );
+    expect(rawDb.prepare('SELECT id FROM tasks').all()).toEqual(tasksBeforeQuote);
     expect(quoted.quote.creditCost).toBeGreaterThan(0);
     expect(quoted.approvalInstructions).toContain(String(quoted.quote.creditCost));
 
-    const rawDb = (h.ctx.db as SqliteStore).raw;
     const workspaceId = (
       await h.ctx.db.ensureUserWorkspace({
         subject: 'mock|joe',

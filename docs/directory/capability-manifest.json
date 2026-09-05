@@ -3,7 +3,7 @@
   "title": "ClipSubtitles",
   "version": "0.1.0",
   "status": "prepared-not-submitted",
-  "summary": "Agent-native captioning studio: import a short video, generate word-timed captions, review and edit through a versioned project, preview for free, approve an immutable credit quote, and render MP4 / transparent overlay / SRT / VTT.",
+  "summary": "Agent-native captioning studio: import a short video, generate word-timed captions, review and edit through a versioned project, preview styles instantly, approve an immutable credit quote, and render MP4 / transparent overlay / SRT / VTT.",
   "sourceOfTruth": {
     "tools": "packages/contracts/src/mcp.ts (MCP_TOOLS)",
     "limits": "packages/contracts/src/limits.ts (LIMITS)",
@@ -37,7 +37,7 @@
     },
     "scopes": {
       "captions:read": "Read projects, tasks, exports",
-      "captions:write": "Create/update projects, start generation, previews, paid renders, cancel tasks"
+      "captions:write": "Create/update projects, start generation, paid renders, cancel tasks"
     },
     "scopeEnforcement": "fail-closed per tool and per REST route",
     "revocation": "per-client grants (oauth_grants); revoking a grant makes the client's next call 401",
@@ -101,20 +101,6 @@
       },
       "sideEffects": "Applies a transactional batch of constrained edits with an optimistic version check (VERSION_CONFLICT on mismatch). Every edit increments the version and invalidates open render quotes.",
       "description": "Apply constrained edits (word text/timing, page split/merge, resegmentation, style, position, title) with an optimistic version check."
-    },
-    {
-      "name": "render_caption_preview",
-      "title": "Render caption preview",
-      "scope": "captions:write",
-      "cost": "free",
-      "annotations": {
-        "readOnlyHint": false,
-        "destructiveHint": false,
-        "idempotentHint": false,
-        "openWorldHint": false
-      },
-      "sideEffects": "Starts a durable low-resolution preview render (rate limited). The finished task carries a short-lived download URL.",
-      "description": "Render a fast, low-resolution preview clip (default: up to 8 seconds from the start) of the current project version."
     },
     {
       "name": "render_caption_export",

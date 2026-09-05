@@ -15,12 +15,7 @@ import type { AppContext } from '../context';
 import { ApiError, toApiError } from '../errors';
 import { withIdempotency } from '../http/idempotent';
 import { audit } from '../services/audit';
-import {
-  createRenderQuote,
-  startGeneration,
-  startPreview,
-  startRender,
-} from '../services/captions';
+import { createRenderQuote, startGeneration, startRender } from '../services/captions';
 import { createProject, getProjectView, patchProject } from '../services/projects';
 import { cancelTask, getTaskView } from '../services/tasks';
 import { registerClipSubtitlesUi, UI_RESOURCES } from './ui';
@@ -137,31 +132,8 @@ export const TOOL_HANDLERS: Handlers = {
     return { project: res.project, applied: res.applied };
   },
 
-  async render_caption_preview(ctx, principal, raw) {
-    const input = MCP_TOOLS[4].inputSchema.parse(raw);
-    const decision = ctx.limiters.previews.take(`p:${principal.workspaceId}`, ctx.clock.now());
-    if (!decision.ok)
-      throw new ApiError(
-        'RATE_LIMITED',
-        'Preview limit reached for this workspace. Try again later.',
-      );
-    const { projectId, ...rest } = input;
-    const out = await withIdempotency(
-      ctx,
-      {
-        workspaceId: principal.workspaceId,
-        scope: `previews:${projectId}`,
-        key: rest.idempotencyKey,
-        payload: input,
-        status: 202,
-      },
-      () => startPreview(ctx, principal, projectId, rest),
-    );
-    return { task: taskPointer(out.body) };
-  },
-
   async render_caption_export(ctx, principal, raw) {
-    const input = MCP_TOOLS[5].inputSchema.parse(raw);
+    const input = MCP_TOOLS[4].inputSchema.parse(raw);
     if (!input.approval) {
       const quote = await createRenderQuote(ctx, principal, input.projectId, {
         ...(input.settings ? { settings: input.settings } : {}),
@@ -219,24 +191,24 @@ export const TOOL_HANDLERS: Handlers = {
   },
 
   async get_caption_task(ctx, principal, raw) {
-    const input = MCP_TOOLS[6].inputSchema.parse(raw);
+    const input = MCP_TOOLS[5].inputSchema.parse(raw);
     const view = await getTaskView(ctx, principal, input.taskId);
     return { task: view.task, ...(view.exports ? { exports: view.exports } : {}) };
   },
 
   async open_caption_progress(ctx, principal, raw) {
-    const input = MCP_TOOLS[12].inputSchema.parse(raw);
+    const input = MCP_TOOLS[11].inputSchema.parse(raw);
     const view = await getTaskView(ctx, principal, input.taskId);
     return { task: view.task, ...(view.exports ? { exports: view.exports } : {}) };
   },
 
   async cancel_caption_task(ctx, principal, raw) {
-    const input = MCP_TOOLS[7].inputSchema.parse(raw);
+    const input = MCP_TOOLS[6].inputSchema.parse(raw);
     return { task: await cancelTask(ctx, principal, input.taskId) };
   },
 
   async get_caption_style_catalog(_ctx, _principal, raw) {
-    MCP_TOOLS[8].inputSchema.parse(raw);
+    MCP_TOOLS[7].inputSchema.parse(raw);
     return {
       presets: Object.values(STYLE_PRESETS),
       guidance: [
@@ -244,18 +216,18 @@ export const TOOL_HANDLERS: Handlers = {
         'Auto emoji are decorative overlays and never alter transcript words or SRT/VTT exports.',
         'Use active-word timing for a brief accent, keyword-hold to keep the emoji through the rest of the caption, or page for deliberate anticipation.',
         'Use resegment maxWordsPerPage/maxLinesPerPage for rapid single-word or short-phrase formats.',
-        'Render a free preview after style changes before requesting a paid export quote.',
+        'Review style changes instantly in open_caption_editor, then request an export quote when ready.',
       ],
     };
   },
 
   async open_caption_start(_ctx, _principal, raw) {
-    MCP_TOOLS[9].inputSchema.parse(raw);
+    MCP_TOOLS[8].inputSchema.parse(raw);
     return { ready: true as const };
   },
 
   async show_caption_style_picker(ctx, principal, raw) {
-    const input = MCP_TOOLS[10].inputSchema.parse(raw);
+    const input = MCP_TOOLS[9].inputSchema.parse(raw);
     return {
       project: await getProjectView(ctx, principal, input.projectId, {
         includePages: true,
@@ -266,7 +238,7 @@ export const TOOL_HANDLERS: Handlers = {
   },
 
   async open_caption_editor(ctx, principal, raw) {
-    const input = MCP_TOOLS[11].inputSchema.parse(raw);
+    const input = MCP_TOOLS[10].inputSchema.parse(raw);
     return {
       project: await getProjectView(ctx, principal, input.projectId, {
         includePages: true,
@@ -418,7 +390,7 @@ export function createMcpServer(ctx: AppContext, principal: Principal): McpServe
 export function llmInstructions(ctx: AppContext): string {
   return [
     'ClipSubtitles turns a short video into accurate, editable, styled captions and rendered exports.',
-    'Workflow: open_caption_start (when visual file selection helps) -> create_caption_project -> generate_captions -> open_caption_editor (immediately show video and caption styles together) -> update_caption_project -> render_caption_preview (free) -> render_caption_export (quote, then explicit approval) -> get_caption_task.',
+    'Workflow: open_caption_start (when visual file selection helps) -> create_caption_project -> generate_captions -> open_caption_editor (immediately show video and caption styles together) -> update_caption_project -> render_caption_export (quote, then explicit approval) -> get_caption_task.',
     'Open open_caption_progress once to show a live task card; use get_caption_task for data-only checks thereafter. The card polls automatically. Avoid repeated progress presentation calls.',
     'Never rewrite spoken words yourself; use explicit per-word edit ops only when the user asks.',
     'Paid renders: always show the quote (credits, outputs, project version, expiry) and get explicit approval before passing approval.',

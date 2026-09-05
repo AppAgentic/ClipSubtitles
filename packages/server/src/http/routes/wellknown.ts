@@ -49,7 +49,7 @@ export function llmsTxt(ctx: AppContext): string {
 - Use a burned-in MP4 when the exact caption design must always show; use SRT or VTT when a player should control subtitle display.
 
 ## Workflow
-create_caption_project -> (upload via web link or remote URL import) -> generate_captions -> get_caption_project -> update_caption_project (optional) -> render_caption_preview (optional, free) -> render_caption_export (quote, then approval) -> get_caption_task -> download exports
+create_caption_project -> (upload via web link or remote URL import) -> generate_captions -> open_caption_editor (instant video and style preview) -> update_caption_project (optional) -> render_caption_export (quote, then approval) -> get_caption_task -> download exports
 
 ## Tools
 ${tools}

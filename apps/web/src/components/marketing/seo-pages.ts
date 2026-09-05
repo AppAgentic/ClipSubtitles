@@ -228,7 +228,7 @@ export const SEO_PAGES = {
     lede: 'Import a clip, generate word-timed captions, apply explicit corrections, choose a style, request a preview and prepare a publish-ready export through MCP or a typed REST API.',
     answerTitle: 'What does a video caption API return?',
     answerBody:
-      'A complete video caption API goes beyond speech-to-text: it accepts a clip, creates timed captions, supports corrections and styling, renders previews and returns finished video or subtitle outputs. ClipSubtitles exposes that workflow through REST and MCP.',
+      'A complete video caption API goes beyond speech-to-text: it accepts a clip, creates timed captions, supports corrections and styling with instant previews, and returns finished video or subtitle outputs. ClipSubtitles exposes that workflow through REST and MCP.',
     proof:
       'The machine workflow covers the whole caption job while keeping paid renders behind human approval.',
     visual: '/marketing/filmmaker-workflow.webp',
@@ -269,7 +269,7 @@ export const SEO_PAGES = {
       {
         question: 'What can the video caption API do?',
         answer:
-          'It can create a project, generate captions, read and update the current version, render a preview, prepare an export, track tasks and cancel work.',
+          'It can create a project, generate captions, read and update the current version, open the instant caption editor, prepare an export, track tasks and cancel work.',
       },
       {
         question: 'Can an AI agent use ClipSubtitles?',
