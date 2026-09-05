@@ -93,7 +93,13 @@ describe('MCP conformance', () => {
       expect(typeof tool.annotations?.readOnlyHint).toBe('boolean');
     }
     const getProject = tools.find((t) => t.name === 'get_caption_project')!;
-    expect(getProject.annotations?.readOnlyHint).toBe(true);
+    expect(getProject.annotations?.readOnlyHint).toBe(false);
+    // Directory review includes durable access-audit writes in state changes.
+    expect(tools.every((tool) => tool.annotations?.readOnlyHint === false)).toBe(true);
+    expect(tools.every((tool) => tool.annotations?.openWorldHint === false)).toBe(true);
+    expect(tools.filter((tool) => tool.annotations?.destructiveHint).map((tool) => tool.name).sort()).toEqual([
+      'cancel_caption_task', 'generate_captions', 'render_caption_export', 'update_caption_project',
+    ]);
     expect(
       (getProject.inputSchema as { additionalProperties?: boolean }).additionalProperties,
     ).toBe(false);
@@ -108,6 +114,19 @@ describe('MCP conformance', () => {
     expect(poll._meta?.['openai/outputTemplate']).toBeUndefined();
     expect(poll._meta?.['openai/widgetAccessible']).toBe(true);
     expect((poll._meta?.ui as { resourceUri?: string }).resourceUri).toBeUndefined();
+    await client.close();
+  });
+
+  it('records access audits for read-scoped presentation without requiring write authority', async () => {
+    const token = await h.token('mock|annotation-reader', ['captions:read']);
+    const client = await connect(token);
+    const result = await client.callTool({ name: 'open_caption_start', arguments: {} });
+    expect(result.isError).not.toBe(true);
+    expect(structured<{ ready: boolean }>(result).ready).toBe(true);
+    const me = await h.api('GET', '/v1/me', { token });
+    const workspaceId = (me.body as { workspace: { id: string } }).workspace.id;
+    const events = await h.ctx.db.listAudit(workspaceId);
+    expect(events.some((event) => event.action === 'mcp.open_caption_start' && event.outcome === 'ok')).toBe(true);
     await client.close();
   });
 
