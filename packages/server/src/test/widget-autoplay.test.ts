@@ -118,11 +118,12 @@ function media(h: ReturnType<typeof mount>, blocked = false) {
   return { video, play, ready };
 }
 describe('initial caption preview playback', () => {
-  it('autoplays muted once when media is ready and leaves audio opt-in', async () => {
+  it('autoplays muted with native looping and leaves audio opt-in', async () => {
     const h = mount({ project: project() });
     const m = media(h);
     expect(m.video.muted).toBe(true);
     expect(m.video.playsInline).toBe(true);
+    expect(m.video.loop).toBe(true);
     m.ready();
     await settle();
     expect(m.play).toHaveBeenCalledOnce();
@@ -185,6 +186,7 @@ describe('initial caption preview playback', () => {
     second.ready();
     expect(second.video.currentTime).toBe(4.25);
     expect(second.video.muted).toBe(false);
+    expect(second.video.loop).toBe(true);
     expect(second.play).not.toHaveBeenCalled();
     h.el('refresh-review').click();
     await settle();
@@ -192,6 +194,7 @@ describe('initial caption preview playback', () => {
     third.ready();
     expect(third.video.currentTime).toBe(4.25);
     expect(third.video.muted).toBe(false);
+    expect(third.video.loop).toBe(true);
     expect(third.play).not.toHaveBeenCalled();
     h.el('fullscreen').click();
     await settle();
