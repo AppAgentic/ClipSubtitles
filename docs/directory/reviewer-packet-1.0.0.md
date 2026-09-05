@@ -54,27 +54,27 @@ Request and approve another short export using available reviewer credits, then 
 
 Expected: successful cancellation ends in `cancelled`, reserved credits are released, and no completed exports remain for that task. If it finishes before cancellation is accepted, record the race and rerun once with a task that remains active; a completed task is not a successful cancellation test. Do not claim cancellation guarantees an already-finished task can be undone.
 
-## Negative cases — exactly three
+## Negative intent cases — exactly three
 
-### N1 — Private-network source URL
+These match the live portal's non-trigger intent fields: Scenario and User prompt. They are not API rejection/security tests. All three are NOT EXECUTED. The expected routing behavior for each is that ClipSubtitles is not invoked.
 
-Prompt: “Create captions from http://127.0.0.1:3101/private.mp4.”
+### N1 — Social post copy, no video
 
-Attempt that source through `create_caption_project`; inspect the returned import task if creation is asynchronous.
+Scenario: The user wants written copy for a social post, not subtitles or a video project.
 
-Expected: source import fails closed with `SOURCE_URL_REJECTED`; no private-network bytes are ingested, no transcription or paid export succeeds, and the error contains no sensitive response body. A project/task record can exist before asynchronous validation finishes; its existence is not an SSRF failure.
+User prompt: “Write five witty Instagram captions for a photo of my morning coffee.”
 
-### N2 — Stale editor version
+### N2 — Still-image accessibility text
 
-Read a project version, make one valid change, then submit a second update with the old `expectedVersion`.
+Scenario: The user asks for a textual description of a still image, not timed video captions.
 
-Expected: `VERSION_CONFLICT` and no application of the stale edit. Re-reading shows the first valid change preserved. A user-facing request should explain that the project changed and reload it, rather than silently overwriting it.
+User prompt: “Write concise alt text for this photo of a dog running through a park.”
 
-### N3 — Approval for an invalidated quote
+### N3 — Subtitle translation only
 
-Get an unapproved export quote, edit the project, then approve the old quote with its original cost.
+Scenario: The user wants translation of an existing subtitle file; ClipSubtitles does not translate speech or subtitle text.
 
-Expected: `QUOTE_INVALIDATED`; no new task/reservation/charge for the stale quote. Request a fresh quote and return it to the user for new approval. Expired quotes may return `QUOTE_EXPIRED`; keep this execution within the TTL to test invalidation specifically.
+User prompt: “Translate these English SRT subtitles into Spanish while keeping every timestamp unchanged.”
 
 ## Release notes — copy this field
 
@@ -83,10 +83,32 @@ First directory release of ClipSubtitles. Upload a video, generate word-timed ca
 ## Concrete unresolved gates
 
 - **Commerce:** current `packages/server/src/mcp/widget-start-approval.ts` presents “Add credits to continue” and “View credit options” linking to `/pricing`. `packages/server/src/mcp/server.ts` tells the assistant to ask the user to open pricing and retry after checkout. This is a digital-credit upsell route. OpenAI permits access with existing paid entitlements and informational entitlement explanations, but disallows digital-credit sales/upsells and links that initiate upgrade or purchase. Remove the transactional promotion from the MCP journey or replace it with a genuinely informational unavailable-feature path; verify the full low-balance flow before checking commerce attestations. Existing credit consumption is not itself proof that all paid use is forbidden.
-  A corrective code branch `fix/mcp-existing-credit-access` is being prepared separately; this packet does not claim it deployed.
+  Correction commit `17ea678` on `fix/mcp-existing-credit-access` replaces the MCP upsell with an informational `insufficient_credits` response and preserves web billing. Its checks passed; it is not merged or deployed.
 - **Annotations:** reconcile the source flags with current review guidance before entering the draft justifications in `tool-justifications-1.0.0.md`. In particular, external reads are not necessarily publicly visible writes, and settled credit consumption can be irreversible.
 - **Reviewer access and execution:** secure account provisioning, seeded sample, credit balance, all eight live cases, revocation/cross-workspace security evidence and independent review remain unverified by this packet.
-- **Portal and assets:** current saved scan/domain/identity readbacks, three correctly sized screenshots, logos, availability selection, and owner-reviewed policy statements are separate gates.
+- **Portal and assets:** parent operator readback confirms 1.0.0 listing metadata, verified Business App Agentic Ltd author, both existing brand PNG icons, all three starters, website/support/privacy/terms/demo URLs, and a completed 13-tool scan. Domain challenge deployment/verification, three correctly sized screenshots, availability selection, tool justifications and policy statements remain separate gates. Reviewer credential fields are still blank.
 - **Import JSON:** no local shared `chatgpt-app-submission` skill or official `chatgpt-app-submission.json` schema was located in this bounded lookup. Do not invent JSON keys or imply the capability manifest is the portal importer format. Manual form fields remain usable; obtain the exact linked skill/schema from the portal before generating an import file.
 
 Sources checked 2026-09-05: [submission requirements](https://developers.openai.com/plugins/deploy/submission-errors), [commerce and monetization](https://developers.openai.com/plugins/app-guidelines#commerce-and-monetization), [MCP review requirements](https://developers.openai.com/plugins/deploy/app-review). Implementation basis: `packages/contracts/src/mcp.ts`, `packages/contracts/src/limits.ts`, `packages/server/src/services/captions.ts`, `packages/server/src/services/projects.ts`, and `packages/server/src/mcp/upload-tool.ts`.
+
+## Appendix — separate API security and consistency checks
+
+### A1 — Private-network source URL
+
+Prompt: “Create captions from http://127.0.0.1:3101/private.mp4.”
+
+Attempt that source through `create_caption_project`; inspect the returned import task if creation is asynchronous.
+
+Expected: source import fails closed with `SOURCE_URL_REJECTED`; no private-network bytes are ingested, no transcription or paid export succeeds, and the error contains no sensitive response body. A project/task record can exist before asynchronous validation finishes; its existence is not an SSRF failure.
+
+### A2 — Stale editor version
+
+Read a project version, make one valid change, then submit a second update with the old `expectedVersion`.
+
+Expected: `VERSION_CONFLICT` and no application of the stale edit. Re-reading shows the first valid change preserved. A user-facing request should explain that the project changed and reload it, rather than silently overwriting it.
+
+### A3 — Approval for an invalidated quote
+
+Get an unapproved export quote, edit the project, then approve the old quote with its original cost.
+
+Expected: `QUOTE_INVALIDATED`; no new task/reservation/charge for the stale quote. Request a fresh quote and return it to the user for new approval. Expired quotes may return `QUOTE_EXPIRED`; keep this execution within the TTL to test invalidation specifically.

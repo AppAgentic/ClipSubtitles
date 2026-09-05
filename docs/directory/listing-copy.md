@@ -5,7 +5,7 @@ Prepared for owner review on 2026-09-05; not submitted. This replaces the legacy
 | Field | Proposed value |
 | --- | --- |
 | Display name | ClipSubtitles |
-| Short description | Add captions to your videos |
+| Short description | Create and edit video captions |
 | Version | 1.0.0 |
 | Category | Creativity |
 | Default language | English |
@@ -15,7 +15,7 @@ Prepared for owner review on 2026-09-05; not submitted. This replaces the legacy
 | Terms | https://clipsubtitles.com/terms |
 | Demo recording | https://clipsubtitles.com/review/caption-workflow-20260905/index.html |
 
-The display name is 13 characters and short description 27. Select the actual verified developer identity in the portal; do not substitute a guessed legal entity. Countries remain an owner-reviewed selection, not an assertion of universal availability.
+The display name is 13 characters and short description 30. Parent portal readback confirms the selected verified Business author is App Agentic Ltd. Countries remain an owner-reviewed selection, not an assertion of universal availability.
 
 ## Long description — copy this field
 
