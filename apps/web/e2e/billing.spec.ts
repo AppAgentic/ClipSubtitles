@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 test.beforeAll(async ({ request }) => {
   const response = await request.get('/v1/prices').catch(() => null);
