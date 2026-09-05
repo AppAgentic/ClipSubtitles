@@ -1,6 +1,8 @@
 # Directory readiness packet (Phase 4)
 
-**Status: PREPARED, NOT SUBMITTED.** Nothing in this folder has been sent to the
+**Status: PREPARED, NOT SUBMITTED.**
+
+Current status and verified demo URL: [submission-status-2026-09-05.md](submission-status-2026-09-05.md). This dated audit supersedes legacy pre-deploy claims and form limits below. Nothing in this folder has been sent to the
 ChatGPT/OpenAI apps directory, the Anthropic/Claude connector directory, or any
 other listing. Submission is an explicit approval gate — see
 `PARKED_ACTIONS.md` (gate 6) — and depends on gates 1–3 (staging deploy,

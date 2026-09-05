@@ -241,5 +241,15 @@
     "apiTests": "packages/server/src/test/*.test.ts — auth, scopes, idempotency, quotes, billing, uploads, retention, SSRF guard",
     "renderDeterminism": "pnpm smoke:render — byte-identical repeat renders",
     "e2e": "pnpm smoke:e2e and apps/web/e2e/studio.spec.ts (desktop + 390px)"
+  },
+  "demoRecordingUrl": "https://clipsubtitles.com/review/caption-workflow-20260905/index.html",
+  "demoRecordingDirectUrl": "https://clipsubtitles.com/marketing/clipsubtitles-reviewer-punchy-20260905-v3.mp4",
+  "submissionStatusReview": "docs/directory/submission-status-2026-09-05.md",
+  "openaiDraft": {
+    "projectId": "proj_1XtY6cMajsOV2P94CWKITYxr",
+    "appId": "asdk_app_6a9c6c7c3bd481918c6e63e5a7658fe9",
+    "versionId": "asdk_app_v_6a9c6c7d7e8081918b0209a73989cc3d",
+    "status": "draft-not-submitted",
+    "demoUrlPersisted": true
   }
 }
