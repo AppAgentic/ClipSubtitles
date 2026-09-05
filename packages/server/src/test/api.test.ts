@@ -73,6 +73,14 @@ afterAll(async () => {
 });
 
 describe('auth boundaries', () => {
+  it('serves the exact public OpenAI domain challenge without authentication', async () => {
+    const res = await h.app.request('/.well-known/openai-apps-challenge');
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toContain('text/plain');
+    expect(res.headers.get('www-authenticate')).toBeNull();
+    expect(await res.text()).toBe('E-I1h-rjId3wiz0VU6UHekFfzfdTN7zzwAG6hpR0cfo');
+  });
+
   it('rejects unauthenticated requests with a bearer challenge pointing at resource metadata', async () => {
     const res = await h.api('GET', '/v1/me');
     expect(res.status).toBe(401);
