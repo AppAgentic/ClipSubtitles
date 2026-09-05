@@ -3,12 +3,7 @@ import type { Scope } from './auth';
 import { IdempotencyKeySchema, ProjectIdSchema, QuoteIdSchema, TaskIdSchema } from './ids';
 import { LIMITS } from './limits';
 import { CaptionProjectSchema, PatchOpSchema, ProjectStatusSchema } from './project';
-import {
-  CreatePreviewRequestSchema,
-  ExportSchema,
-  OutputSettingsSchema,
-  RenderQuoteSchema,
-} from './render';
+import { ExportSchema, OutputSettingsSchema, RenderQuoteSchema } from './render';
 import { CheckoutRequiredSchema } from './billing';
 import { CaptionPositionSchema, StyleConfigSchema, StylePresetIdSchema } from './style';
 import { TaskSchema } from './tasks';
@@ -23,7 +18,6 @@ export const MCP_TOOL_NAMES = [
   'generate_captions',
   'get_caption_project',
   'update_caption_project',
-  'render_caption_preview',
   'render_caption_export',
   'get_caption_task',
   'cancel_caption_task',
@@ -203,25 +197,6 @@ export const UpdateCaptionProjectTool = describe({
   cost: 'free',
 });
 
-export const RenderCaptionPreviewTool = describe({
-  name: 'render_caption_preview',
-  description:
-    'Render a fast, low-resolution preview clip (default: up to 8 seconds from the start) of the current project version. Free, rate limited. Returns a durable task; the finished task carries a short-lived download URL.',
-  inputSchema: CreatePreviewRequestSchema.extend({ projectId: ProjectIdSchema }).strict(),
-  outputSchema: z.object({
-    task: TaskPointerSchema,
-  }),
-  annotations: {
-    title: 'Render caption preview',
-    readOnlyHint: false,
-    destructiveHint: false,
-    idempotentHint: false,
-    openWorldHint: false,
-  },
-  scope: 'captions:write',
-  cost: 'free',
-});
-
 export const RenderCaptionExportTool = describe({
   name: 'render_caption_export',
   description:
@@ -377,7 +352,6 @@ export const MCP_TOOLS = [
   GenerateCaptionsTool,
   GetCaptionProjectTool,
   UpdateCaptionProjectTool,
-  RenderCaptionPreviewTool,
   RenderCaptionExportTool,
   GetCaptionTaskTool,
   CancelCaptionTaskTool,

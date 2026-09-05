@@ -31,7 +31,7 @@ const CALLS: Array<{ actor: Actor; tool: string; args?: string; result: string }
     args: `replace_word_text "${EDITED_WORD.was}" → "${EDITED_WORD.text}"`,
     result: `→ v3 · ${shortHash(SAMPLE.hashV3)}`,
   },
-  { actor: 'agent', tool: 'render_caption_preview', result: '→ 480p preview of v3' },
+  { actor: 'agent', tool: 'open_caption_editor', result: '→ instant caption and style preview' },
   {
     actor: 'agent',
     tool: 'render_caption_export',

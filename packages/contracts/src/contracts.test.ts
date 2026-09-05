@@ -197,7 +197,7 @@ describe('request schemas are strict and bounded', () => {
 describe('MCP registry', () => {
   it('exposes exactly the twelve contracted tools with annotations and scopes', () => {
     expect(MCP_TOOLS.map((t) => t.name)).toEqual([...MCP_TOOL_NAMES]);
-    expect(MCP_TOOLS).toHaveLength(13);
+    expect(MCP_TOOLS).toHaveLength(12);
     for (const tool of MCP_TOOLS) {
       expect(tool.description.length).toBeGreaterThan(40);
       expect(tool.annotations.title.length).toBeGreaterThan(0);

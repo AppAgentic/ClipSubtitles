@@ -13,7 +13,7 @@ asks before spending credits. **Not submitted.**
 | "Fix the word at 00:12 — it should be 'Ruvix', not 'Rubik'." | `update_caption_project` with a word-text op and `expectedVersion` |
 | "Move the captions to the top and make them a bit larger." | `update_caption_project` with style/position ops |
 | "Split the second caption after 'tonight'." | `update_caption_project` with a page-split op |
-| "Give me a quick preview before we render." | `render_caption_preview` (free) → `get_caption_task` → download URL |
+| "Give me a quick preview before we render." | `open_caption_editor` → instant video and style preview |
 | "How much would a 1080p MP4 plus SRT cost?" | `render_caption_export` **without** approval → show the immutable quote; do not reserve credits |
 | "Go ahead and render it." (after a quote was shown) | `render_caption_export` with `approval: {quoteId, approvedCreditCost}` → `get_caption_task` until finished → download links |
 | "Cancel that render." | `cancel_caption_task` → confirm reserved credits were released |
@@ -25,4 +25,4 @@ asks before spending credits. **Not submitted.**
 - Prompts that edit text name the exact word: edits are explicit per-word
   operations, never "clean up the transcript".
 
-Use `open_caption_progress` once when presenting a live task card. It refreshes itself and shows the completed preview or the next editing action. Keep subsequent agent checks on the data-only `get_caption_task` tool to avoid duplicate progress cards.
+Use `open_caption_progress` once when presenting a live task card. It refreshes itself and shows the completed export or the next editing action. Keep subsequent agent checks on the data-only `get_caption_task` tool to avoid duplicate progress cards.

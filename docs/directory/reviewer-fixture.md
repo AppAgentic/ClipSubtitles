@@ -30,10 +30,12 @@ errors arrive as JSON text content with `isError: true` and a stable `code`.
    credentials; on staging it is the WorkOS hosted page. Expect a bearer token
    with both scopes.
 3. **Handshake.** `initialize` → `serverInfo.name` is `clipsubtitles`.
-   `tools/list` → exactly eight tools:
+   `tools/list` → 12 model-visible tools (plus the private app-only upload helper):
    `create_caption_project`, `generate_captions`, `get_caption_project`,
-   `update_caption_project`, `render_caption_preview`, `render_caption_export`,
-   `get_caption_task`, `cancel_caption_task`.
+   `update_caption_project`, `render_caption_export`,
+   `get_caption_task`, `cancel_caption_task`, `get_caption_style_catalog`,
+   `open_caption_start`, `show_caption_style_picker`, `open_caption_editor`,
+   `open_caption_progress`.
 4. **Create (upload path).** `create_caption_project { "title": "Reviewer clip" }`
    → `project` pointer plus `uploadTarget.webUploadUrl` (short-lived) and
    `nextSteps`. Open the link in a browser, upload the sample clip.
@@ -51,10 +53,10 @@ errors arrive as JSON text content with `isError: true` and a stable `code`.
    Repeat with the *old* `expectedVersion` → error code `VERSION_CONFLICT`.
    Other ops to try: `replace_word_text`, `set_word_timing`, `split_page`,
    `merge_page_with_next`, `set_style`, `set_preset`, `resegment`, `set_title`.
-7. **Free preview.** `render_caption_preview { "projectId" }` → task. Poll to
-   `succeeded`; the task's `exports[0]` has a short-lived download URL that
-   serves `video/mp4`. No credits move (check the web account page or
-   `GET /v1/account`).
+7. **Instant preview.** `open_caption_editor { "projectId" }` shows the video,
+   current caption style and word corrections together. Play the video and
+   choose another style; the overlay updates without a render task or credit
+   charge. Continue to export to review a quote.
 8. **Quote (no approval).** `render_caption_export { "projectId", "settings": { … } }`
    → `status: "quote_required"`, `quote` with `id`, `creditCost`, `expiresAt`,
    `projectVersion`, `contentHash`, and `approvalInstructions`.
@@ -79,7 +81,7 @@ errors arrive as JSON text content with `isError: true` and a stable `code`.
 
 ## Expected timings (local, mock provider, ffmpeg renderer)
 
-Generation: seconds. Preview: ~5–15 s. Export (720p MP4 + SRT, 20 s clip): ~10–60 s
+Generation: seconds. Editor preview: instant. Export (720p MP4 + SRT, 20 s clip): ~10–60 s
 depending on the machine. Remotion renderer (`RENDERER=remotion`) is slower.
 
 ## What a reviewer should *not* see

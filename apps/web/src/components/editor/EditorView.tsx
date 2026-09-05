@@ -15,7 +15,6 @@ import type {
   TranscriptWord,
 } from '@clipsubtitles/contracts';
 import { applyStylePatch } from '@clipsubtitles/core';
-import { Dialog } from '@/components/ui/Dialog';
 import { Button, Chip, LinkButton, Progress, statusTone } from '@/components/ui/primitives';
 import { useToast } from '@/components/ui/Toast';
 import { ApiClientError, api, errorMessage, loadAllWords } from '@/lib/api';
@@ -51,8 +50,6 @@ export function EditorView({ projectId }: { projectId: string }) {
   const [generateOpen, setGenerateOpen] = useState(false);
   const [generateBusy, setGenerateBusy] = useState(false);
   const [generateTaskId, setGenerateTaskId] = useState<string | null>(null);
-  const [previewTaskId, setPreviewTaskId] = useState<string | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [titleDraft, setTitleDraft] = useState<string | null>(null);
   const stage = useRef<StageHandle | null>(null);
   const queue = useRef<PatchQueue | null>(null);
@@ -162,24 +159,12 @@ export function EditorView({ projectId }: { projectId: string }) {
     }
   }, [genTask, load, toast]);
 
-  // Preview task: poll, then show.
-  const { task: previewTask, exports: previewExports } = useTask(previewTaskId);
+  // The instant player is the review step; no server render is needed.
   useEffect(() => {
-    if (!previewTask) return;
-    if (previewTask.status === 'succeeded') {
-      setPreviewUrl(previewExports[0]?.downloadUrl ?? null);
-      setPreviewTaskId(null);
+    if (timeMs > 0 && project?.transcript) {
       trackPaidFunnelEventOnce('preview_seen', { project_id: projectId });
-    } else if (previewTask.status === 'failed' || previewTask.status === 'cancelled') {
-      setPreviewTaskId(null);
-      toast.push(
-        'error',
-        previewTask.error
-          ? `${previewTask.error.code}: ${previewTask.error.message}`
-          : 'Preview failed.',
-      );
     }
-  }, [previewTask, previewExports, toast]);
+  }, [timeMs, project?.transcript, projectId]);
 
   const sendOps = useCallback(
     (ops: PatchOp[]) => {
@@ -245,20 +230,6 @@ export function EditorView({ projectId }: { projectId: string }) {
       toast.push('error', errorMessage(err));
     } finally {
       setGenerateBusy(false);
-    }
-  };
-
-  const preview = async () => {
-    try {
-      await queue.current?.flushStyle();
-      const res = await api.createPreview(projectId, {
-        startMs: Math.max(0, timeMs - 500),
-        durationMs: 8000,
-        resolution: '480p',
-      });
-      setPreviewTaskId(res.task.id);
-    } catch (err) {
-      toast.push('error', errorMessage(err));
     }
   };
 
@@ -375,15 +346,6 @@ export function EditorView({ projectId }: { projectId: string }) {
             }
           >
             {hasTranscript ? 'Regenerate' : 'Generate captions'}
-          </Button>
-          <Button
-            size="sm"
-            className="flex-1 sm:flex-none"
-            onClick={() => void preview()}
-            disabled={!hasTranscript || isActiveTask(previewTask)}
-            loading={isActiveTask(previewTask)}
-          >
-            Preview 8s
           </Button>
           <LinkButton
             href={`/studio/${project.id}/render`}
@@ -514,46 +476,6 @@ export function EditorView({ projectId }: { projectId: string }) {
         onSubmit={generate}
         busy={generateBusy}
       />
-
-      <Dialog
-        open={Boolean(previewUrl)}
-        onClose={() => setPreviewUrl(null)}
-        title="Video preview"
-        description="A quick preview of your current captions, style and motion before export."
-        width={720}
-      >
-        {previewUrl ? (
-          <div className="mt-3 flex flex-col items-center gap-3">
-            <video
-              src={previewUrl}
-              controls
-              autoPlay
-              className="max-h-[60vh] rounded-xl shadow-2xl"
-            />
-            <div className="flex items-center gap-3 text-[12px] text-ink-mute">
-              <a href={`${previewUrl}&download=1`} className="text-signal hover:text-signal-soft">
-                Download preview
-              </a>
-              <Button size="sm" onClick={() => setPreviewUrl(null)}>
-                Close
-              </Button>
-            </div>
-          </div>
-        ) : null}
-      </Dialog>
-
-      {previewTaskId && previewTask ? (
-        <div
-          className="fixed bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-3 rounded-full border border-line-strong bg-panel-2/95 px-4 py-2 text-[12px] shadow-xl"
-          role="status"
-        >
-          <span className="record-dot h-2 w-2 rounded-full bg-signal" />
-          Rendering preview ·{' '}
-          <span className="mono">
-            {previewTask.stage ?? previewTask.status} {previewTask.progress}%
-          </span>
-        </div>
-      ) : null}
     </div>
   );
 }

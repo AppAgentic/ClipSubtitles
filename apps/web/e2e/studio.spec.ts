@@ -165,6 +165,11 @@ test('AI connections explains the first ChatGPT action after connecting', async 
 test('library, editor, and render routes stay within the viewport and the caption workflow works', async ({
   page,
 }) => {
+  const previewRequests: string[] = [];
+  page.on('request', (request) => {
+    const path = new URL(request.url()).pathname;
+    if (request.method() === 'POST' && path.endsWith('/previews')) previewRequests.push(path);
+  });
   await signIn(page);
   await noHorizontalOverflow(page, 'library');
   await shot(page, 'library');
@@ -212,6 +217,8 @@ test('library, editor, and render routes stay within the viewport and the captio
         .getAttribute('aria-label')
     )?.match(/(\d+) credits/)?.[1],
   );
+  await expect(page.getByRole('button', { name: 'Preview 8s' })).toHaveCount(0);
+  expect(previewRequests).toEqual([]);
   await page.getByRole('link', { name: 'Continue to export' }).click();
   await expect(page.getByRole('heading', { name: /^Export /, level: 1 })).toBeVisible();
   await noHorizontalOverflow(page, 'render');
