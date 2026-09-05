@@ -4,7 +4,6 @@ import { IdempotencyKeySchema, ProjectIdSchema, QuoteIdSchema, TaskIdSchema } fr
 import { LIMITS } from './limits';
 import { CaptionProjectSchema, PatchOpSchema, ProjectStatusSchema } from './project';
 import { ExportSchema, OutputSettingsSchema, RenderQuoteSchema } from './render';
-import { CheckoutRequiredSchema } from './billing';
 import { CaptionPositionSchema, StyleConfigSchema, StylePresetIdSchema } from './style';
 import { TaskSchema } from './tasks';
 import { LanguageTagSchema, VocabularySchema } from './transcript';
@@ -115,7 +114,7 @@ export const CreateCaptionProjectTool = describe({
 export const GenerateCaptionsTool = describe({
   name: 'generate_captions',
   description:
-    'Start transcription, normalization, semantic/prosody segmentation, and initial styling for a project whose source is ready. Returns a durable task. Spoken words are never rewritten; vocabulary only biases recognition.',
+    'Send the project audio to the configured transcription provider (ElevenLabs, with Gemini fallback), then run transcription, normalization, semantic/prosody segmentation, and initial styling for a project whose source is ready. Returns a durable task. Spoken words are never rewritten; vocabulary only biases recognition.',
   inputSchema: z
     .object({
       projectId: ProjectIdSchema,
@@ -200,7 +199,7 @@ export const UpdateCaptionProjectTool = describe({
 export const RenderCaptionExportTool = describe({
   name: 'render_caption_export',
   description:
-    'Two-step paid render. Step 1 (no approval): returns an immutable quote (settings, project version/hash, expected outputs, credit cost, expiry) and status "quote_required" — show it to the user. Step 2: call again with approval {quoteId, approvedCreditCost} to reserve credits and start the final render. Credits are charged exactly once when the render succeeds and released on failure or cancellation. Duplicate calls with the same idempotencyKey return the same task.',
+    'Two-step paid render. Step 1 (no approval): returns an immutable quote (settings, project version/hash, expected outputs, credit cost, expiry) and status "quote_required" — show it to the user. Step 2: call again with approval {quoteId, approvedCreditCost} to reserve credits and start the final render. If existing credits are insufficient, returns status "insufficient_credits" with availability details; no export starts and no credits are reserved or charged. Credits are charged exactly once when the render succeeds and released on failure or cancellation. Duplicate calls with the same idempotencyKey return the same task.',
   inputSchema: z
     .object({
       projectId: ProjectIdSchema,
@@ -214,11 +213,15 @@ export const RenderCaptionExportTool = describe({
     })
     .strict(),
   outputSchema: z.object({
-    status: z.enum(['quote_required', 'checkout_required', 'render_started']),
+    status: z.enum(['quote_required', 'insufficient_credits', 'render_started']),
     quote: RenderQuoteSchema,
     task: TaskPointerSchema.optional(),
     approvalInstructions: z.string().optional(),
-    checkout: CheckoutRequiredSchema.optional(),
+    creditAvailability: z.object({
+      balance: z.number().int().nonnegative(),
+      required: z.number().int().nonnegative(),
+      shortfall: z.number().int().positive(),
+    }).optional(),
   }),
   annotations: {
     title: 'Render caption export (paid)',
