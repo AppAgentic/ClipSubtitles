@@ -1,0 +1,230 @@
+{
+  "$schema": "https://developers.openai.com/plugins/schemas/chatgpt-app-submission.v1.json",
+  "schema_version": 1,
+  "tools": {
+    "create_caption_project": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Creates a private project and upload target or enqueues a source import, and records an access audit.",
+        "open_world_justification": "Imports media with an external read into private storage without publishing content or changing the source system.",
+        "destructive_justification": "Creates new project and source records without deleting or overwriting an existing project."
+      }
+    },
+    "generate_captions": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Enqueues transcription and updates the private project transcript, layout and version, with an access audit.",
+        "open_world_justification": "Processes audio through private ElevenLabs or Gemini transcription services and does not publish media or captions.",
+        "destructive_justification": "Regeneration replaces current caption layout and manual grouping without a complete layout snapshot, although transcript revisions are retained."
+      }
+    },
+    "get_caption_project": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Retrieves the owned project and bounded transcript window while persisting a redacted access audit.",
+        "open_world_justification": "Reads private workspace records and cannot publish or send them to external recipients.",
+        "destructive_justification": "Does not delete or overwrite project content; its access audit is append-only."
+      }
+    },
+    "update_caption_project": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Updates private words, timing, style, layout or title after checking the current project version and records an audit.",
+        "open_world_justification": "Changes only the authenticated workspace project and cannot publish it or message external recipients.",
+        "destructive_justification": "Can overwrite layout, styling and title without full historical snapshots; version checks prevent stale edits and transcript edits retain parent revisions."
+      }
+    },
+    "render_caption_export": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Persists an export quote or, after explicit approval, creates a render task and reserves and settles existing credits.",
+        "open_world_justification": "Renders private downloadable files in application storage without posting to social media or other public destinations.",
+        "destructive_justification": "An approved successful export consumes credits irreversibly; immutable quotes, explicit cost approval and idempotency prevent unapproved or duplicate charges."
+      }
+    },
+    "get_caption_task": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Retrieves task state and completed output metadata while persisting a redacted access audit.",
+        "open_world_justification": "Reads private task records and scoped downloads without publishing public content.",
+        "destructive_justification": "Does not cancel tasks or delete or overwrite their outputs; its access audit is append-only."
+      }
+    },
+    "cancel_caption_task": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Changes a private queued or running task to request cancellation and releases its reserved credits when cancelled.",
+        "open_world_justification": "Changes private application work only and does not publish content or affect public destinations.",
+        "destructive_justification": "Cancellation is terminal and discards incomplete outputs for that task; completed tasks cannot be cancelled and the source project remains available."
+      }
+    },
+    "get_caption_style_catalog": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Retrieves caption presets and guidance while persisting a redacted access audit.",
+        "open_world_justification": "Reads a first-party preset catalog without changing public internet state.",
+        "destructive_justification": "Does not modify presets or projects; its access audit is append-only."
+      }
+    },
+    "open_caption_start": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Returns the video-upload start card while persisting a redacted access audit; upload preparation requires a separate action.",
+        "open_world_justification": "Displays first-party UI without publishing media or writing to public destinations.",
+        "destructive_justification": "Does not delete or overwrite project content; its access audit is append-only."
+      }
+    },
+    "show_caption_style_picker": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Retrieves the private project and presets for the picker while persisting a redacted access audit; applying a style is separate.",
+        "open_world_justification": "Displays private project data and first-party presets without public publication.",
+        "destructive_justification": "Opening the picker does not overwrite the project; its access audit is append-only."
+      }
+    },
+    "open_caption_editor": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Retrieves the private project and bounded words for the editor while persisting a redacted access audit; edits are separate calls.",
+        "open_world_justification": "Displays private workspace content without public publication or external messaging.",
+        "destructive_justification": "Opening the editor does not overwrite project content; its access audit is append-only."
+      }
+    },
+    "open_caption_progress": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Retrieves task state for a progress card while persisting a redacted access audit.",
+        "open_world_justification": "Displays private job and output state without publishing public content.",
+        "destructive_justification": "Opening progress does not cancel tasks or remove outputs; its access audit is append-only."
+      }
+    },
+    "prepare_caption_upload": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Creates a private project or short-lived upload target for a user-selected file and records an access audit.",
+        "open_world_justification": "Prepares upload into private first-party storage and cannot publish the media.",
+        "destructive_justification": "Creates upload records without deleting existing projects and avoids replacing an already-ready source."
+      }
+    }
+  },
+  "test_cases": [
+    {
+      "description": "Upload and generate captions",
+      "user_prompt": "Add captions to a video I upload and let me choose a style.",
+      "file_attachment_urls": null,
+      "tools_triggered": "open_caption_start, prepare_caption_upload, generate_captions, get_caption_task, open_caption_editor",
+      "expected_output": "Upload a short talking-head MP4 in a fresh chat; receive timed captions and the style editor with muted looping playback when allowed; no paid render or credit reservation occurs. Live execution pending.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Choose and persist a caption style",
+      "user_prompt": "Show me the available caption styles, then move the captions to the top.",
+      "file_attachment_urls": null,
+      "tools_triggered": "get_caption_style_catalog, show_caption_style_picker, update_caption_project, open_caption_editor",
+      "expected_output": "The selected preset and top placement persist after reopening, the project version increases and no paid render starts. Live execution pending.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Correct one word and reopen",
+      "user_prompt": "Help me review my video's captions and correct a word before exporting.",
+      "file_attachment_urls": null,
+      "tools_triggered": "get_caption_project, open_caption_editor, update_caption_project",
+      "expected_output": "Only the explicitly requested word changes; the version increases and the saved correction remains after reopening, with unrelated words unchanged. Live execution pending.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Quote, approve, render and download",
+      "user_prompt": "Show me the cost to export my captioned video as an MP4 with an SRT file.",
+      "file_attachment_urls": null,
+      "tools_triggered": "render_caption_export, open_caption_progress, get_caption_task",
+      "expected_output": "Quote creates no task or charge; exact-cost approval starts one export; MP4 and SRT contain the correction, and repeating the same idempotency key creates no duplicate task or charge. Live execution pending.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Cancel an active task",
+      "user_prompt": "Cancel that export.",
+      "file_attachment_urls": null,
+      "tools_triggered": "cancel_caption_task, get_caption_task",
+      "expected_output": "An accepted cancellation becomes terminal, releases reserved credits and leaves no completed task outputs; a task already finished is not a successful cancellation case. Live execution pending.",
+      "expected_output_url": null
+    }
+  ],
+  "negative_test_cases": [
+    {
+      "description": "Social post copy, not timed video captions",
+      "user_prompt": "Write five witty Instagram captions for a photo of my morning coffee.",
+      "file_attachment_urls": null,
+      "tools_triggered": null,
+      "expected_output": "ClipSubtitles should not be invoked for this request. Live execution pending.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Still-image alt text, not video subtitles",
+      "user_prompt": "Write concise alt text for this photo of a dog running through a park.",
+      "file_attachment_urls": null,
+      "tools_triggered": null,
+      "expected_output": "ClipSubtitles should not be invoked for this request. Live execution pending.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Subtitle translation is outside supported capabilities",
+      "user_prompt": "Translate these English SRT subtitles into Spanish while keeping every timestamp unchanged.",
+      "file_attachment_urls": null,
+      "tools_triggered": null,
+      "expected_output": "ClipSubtitles should not be invoked for this request. Live execution pending.",
+      "expected_output_url": null
+    }
+  ]
+}
