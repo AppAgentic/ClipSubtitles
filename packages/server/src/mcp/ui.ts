@@ -141,8 +141,11 @@ h1{font-size:24px;font-weight:650;line-height:1.18;letter-spacing:-.025em;text-w
 .stage .circle{z-index:1;width:20px;height:20px;border:2px solid var(--line);border-radius:50%;background:var(--bg)}
 .stage.done .circle{border-color:var(--ok);background:var(--ok)}
 .stage.active .circle{border-color:var(--accent-fill);background:var(--accent-fill)}
-.stage-detail{min-width:0}.stage-progress{height:5px;overflow:hidden;margin-top:9px;border-radius:3px;background:var(--line)}
+.stage-detail{min-width:0}.stage-progress{position:relative;height:5px;overflow:hidden;margin-top:9px;border-radius:3px;background:var(--line)}
 .stage-progress i{display:block;height:100%;border-radius:inherit;background:var(--accent-fill);transition:width .3s}
+.stage-progress.is-active::after{content:"";position:absolute;inset:0 auto 0 0;width:35%;background:var(--accent-fill);opacity:.45;animation:task-activity 1.8s ease-in-out infinite}
+@keyframes task-activity{from{transform:translateX(-100%)}to{transform:translateX(390%)}}
+@media(prefers-reduced-motion:reduce){.stage-progress.is-active::after{animation:none;display:none}}
 .files{display:grid;gap:8px}.download{display:flex;align-items:center;justify-content:space-between;gap:12px;border:0;border-radius:16px;background:var(--soft);padding:12px;color:var(--ink);text-decoration:none}
 .editor{display:grid;grid-template-columns:minmax(0,1fr);gap:0;overflow:hidden;border:1px solid var(--line);border-radius:22px;background:var(--bg)}
 .panel{min-width:0;border:0;border-right:1px solid var(--line);border-radius:0;background:var(--bg);padding:16px}

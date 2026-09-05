@@ -136,6 +136,18 @@ const task = {
 };
 
 describe('widget host lifecycle and task recovery', () => {
+  it('shows queued activity and then the persisted transcription stage', async () => {
+    const h = harness({ task: { ...task, kind: 'generate_captions', status: 'queued', progress: 0 } }, [
+      { task: { ...task, kind: 'generate_captions', stage: 'transcribing', progress: 20 } },
+    ]);
+    expect(h.node('content').innerHTML).toContain('stage-progress is-active');
+    expect(h.node('content').innerHTML).toContain('Waiting for a worker');
+    expect(h.node('content').innerHTML).not.toContain('<p>0%</p>');
+    await h.node('refresh-progress').onclick!();
+    expect(h.node('content').innerHTML).toContain('Transcribing speech');
+    expect(h.node('content').innerHTML).toContain('width:20%');
+  });
+
   it('does not replay the original host output over a locally advanced view on a globals echo', () => {
     const h = harness({ task });
     const next = { ...task, id: 'task_new', progress: 70 };
