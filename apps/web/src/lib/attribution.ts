@@ -1,5 +1,6 @@
 'use client';
 
+import { readPrivacyConsent } from './privacy-consent';
 import type { PaidFunnelEvent, WebAttribution } from '@clipsubtitles/contracts';
 
 const STORAGE_KEY = 'clipsubtitles_attribution';
@@ -39,22 +40,33 @@ function safePageUrl(value: string): string | undefined {
 }
 
 export function readAttribution(): WebAttribution | undefined {
+  const consent = readPrivacyConsent();
+  if (!consent?.analytics && !consent?.marketing) return undefined;
   try {
     const value = sessionStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(STORAGE_KEY);
     if (!value) return undefined;
     const parsed = JSON.parse(value) as WebAttribution;
     if (!parsed.sessionId || Date.now() - parsed.capturedAt > MAX_AGE_MS) return undefined;
-    return parsed;
+    if (consent.marketing) return parsed;
+    const { sessionId, capturedAt, landingUrl, referrer } = parsed;
+    return {
+      sessionId,
+      capturedAt,
+      ...(landingUrl ? { landingUrl } : {}),
+      ...(referrer ? { referrer } : {}),
+    };
   } catch {
     return undefined;
   }
 }
 
-export function captureAttribution(): WebAttribution {
+export function captureAttribution(): WebAttribution | undefined {
+  const consent = readPrivacyConsent();
+  if (!consent?.analytics && !consent?.marketing) return undefined;
   const params = new URLSearchParams(window.location.search);
   const incoming: Partial<WebAttribution> = {};
   for (const [query, field] of Object.entries(QUERY_FIELDS)) {
-    const value = clean(params.get(query), field.endsWith('Name') ? 200 : 500);
+    const value = consent.marketing && clean(params.get(query), field.endsWith('Name') ? 200 : 500);
     if (value) incoming[field] = value;
   }
   const paidTouch = Boolean(incoming.appreferClickId || incoming.fbclid || incoming.utmSource);
@@ -73,8 +85,12 @@ export function captureAttribution(): WebAttribution {
   };
   if (!attribution.fbc && attribution.fbclid) attribution.fbc = `fb.1.${now}.${attribution.fbclid}`;
   const encoded = JSON.stringify(attribution);
-  sessionStorage.setItem(STORAGE_KEY, encoded);
-  localStorage.setItem(STORAGE_KEY, encoded);
+  try {
+    sessionStorage.setItem(STORAGE_KEY, encoded);
+    localStorage.setItem(STORAGE_KEY, encoded);
+  } catch {
+    return undefined;
+  }
   return attribution;
 }
 
@@ -82,7 +98,9 @@ export function trackPaidFunnelEvent(
   event: PaidFunnelEvent,
   properties?: Record<string, string | number | boolean>,
 ): void {
+  if (!readPrivacyConsent()?.analytics) return;
   const attribution = readAttribution() ?? captureAttribution();
+  if (!attribution) return;
   void fetch('/v1/analytics/funnel', {
     method: 'POST',
     credentials: 'include',
@@ -97,9 +115,20 @@ export function trackPaidFunnelEventOnce(
   event: PaidFunnelEvent,
   properties?: Record<string, string | number | boolean>,
 ): void {
+  if (!readPrivacyConsent()?.analytics) return;
   const attribution = readAttribution() ?? captureAttribution();
+  if (!attribution) return;
   const key = `${STORAGE_KEY}:event:${attribution.sessionId}:${event}`;
-  if (sessionStorage.getItem(key)) return;
-  sessionStorage.setItem(key, '1');
+  try {
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, '1');
+  } catch {
+    return;
+  }
   trackPaidFunnelEvent(event, properties);
+}
+
+/** Checkout attribution is advertising measurement, independent of usage analytics. */
+export function readCheckoutAttribution(): WebAttribution | undefined {
+  return readPrivacyConsent()?.marketing ? (readAttribution() ?? captureAttribution()) : undefined;
 }

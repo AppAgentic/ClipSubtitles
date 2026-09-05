@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { savePrivacyConsent } from './privacy-consent';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   captureAttribution,
@@ -13,6 +14,7 @@ describe('all-source web attribution', () => {
     sessionStorage.clear();
     localStorage.clear();
     history.replaceState({}, '', '/');
+    savePrivacyConsent({ analytics: true, marketing: true });
   });
 
   afterEach(() => vi.restoreAllMocks());
@@ -38,7 +40,7 @@ describe('all-source web attribution', () => {
 
   it('creates durable attribution state for direct traffic', () => {
     expect(captureAttribution()).toMatchObject({ landingUrl: 'http://localhost:3000/' });
-    expect(localStorage.length).toBe(1);
+    expect(localStorage.length).toBe(2);
   });
 
   it('sends funnel events for direct and paid attribution', async () => {
