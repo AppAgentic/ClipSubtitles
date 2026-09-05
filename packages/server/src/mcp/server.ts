@@ -2,7 +2,6 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import type { z } from 'zod';
 import {
-  BILLING_CATALOG,
   CONTENT_NOTICE,
   MCP_SERVER_INFO,
   MCP_TOOLS,
@@ -171,20 +170,13 @@ export const TOOL_HANDLERS: Handlers = {
       const balance = await ctx.db.getBalance(principal.workspaceId);
       const quote = await ctx.db.getQuote(principal.workspaceId, approval.quoteId);
       if (!quote) throw err;
-      const pricingUrl = new URL('/pricing', `${ctx.config.webPublicUrl}/`);
-      pricingUrl.searchParams.set('source', 'agent');
-      pricingUrl.searchParams.set('resume', `render:${input.projectId}:${quote.id}`);
       return {
-        status: 'checkout_required',
+        status: 'insufficient_credits',
         quote,
-        checkout: {
-          status: 'checkout_required',
+        creditAvailability: {
           balance: balance.available,
+          required: quote.creditCost,
           shortfall: Math.max(1, quote.creditCost - balance.available),
-          quoteId: quote.id,
-          quoteExpiresAt: quote.expiresAt,
-          pricingUrl: pricingUrl.toString(),
-          catalogVersion: BILLING_CATALOG.version,
         },
       };
     }
@@ -273,9 +265,9 @@ function summarize(name: McpToolName, output: unknown): string {
       return `Opening the focused caption editor for ${(o.project as { title: string }).title}.`;
     case 'render_caption_export': {
       const q = o.quote as { creditCost: number; id: string; expiresAt: string };
-      if (o.status === 'checkout_required') {
-        const checkout = o.checkout as { pricingUrl: string; shortfall: number };
-        return `More credits are needed (${checkout.shortfall} short). Ask the user to open ${checkout.pricingUrl}; after checkout, retry the same approved quote before it expires.`;
+      if (o.status === 'insufficient_credits') {
+        const credits = o.creditAvailability as { balance: number; required: number; shortfall: number };
+        return `This export requires ${credits.required} existing credits; ${credits.balance} are available (${credits.shortfall} short). No export started and no credits were reserved or charged. The user can keep editing or choose different export options and review a new quote. Do not retry this export automatically.`;
       }
       return o.status === 'quote_required'
         ? `Quote ${q.id}: ${q.creditCost} credits, expires ${q.expiresAt}. Approval required before rendering.`

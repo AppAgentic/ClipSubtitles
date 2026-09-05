@@ -305,25 +305,31 @@ describe('MCP conformance', () => {
       .prepare('UPDATE credit_accounts SET available = 0 WHERE workspace_id = ?')
       .run(workspaceId);
     rawDb.prepare('UPDATE credit_pools SET available = 0 WHERE workspace_id = ?').run(workspaceId);
-    const needsCheckout = structured<{
+    const creditsBeforeInsufficient = rawDb.prepare('SELECT available, reserved FROM credit_accounts').all();
+    const ledgerBeforeInsufficient = rawDb.prepare('SELECT * FROM credit_ledger').all();
+    const insufficientResult = await client.callTool({
+      name: 'render_caption_export',
+      arguments: {
+        projectId,
+        approval: { quoteId: quoted.quote.id, approvedCreditCost: quoted.quote.creditCost },
+        idempotencyKey: 'mcp-render-no-credits',
+      },
+    });
+    const insufficient = structured<{
       status: string;
-      checkout: { shortfall: number; pricingUrl: string; quoteId: string };
-    }>(
-      await client.callTool({
-        name: 'render_caption_export',
-        arguments: {
-          projectId,
-          approval: { quoteId: quoted.quote.id, approvedCreditCost: quoted.quote.creditCost },
-          idempotencyKey: 'mcp-render-no-credits',
-        },
-      }),
-    );
-    expect(needsCheckout.status).toBe('checkout_required');
-    expect(needsCheckout.checkout).toMatchObject({
-      quoteId: quoted.quote.id,
+      creditAvailability: { balance: number; required: number; shortfall: number };
+    }>(insufficientResult);
+    expect(insufficient.status).toBe('insufficient_credits');
+    expect(insufficient.creditAvailability).toEqual({
+      balance: 0,
+      required: quoted.quote.creditCost,
       shortfall: quoted.quote.creditCost,
     });
-    expect(needsCheckout.checkout.pricingUrl).toContain('/pricing?source=agent');
+    expect(JSON.stringify(insufficientResult)).not.toMatch(/pricing|checkout|upsell/i);
+    expect(JSON.stringify(insufficientResult.content)).toContain('No export started');
+    expect(rawDb.prepare('SELECT available, reserved FROM credit_accounts').all()).toEqual(creditsBeforeInsufficient);
+    expect(rawDb.prepare('SELECT * FROM credit_ledger').all()).toEqual(ledgerBeforeInsufficient);
+    expect(rawDb.prepare('SELECT id FROM tasks').all()).toEqual(tasksBeforeQuote);
     rawDb
       .prepare('UPDATE credit_accounts SET available = 10 WHERE workspace_id = ?')
       .run(workspaceId);

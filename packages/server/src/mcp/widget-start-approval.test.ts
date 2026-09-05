@@ -112,12 +112,19 @@ describe('widget start and export approval', () => {
     expect(h.callTool).toHaveBeenCalledExactlyOnceWith('render_caption_export', { projectId: 'proj_1', settings: q.settings });
     expect(h.render).toHaveBeenCalledOnce();
   });
-  it('renders checkout without implying payment or retrying the export automatically', async () => {
-    const h = harness({ status: 'checkout_required', quote: quote(), checkout: { balance: 1, shortfall: 11, pricingUrl: 'https://elsewhere.test/pay' } });
+  it('shows insufficient existing credits without purchase links or automatic export retries', async () => {
+    const h = harness({ status: 'insufficient_credits', quote: quote(), creditAvailability: { balance: 1, required: 12, shortfall: 11 } });
     h.run('renderApproval()');
-    await h.elements.get('add-credits')!.onclick!();
-    expect(h.openExternal).toHaveBeenCalledWith('https://clipsubtitles.com/pricing');
+    expect(h.html()).toContain('No credits were reserved or charged');
+    expect(h.html()).toContain('Available: 1. Shortfall: 11.');
+    expect(h.html()).not.toMatch(/pricing|checkout|add-credits|View credit options|href=/i);
+    expect(h.elements.has('approve')).toBe(false);
     expect(h.callTool).not.toHaveBeenCalled();
+    await h.elements.get('change')!.onclick!();
+    expect(h.followUp).toHaveBeenCalledWith(expect.stringContaining('create a new quote'));
+    await h.elements.get('edit-project')!.onclick!();
+    expect(h.callTool).toHaveBeenCalledExactlyOnceWith('open_caption_editor', { projectId: 'proj_1' });
+    expect(h.openExternal).not.toHaveBeenCalled();
   });
   it('guards double clicks and submits only the immutable quote and exact credit amount', async () => {
     const h = harness({ quote: quote() });

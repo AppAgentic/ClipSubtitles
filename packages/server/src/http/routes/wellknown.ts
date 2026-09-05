@@ -65,6 +65,10 @@ ${tools}
 export function registerWellKnownRoutes(app: Hono<AppEnv>, ctx: AppContext): void {
   const metadata = (c: { json: (body: unknown, status?: 200) => Response }) =>
     c.json(protectedResourceMetadata(ctx), 200);
+  // Public ownership proof from the ClipSubtitles OpenAI draft; not an authentication secret.
+  app.get('/.well-known/openai-apps-challenge', (c) =>
+    c.text('E-I1h-rjId3wiz0VU6UHekFfzfdTN7zzwAG6hpR0cfo'),
+  );
   app.get('/.well-known/oauth-protected-resource', metadata);
   app.get('/.well-known/oauth-protected-resource/api/mcp', metadata);
   app.get('/llms.txt', (c) => c.text(llmsTxt(ctx)));
