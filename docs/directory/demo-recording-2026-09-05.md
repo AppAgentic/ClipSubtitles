@@ -4,8 +4,9 @@ Prepared review material; this does not record a directory submission or approva
 
 ## Reviewer links
 
+- Guided recording: https://clipsubtitles.com/marketing/clipsubtitles-reviewer-guided-20260905-v2.mp4
 - Viewing page: https://clipsubtitles.com/review/caption-workflow-20260905/index.html
-- Direct recording: https://clipsubtitles.com/marketing/clipsubtitles-reviewer-workflow-20260905-v1.mp4
+- Plain recording: https://clipsubtitles.com/marketing/clipsubtitles-reviewer-workflow-20260905-v1.mp4
 - Actual output: https://clipsubtitles.com/marketing/clipsubtitles-reviewer-result-20260905-v1.mp4
 - Actual subtitles: https://clipsubtitles.com/marketing/clipsubtitles-reviewer-result-20260905-v1.srt
 
@@ -57,3 +58,11 @@ prerequisites or guarantee review approval.
 | Workflow recording | 5,116,022 | `38b1220014b59686ce690cdc6eff8baa22d307a232c3e3b44bfa8ea53971f6eb` |
 | Captioned output | 6,195,310 | `5fceb7d3f9768aba4c11a95cfb9f610eb87202da49b1df1602ac227376355d77` |
 | SRT | 473 | `9f23fe1b4a0f70b6d79e1240edb68b8260c89bb289b12823f60f5924c768e4ec` |
+
+## Guided second pass
+
+The primary player now shows the 233.7-second, 1920×1080 guided edit requested by the operator. Eleven numbered explanations sit outside the source footage. Eased zooms focus on localized controls; quote and download views retain their full width. Highlights mark observed controls, not reconstructed UI. The final 12 seconds show the actual exported file with its saved correction. The original plain edit remains linked. Chapter buttons allow reviewers to jump to each step. Both walkthrough versions are silent; the separately linked exported MP4 retains its original audio.
+
+The host banner obscures part of the correction input in the source recording. The guided edit highlights the visible word selection and independently verified result; it does not claim the hidden input is visible. Independent visual recheck confirmed quote, approval and download controls remain in frame.
+
+Guided artifact: 12069433 bytes; SHA-256 `61757faabc93ca69f7343776d998c40bd99cf11186d2dcb5f876f7f91361814f`.
