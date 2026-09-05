@@ -1,5 +1,14 @@
 # Submission checklist — directory listing
 
+> Current audit: [submission-status-2026-09-05.md](submission-status-2026-09-05.md).
+> The checklist below is historical: production is live, OAuth uses OIDC scopes,
+> and current OpenAI field limits/test-case/screenshot requirements supersede it.
+
+- [x] Demo recording prepared, published and added to the submission packet:
+  https://clipsubtitles.com/review/caption-workflow-20260905/index.html
+- [x] Save the demo URL to the exact ClipSubtitles 0.1.0 portal draft;
+  persistence verified by Exit and reopen in the ClipSubtitles project.
+
 **Do not start the form until every box in "Before" is ticked and the release
 owner has signed off.** Submission is gate 6 in `PARKED_ACTIONS.md`; this
 checklist is what "ready" means. Nothing here has been done yet unless marked.

@@ -1,23 +1,18 @@
 # Directory readiness packet (Phase 4)
 
-**Status: PREPARED, NOT SUBMITTED.** Nothing in this folder has been sent to the
-ChatGPT/OpenAI apps directory, the Anthropic/Claude connector directory, or any
-other listing. Submission is an explicit approval gate — see
-`PARKED_ACTIONS.md` (gate 6) — and depends on gates 1–3 (staging deploy,
-WorkOS production client, domain/TLS) landing first.
+**Status: PREPARED, NOT SUBMITTED.**
 
-This packet is the reviewable input for that decision. Every claim in it is
-backed by code or a check you can run locally; anything that is not yet true
-in production is marked **[after deploy]**.
+Current dated portal evidence: [submission-status-2026-09-05.md](submission-status-2026-09-05.md). A ClipSubtitles draft and demo link have been saved; no final submission has occurred. Joe authorized completing preparation for review on 2026-09-05, with Submit explicitly withheld.
 
-| File | What it is | Consumed by |
-| --- | --- | --- |
-| `capability-manifest.json` | Machine-readable description of the connector: endpoint, transport, auth, scopes, the eight tools, side effects, billing, limits, data handling | Directory submission form, internal review |
-| `listing-copy.md` | Human-facing name, tagline, descriptions, category, screenshots list, "does not do" statements | Directory listing fields |
-| `reviewer-fixture.md` | A scripted end-to-end run a directory reviewer (or we, before submitting) can follow against staging or local mock auth, with expected outputs | Reviewer instructions field |
-| `starter-prompts.md` | Suggested first prompts, phrased so the model reaches for the right tool and asks before spending credits | Directory "starter prompts" |
-| `submission-checklist.md` | Pre-flight checklist: what must be true before the form is filled in, who approves, what evidence to attach | Release owner |
-| `cimd-dcr-notes.md` | How clients register: Dynamic Client Registration locally today, CIMD/DCR through WorkOS AuthKit in production; the exact settings and how to verify | Auth/infra owner |
+| File | Purpose |
+| --- | --- |
+| [listing-copy.md](listing-copy.md) | Proposed 1.0.0 listing fields with current limits |
+| [starter-prompts.md](starter-prompts.md) | Three final candidate starter prompts and screenshot mapping |
+| [reviewer-packet-1.0.0.md](reviewer-packet-1.0.0.md) | Exactly five positive and three negative tests, release notes, and concrete remaining gates |
+| [tool-justifications-1.0.0.md](tool-justifications-1.0.0.md) | Current flags and draft rationale for 12 public tools plus app-only upload helper |
+| [demo-recording-2026-09-05.md](demo-recording-2026-09-05.md) | Published demo evidence and limitations |
+
+`capability-manifest.json`, `reviewer-fixture.md`, `submission-checklist.md` and `cimd-dcr-notes.md` retain historical engineering detail and may contain superseded pre-deployment values. Do not paste them into the portal unchanged. Use the dated packet and production readback for current OAuth scopes, source limits, field limits and saved state. None is the verified schema for the portal's JSON importer.
 
 ## Verify locally (no external calls)
 
