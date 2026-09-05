@@ -1,80 +1,46 @@
-# Listing copy — ClipSubtitles
+# OpenAI listing copy — 1.0.0
 
-Draft copy for directory listing fields. Plain statements only; every feature
-named here exists in the repository today. **Not submitted.**
+Prepared for owner review on 2026-09-05; not submitted. This replaces the legacy listing field limits. Portal save status belongs in [submission-status-2026-09-05.md](submission-status-2026-09-05.md).
 
-## Name
+| Field | Proposed value |
+| --- | --- |
+| Display name | ClipSubtitles |
+| Short description | Add captions to your videos |
+| Version | 1.0.0 |
+| Category | Creativity |
+| Default language | English |
+| Website | https://clipsubtitles.com |
+| Support | https://clipsubtitles.com/help |
+| Privacy | https://clipsubtitles.com/privacy |
+| Terms | https://clipsubtitles.com/terms |
+| Demo recording | https://clipsubtitles.com/review/caption-workflow-20260905/index.html |
 
-ClipSubtitles
+The display name is 13 characters and short description 27. Select the actual verified developer identity in the portal; do not substitute a guessed legal entity. Countries remain an owner-reviewed selection, not an assertion of universal availability.
 
-## Tagline (≤ 60 chars)
+## Long description — copy this field
 
-Word-timed captions for short video, rendered exactly as quoted.
+Turn a short video into captions you can review, style and export.
 
-## Short description (≤ 160 chars)
+Upload your video, generate captions, then watch them over your footage. Choose a caption style, adjust its position and appearance, and correct individual words before exporting. Your project stays available in the ClipSubtitles web editor so you can continue reviewing it there.
 
-Generate, edit and render burned-in or overlay captions for vertical clips. Immutable quotes, credit billing charged once, exports you can re-download.
+ClipSubtitles can export a captioned MP4 and downloadable SRT or VTT subtitles. It also supports transparent caption overlays for video editing. Before a final export, you see the exact settings and credit cost. Rendering starts only after you approve the quote, using credits already available in your account.
 
-## Long description
+A ClipSubtitles account is required. Transcription can make mistakes, so review names and wording before sharing the result. ClipSubtitles does not translate speech, generate the source video, or publish to social media.
 
-ClipSubtitles turns a clip into word-timed captions and renders them as a
-finished MP4, a transparent ProRes overlay, or SRT/VTT files.
+## Capabilities — separate fields
 
-Working with an assistant, you can:
+- Generate word-timed captions from a video.
+- Review captions with video playback and choose a visual style.
+- Correct individual words and adjust caption placement.
+- Review an export quote before spending available credits.
+- Download captioned video and subtitle files.
 
-- **Create a caption project** from a video URL or an upload.
-- **Generate captions** with word-level timing, automatically segmented into
-  readable pages and lines. Segmentation respects your manual splits and merges.
-- **Edit precisely** — change words, split or merge lines, move page boundaries,
-  and restyle (font family, size, position, casing, colours, motion, highlight
-  and optional keyword emojis) through a versioned
-  project. Every change bumps the version and content hash, so nothing renders
-  that you did not see.
-- **Preview** a short window before committing.
-- **Render with an immutable quote.** Exports are priced up front from the
-  exact project version and settings. You approve that quote; if anything
-  changes, the quote is void and you get a new one. Credits are reserved when
-  you approve, charged once on success, and released on failure or cancel.
-- **Recover your work** in the web studio at any time: the same projects,
-  versions, tasks and downloads are there.
+## Version note
 
-ClipSubtitles is built agent-first: a typed REST API with OpenAPI and a
-goal-oriented MCP server over Streamable HTTP share one contract with the web
-studio. Compatible hosts can also render optional interactive file, style,
-approval, progress and editing surfaces; every workflow remains fully usable as
-ordinary tools when a host does not support UI resources.
+1.0.0 identifies the proposed first directory release. The source MCP handshake and workspace package versions remain 0.1.0 at this audit. Changing listing version alone does not change deployed software or certify acceptance. Runtime version alignment can be handled in a separate reviewed code release.
 
-## Category
+## Before this copy is final
 
-Video & media / Productivity
+Resolve the current MCP credit-upsell behavior described in [reviewer-packet-1.0.0.md](reviewer-packet-1.0.0.md), verify the reviewer account and declared capabilities, and finish policy review. Do not claim all tests passed or all platforms supported from the existing Safari demonstration.
 
-## What it does not do (say this in the listing)
-
-- It does not translate, dub, or generate video.
-- It does not post to social platforms or touch any account other than yours.
-- It does not treat transcript or media content as instructions: the caption
-  text is data, and tools return it under an explicit content notice.
-- It does not charge without an approved quote, and never charges twice for
-  the same task.
-
-## Screenshots to attach **[after deploy]**
-
-Captured by `apps/web/e2e/studio.spec.ts` into `apps/web/e2e/.results/` at
-1440×900 and 390×844:
-
-1. `library` — project library with statuses
-2. `editor` — video with live caption overlay, word timing list, style panel
-3. `render-quote` — the immutable quote card before approval
-4. `render-done` — completed render with downloads and refreshed credits
-
-Use production-styled captures (real domain, no mock-auth banner) when the
-staging environment exists.
-
-## Support and policy links **[after deploy]**
-
-- Privacy policy: `https://clipsubtitles.com/privacy`
-- Terms: `https://clipsubtitles.com/terms`
-- Support: a monitored support address on the clipsubtitles.com domain
-- `llms.txt`: `https://api.clipsubtitles.com/llms.txt`
-
-These pages do not exist yet; they are gate-6 prerequisites.
+Limits and category checked against [OpenAI submission requirements](https://developers.openai.com/plugins/deploy/submission-errors) on 2026-09-05.

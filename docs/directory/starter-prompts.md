@@ -1,28 +1,13 @@
-# Starter prompts
+# OpenAI starter prompts — 1.0.0
 
-Suggested first prompts for the directory listing. Each one maps onto a real
-tool path and none of them implies an action the server cannot do. Paid
-renders always surface the quote first; the prompts are worded so the model
-asks before spending credits. **Not submitted.**
+Exactly three proposed listing prompts, prepared for review. Each is unique, one line, below 128 characters, and contains no app mention. These replace the former ten-prompt brainstorming library.
 
-| Prompt | Expected tool path |
-| --- | --- |
-| "Caption this clip: https://example.com/clip.mp4 — keep the captions at the bottom." | `create_caption_project` (sourceUrl, position via `generate_captions`) → poll `get_caption_task` → `generate_captions` → `get_caption_project` |
-| "I have a video on my laptop. Set up a caption project and tell me where to upload it." | `create_caption_project` without `sourceUrl` → return the web upload link → wait for the user |
-| "Show me the captions you generated and flag anything that looks mis-heard." | `get_caption_project` (pages, optionally `words=true` window) — model reports, does not rewrite words |
-| "Fix the word at 00:12 — it should be 'Ruvix', not 'Rubik'." | `update_caption_project` with a word-text op and `expectedVersion` |
-| "Move the captions to the top and make them a bit larger." | `update_caption_project` with style/position ops |
-| "Split the second caption after 'tonight'." | `update_caption_project` with a page-split op |
-| "Give me a quick preview before we render." | `open_caption_editor` → instant video and style preview |
-| "How much would a 1080p MP4 plus SRT cost?" | `render_caption_export` **without** approval → show the immutable quote; do not reserve credits |
-| "Go ahead and render it." (after a quote was shown) | `render_caption_export` with `approval: {quoteId, approvedCreditCost}` → `get_caption_task` until finished → download links |
-| "Cancel that render." | `cancel_caption_task` → confirm reserved credits were released |
+| # | Prompt | Expected flow | Screenshot subject |
+| --- | --- | --- | --- |
+| 1 | Add captions to a video I upload and let me choose a style. | `open_caption_start` → upload → `generate_captions` → one progress card → `open_caption_editor` | Real uploaded talking-head video with captions and visible styles |
+| 2 | Help me review my video's captions and correct a word before exporting. | Identify the user's existing project or request a video; `open_caption_editor` → explicit word correction through `update_caption_project` | Actual saved correction and video, with no private account data |
+| 3 | Show me the cost to export my captioned video as an MP4 with an SRT file. | Identify a ready project; `render_caption_export` without approval → show quote and wait | Real quote with output types and visible approval control |
 
-## Phrasing rules used above
+Capture one actual PNG/JPEG UI image per prompt at 706 pixels wide and 400–860 pixels tall. These are capture subjects, not completed assets. Avoid synthetic or mock-auth listing screenshots. Prompt 2 and 3 need a prepared project; a fresh chat must request the video/project rather than inventing a project ID. `open_caption_progress` opens one updating card; subsequent polling uses `get_caption_task`.
 
-- Never name a price or credit cost in the prompt — it comes from the quote.
-- Never suggest the assistant can post the result anywhere; downloads only.
-- Prompts that edit text name the exact word: edits are explicit per-word
-  operations, never "clean up the transcript".
-
-Use `open_caption_progress` once when presenting a live task card. It refreshes itself and shows the completed export or the next editing action. Keep subsequent agent checks on the data-only `get_caption_task` tool to avoid duplicate progress cards.
+[OpenAI screenshot and prompt requirements](https://developers.openai.com/plugins/deploy/submission-errors), checked 2026-09-05.
