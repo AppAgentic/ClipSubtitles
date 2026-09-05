@@ -20,7 +20,11 @@ Saved: display name ClipSubtitles; short description “Create and edit video ca
 - Draft: `asdk_app_6a9c6c7c3bd481918c6e63e5a7658fe9`
 - Version record: `asdk_app_v_6a9c6c7d7e8081918b0209a73989cc3d`
 
-The domain token has been generated and separate deployment preparation is underway; no deployment or successful domain verification is claimed. All five positive and three negative intent case fields have been saved; this does not mark them executed. Positive live execution remains explicitly pending and reviewer credential fields remain blank. Screenshots 1 and 2 have been saved. The third starter is being changed to “Create a captioned version of my video that I can download and share.”; its completed-export screenshot is in preparation, so this record does not yet claim that replacement saved. Global defaults remain en-US and Allow all; these unchanged defaults are not a reviewed availability decision. No attestations or submission were performed.
+The production domain is now **verified in OpenAI**. A fresh OAuth scan discovered all 13 tools and reflects the updated annotations. The official submission JSON import succeeded: all 39 annotation explanations and the five positive/three negative intent definitions matched readback, with zero missing fields and zero mismatches. Accepted import artifact: `/tmp/clipsubtitles-portal-import/chatgpt-app-submission.json`. The portal required an `apps-sdk` schema identifier despite the published `plugins` constant; preserve the accepted artifact rather than regenerating its identifier blindly.
+
+All three screenshots and the result-led third starter “Create a captioned version of my video that I can download and share.” are saved and verified. Actual reviewer-account test execution remains pending. Joe completed the Cloudflare interaction; secure email verification then succeeded. The subsequent state-less callback error was expected for that entry path; a normal /auth/login returned to the landing page. Authenticated reviewer workspace identity is not yet verified, and the browser inspection tool currently returns title-only state. A successful scan/import does not prove reviewer authentication or end-to-end execution.
+
+The current ElevenLabs account audit identified the exact ClipSubtitles account on **Starter**, with **Improve models ON**. Provider eligibility remains unresolved; the traditional Google Cloud Speech-to-Text alternative is a research/implementation plan only. No new-provider implementation or enabling is claimed. Consent-only website improvements are assigned to the release agent; no deployment is claimed by this document without their receipt. Global defaults remain en-US and Allow all; do not silently restrict availability to the UK based on a parked UK review. No attestations or submission were performed.
 
 During earlier prerequisite inspection, Create plugin → With MCP → Continue unexpectedly created an untitled draft under the previous project. Only that newly created empty draft was removed; the existing AppStoreCopilot draft was verified unchanged. The create-on-Continue behavior is recorded in the owning shared skill.
 
@@ -33,16 +37,14 @@ During earlier prerequisite inspection, Create plugin → With MCP → Continue 
 
 ## Remaining before submission
 
-1. Deploy and verify the generated domain challenge. Confirm the saved scan is still current after any server metadata release; complete annotation justifications and explanations for any actually reported external frame domains.
-2. Review the prepared long description and release notes, save the final availability/language choices, and reconcile listing claims with the final serving code. Name, short description, category, author, URLs, icons and three starters have been saved.
-3. Provide a dedicated reviewer identity with seeded nonprivate sample data, sufficient existing credits and unobstructed password login. Execute the saved five positive cases and three negative **non-trigger intent** cases from `reviewer-packet-1.0.0.md`. API security checks are retained separately in its appendix, not substituted for portal negative cases.
-4. Finish and save the third result-led starter and its completed-export screenshot. Screenshots 1 and 2 are already saved. Every screenshot must be 706 pixels wide and 400–860 pixels tall; existing engineering screenshots are not automatically the listing set.
-5. Review and release the prepared MCP commerce and domain changes (`17ea678`, `59a3cab`). Parent reports full checks passed with 406 tests and local visual verification; no production deployment is claimed by this status. Verify the serving low-balance path and live domain response before commerce attestation/domain verification. Resolve remaining annotation questions against exact behavior.
-6. Complete owner policy review and required attestations. Privacy/Terms remain early-access text; reconcile data handling, controller/contact details, retention and processor terms before attesting. No legal-page edit is included here.
-7. Reopen the final draft for Joe's review and explicit approval to submit. No directory submission has been authorized or performed.
+1. Resolve the concrete provider entitlement/age issue in `remaining-decisions-2026-09-05.md`. Do not mark the app as mature content to work around provider age restrictions, or claim a different transcription provider is deployed when it remains a plan.
+2. Finish dedicated reviewer access and execute the saved five positive cases and three negative **non-trigger intent** cases. Record actual results and evidence, including explicit quote approval, export/download and cancellation. API security tests remain a separate appendix, not substitutes.
+3. Complete the consent-only release and verify anonymous first-visit/reopen/withdrawal behavior against the serving revision. Reconcile policy/processor disclosures with the final active provider chain. The broader adults-only policy draft remains held; publishing consent controls alone does not resolve provider eligibility.
+4. Reconcile final listing/release notes, availability, provider disclosures and imported annotation explanations against the actual release. Domain verification, 13-tool OAuth scan, all three screenshots/starters and all 39 justification fields are already saved and read back.
+5. Present the reopened final draft and execution evidence to Joe. Binding terms/attestations and final submission remain for his explicit review/approval. No directory submission has been authorized or performed.
 
 Official requirements checked2026-09-05:
 https://developers.openai.com/plugins/deploy/submission-errors#final-directory-submission
 https://developers.openai.com/plugins/deploy/submission
 
-A successful tool scan and selected verified identity have been read back; domain verification and reviewer acceptance remain distinct unfinished checks.
+Domain verification, fresh tool discovery and JSON field persistence are complete; reviewer acceptance and provider eligibility remain distinct unfinished checks.
