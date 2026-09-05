@@ -6,6 +6,7 @@ import './globals.css';
 import { ToastProvider } from '@/components/ui/Toast';
 import { THEME_BOOT_SCRIPT } from '@/lib/theme';
 import { GleapSupportProvider } from '@/components/support/GleapSupport';
+import { PrivacyControls } from '@/components/privacy/PrivacyControls';
 import { PaidFunnelTracker } from '@/components/analytics/PaidFunnelTracker';
 
 export const metadata: Metadata = {
@@ -52,6 +53,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <ToastProvider>
               <PaidFunnelTracker />
               {children}
+              <PrivacyControls />
             </ToastProvider>
           </GleapSupportProvider>
         </div>

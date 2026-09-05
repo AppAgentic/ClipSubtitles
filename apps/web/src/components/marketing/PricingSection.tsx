@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { BILLING_CATALOG, type BillingSku, type CheckoutSource } from '@clipsubtitles/contracts';
 import { api, isUnauthenticated } from '@/lib/api';
-import { readAttribution, trackPaidFunnelEvent } from '@/lib/attribution';
+import { readCheckoutAttribution, trackPaidFunnelEvent } from '@/lib/attribution';
 
 const FEATURES: Record<string, string[]> = {
   free: ['A complete first captioned clip', 'Agent and API access', 'Caption styles and exports'],
@@ -150,7 +150,7 @@ function CheckoutButton({
       setBusy(true);
       setError('');
       try {
-        const attribution = readAttribution();
+        const attribution = readCheckoutAttribution();
         trackPaidFunnelEvent('plan_selected', { sku });
         const completion = new URLSearchParams({ checkout: 'complete', source: context.source });
         if (context.resume) completion.set('resume', context.resume);

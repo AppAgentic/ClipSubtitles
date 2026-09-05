@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useRef, type ReactNode } from 'react';
-import { usePathname } from 'next/navigation';
-import Gleap from 'gleap';
+import type { ReactNode } from 'react';
+import type GleapType from 'gleap';
+type GleapClient = typeof GleapType;
+let Gleap: GleapClient | undefined;
 import type { Me } from '@clipsubtitles/contracts';
 
 const SUPPORT_EMAIL = 'support@clipsubtitles.com';
@@ -26,9 +27,10 @@ const NETWORK_PROP_BLOCKLIST = [
 
 let initialized = false;
 let pendingIdentity: Me | null = null;
+let initializing: Promise<boolean> | null = null;
 
 function applyIdentity(me: Me): void {
-  if (!initialized) {
+  if (!initialized || !Gleap) {
     pendingIdentity = me;
     return;
   }
@@ -52,47 +54,49 @@ export function identifySupportUser(me: Me): void {
 
 export function clearSupportUser(): void {
   pendingIdentity = null;
-  if (initialized) Gleap.clearIdentity();
+  if (initialized) Gleap?.clearIdentity();
 }
 
-export function openSupport(): void {
-  if (initialized) {
-    Gleap.open();
-    return;
-  }
-  window.location.assign(`mailto:${SUPPORT_EMAIL}?subject=ClipSubtitles%20support`);
-}
+async function initializeSupport(): Promise<boolean> {
+  if (initialized) return true;
+  if (initializing) return initializing;
+  const sdkToken = process.env.NEXT_PUBLIC_GLEAP_SDK_TOKEN?.trim();
+  if (!sdkToken) return false;
 
-export function GleapSupportProvider({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
-  const initializedRef = useRef(false);
-
-  useEffect(() => {
-    const sdkToken = process.env.NEXT_PUBLIC_GLEAP_SDK_TOKEN?.trim();
-    if (!sdkToken || initializedRef.current) return;
-
-    initializedRef.current = true;
+  initializing = Promise.resolve().then(async () => {
     try {
-      Gleap.initialize(sdkToken);
+      Gleap = (await import('gleap')).default;
+      Gleap.setDisablePageTracking(true);
+      Gleap.disableConsoleLogOverwrite();
+      Gleap.setMaxNetworkRequests(0);
+      Gleap.initialize(sdkToken, true);
       Gleap.showFeedbackButton(false);
       Gleap.hideAiChatbar();
       Gleap.setNetworkLogsBlacklist(NETWORK_LOG_BLOCKLIST);
       Gleap.setNetworkLogPropsToIgnore(NETWORK_PROP_BLOCKLIST);
       initialized = true;
-
       if (pendingIdentity) applyIdentity(pendingIdentity);
+      return true;
     } catch {
-      initializedRef.current = false;
       initialized = false;
+      return false;
+    } finally {
+      initializing = null;
     }
-  }, []);
+  });
+  return initializing;
+}
 
-  useEffect(() => {
-    if (!initialized || !pathname) return;
-    Gleap.attachCustomData({ currentPage: pathname });
-    Gleap.trackEvent('page_view', { page: pathname });
-  }, [pathname]);
+export async function openSupport(): Promise<void> {
+  if (initialized) {
+    Gleap?.open();
+    return;
+  }
+  if (await initializeSupport()) Gleap?.open();
+  else window.location.assign(`mailto:${SUPPORT_EMAIL}?subject=ClipSubtitles%20support`);
+}
 
+export function GleapSupportProvider({ children }: { children: ReactNode }) {
   return children;
 }
 
@@ -104,7 +108,7 @@ export function SupportButton({
   className?: string;
 }) {
   return (
-    <button type="button" className={className} onClick={openSupport}>
+    <button type="button" className={className} onClick={() => void openSupport()}>
       {children}
     </button>
   );

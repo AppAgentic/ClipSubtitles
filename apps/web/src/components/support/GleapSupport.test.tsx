@@ -1,10 +1,13 @@
 // @vitest-environment jsdom
 import { cleanup, render, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { GleapSupportProvider, identifySupportUser } from './GleapSupport';
+import { GleapSupportProvider, identifySupportUser, openSupport } from './GleapSupport';
 
 const gleap = vi.hoisted(() => ({
   initialize: vi.fn(),
+  setDisablePageTracking: vi.fn(),
+  disableConsoleLogOverwrite: vi.fn(),
+  setMaxNetworkRequests: vi.fn(),
   showFeedbackButton: vi.fn(),
   hideAiChatbar: vi.fn(),
   setNetworkLogsBlacklist: vi.fn(),
@@ -26,7 +29,7 @@ afterEach(() => {
 });
 
 describe('Gleap support', () => {
-  it('initializes privately and applies queued signed-in user context', async () => {
+  it('does not load on mount; initializes only for requested support and applies queued context', async () => {
     process.env.NEXT_PUBLIC_GLEAP_SDK_TOKEN = 'public_sdk_token';
     identifySupportUser({
       user: { id: 'user_test', displayName: 'Test User', emailMasked: 't***@example.com' },
@@ -48,7 +51,14 @@ describe('Gleap support', () => {
       </GleapSupportProvider>,
     );
 
-    await waitFor(() => expect(gleap.initialize).toHaveBeenCalledWith('public_sdk_token'));
+    expect(gleap.initialize).not.toHaveBeenCalled();
+    expect(gleap.identify).not.toHaveBeenCalled();
+    await openSupport();
+    await waitFor(() => expect(gleap.initialize).toHaveBeenCalledWith('public_sdk_token', true));
+    expect(gleap.setDisablePageTracking).toHaveBeenCalledWith(true);
+    expect(gleap.disableConsoleLogOverwrite).toHaveBeenCalled();
+    expect(gleap.setMaxNetworkRequests).toHaveBeenCalledWith(0);
+    expect(gleap.trackEvent).not.toHaveBeenCalled();
     expect(gleap.showFeedbackButton).toHaveBeenCalledWith(false);
     expect(gleap.hideAiChatbar).toHaveBeenCalled();
     expect(gleap.setNetworkLogsBlacklist).toHaveBeenCalledWith(
