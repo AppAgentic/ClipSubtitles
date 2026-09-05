@@ -426,13 +426,14 @@ describe('assembled caption workspace', () => {
     video.dispatchEvent(new h.win.Event('timeupdate'));
     expect(h.el('video-time').textContent).toBe('0:04 / 0:12');
     expect(h.el('scene-count').textContent).toBe('Caption 5 of 12');
-    h.el('video-mute').click();
     expect(video.muted).toBe(true);
-    expect(h.el('video-mute').getAttribute('aria-label')).toBe('Unmute video');
-    expect(h.el('video-mute').getAttribute('aria-pressed')).toBe('true');
     h.el('video-mute').click();
     expect(video.muted).toBe(false);
+    expect(h.el('video-mute').getAttribute('aria-label')).toBe('Mute video');
     expect(h.el('video-mute').getAttribute('aria-pressed')).toBe('false');
+    h.el('video-mute').click();
+    expect(video.muted).toBe(true);
+    expect(h.el('video-mute').getAttribute('aria-pressed')).toBe('true');
     video.play = vi.fn(async () => {
       throw new Error('Browser playback blocked');
     });

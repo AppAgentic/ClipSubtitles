@@ -78,7 +78,9 @@ export class TaskWorker {
     this.workerId = opts.workerId ?? newId('task').replace('task_', 'worker_');
     this.pollMs = opts.pollMs ?? ctx.config.worker.pollMs;
     this.leaseMs = opts.leaseMs ?? ctx.config.worker.leaseMs;
-    this.heartbeatMs = opts.heartbeatMs ?? Math.max(250, Math.floor(this.leaseMs / 4));
+    // Persist visible task progress promptly even when the lease is minutes long.
+    // Otherwise short transcription jobs finish before their first progress write.
+    this.heartbeatMs = opts.heartbeatMs ?? Math.max(250, Math.min(1_000, Math.floor(this.leaseMs / 4)));
     this.kinds = opts.kinds;
     this.maintenanceEveryMs = opts.maintenanceEveryMs ?? 30_000;
     this.retentionEveryMs = opts.retentionEveryMs ?? 10 * 60_000;
