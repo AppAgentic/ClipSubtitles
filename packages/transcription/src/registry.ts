@@ -1,3 +1,4 @@
+import { OpenAIWhisperProvider } from './adapters/openai-whisper';
 import { ElevenLabsScribeProvider } from './adapters/elevenlabs';
 import { GeminiTranscribeProvider } from './adapters/gemini';
 import { MOCK_PROFILES, MockTranscriptionProvider } from './mock';
@@ -5,6 +6,8 @@ import type { TranscriptionProvider } from './provider';
 import type { TruthSource } from './truth';
 
 export interface ProviderEnv {
+  OPENAI_API_KEY?: string | undefined;
+  OPENAI_TRANSCRIBE_MODEL?: string | undefined;
   TRANSCRIPTION_PROVIDERS?: string | undefined;
   GEMINI_API_KEY?: string | undefined;
   GEMINI_TRANSCRIBE_MODEL?: string | undefined;
@@ -20,6 +23,7 @@ export const KNOWN_PROVIDER_IDS = [
   'mock-noisy',
   'mock-drifty',
   'mock-flaky',
+  'openai-whisper',
   'elevenlabs',
   'gemini',
 ] as const;
@@ -49,12 +53,15 @@ export function createProviderRegistry(
     ...Object.values(MOCK_PROFILES).map(
       (profile) => new MockTranscriptionProvider({ ...mockOpts, profile }),
     ),
+    new OpenAIWhisperProvider({
+      ...(env.OPENAI_API_KEY ? { apiKey: env.OPENAI_API_KEY } : {}),
+      ...(env.OPENAI_TRANSCRIBE_MODEL ? { model: env.OPENAI_TRANSCRIBE_MODEL } : {}),
+    }),
     new ElevenLabsScribeProvider({
       ...(env.ELEVENLABS_API_KEY ? { apiKey: env.ELEVENLABS_API_KEY } : {}),
       ...(env.ELEVENLABS_SCRIBE_MODEL ? { model: env.ELEVENLABS_SCRIBE_MODEL } : {}),
       captureErrorDiagnostic:
-        env.ELEVENLABS_ERROR_DIAGNOSTICS === '1' ||
-        env.ELEVENLABS_ERROR_DIAGNOSTICS === 'true',
+        env.ELEVENLABS_ERROR_DIAGNOSTICS === '1' || env.ELEVENLABS_ERROR_DIAGNOSTICS === 'true',
       usdPerMinute: price(env, 'elevenlabs'),
     }),
     new GeminiTranscribeProvider({
