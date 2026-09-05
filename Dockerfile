@@ -1,7 +1,5 @@
 # syntax=docker/dockerfile:1.7
 FROM --platform=$BUILDPLATFORM node:24-bookworm-slim AS build-workspace
-ARG API_INTERNAL_URL=https://api.clipsubtitles.com
-ENV API_INTERNAL_URL=$API_INTERNAL_URL
 ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
 WORKDIR /workspace
@@ -16,14 +14,24 @@ COPY packages/render/package.json packages/render/package.json
 COPY packages/render-remotion/package.json packages/render-remotion/package.json
 COPY packages/server/package.json packages/server/package.json
 COPY apps/web/package.json apps/web/package.json
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store,sharing=locked pnpm install --frozen-lockfile
 
-COPY . .
-
+# Keep dependencies independent of application sources and web-only settings.
 FROM build-workspace AS server-build
+COPY tsconfig.base.json ./
+COPY packages ./packages
 RUN pnpm --filter @clipsubtitles/server build
 
 FROM build-workspace AS web-build
+COPY tsconfig.base.json ./
+COPY packages/contracts ./packages/contracts
+COPY packages/core ./packages/core
+COPY apps/web ./apps/web
+ARG API_INTERNAL_URL=https://api.clipsubtitles.com
+ENV API_INTERNAL_URL=$API_INTERNAL_URL
+# Build secrets do not invalidate Docker cache. Pass the non-secret Secret
+# Manager version (or bump this value) whenever the embedded SDK token changes.
+ARG WEB_ASSET_VERSION=1
 RUN --mount=type=secret,id=gleap_sdk_token,required=false \
     NEXT_PUBLIC_GLEAP_SDK_TOKEN="$(cat /run/secrets/gleap_sdk_token 2>/dev/null || true)" \
     pnpm --filter @clipsubtitles/web build
@@ -46,8 +54,10 @@ COPY packages/render/package.json packages/render/package.json
 COPY packages/render-remotion/package.json packages/render-remotion/package.json
 COPY packages/server/package.json packages/server/package.json
 COPY apps/web/package.json apps/web/package.json
-RUN --mount=type=cache,id=pnpm-target,target=/pnpm/store pnpm install --frozen-lockfile
-COPY . .
+RUN --mount=type=cache,id=pnpm-target,target=/pnpm/store,sharing=locked pnpm install --frozen-lockfile
+# The API/worker consume workspace packages, never web sources or design docs.
+COPY tsconfig.base.json ./
+COPY packages ./packages
 RUN pnpm --filter @clipsubtitles/server deploy --prod --legacy /output/server
 
 FROM node:24-bookworm-slim AS media-runtime

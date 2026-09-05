@@ -29,6 +29,10 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @clipsubtitles/web exec playwright install --with-deps chromium
+      - name: Validate release proof rejection cases
+        run: |
+          python3 -B scripts/test_ci_release_proof.py
+          python3 -B scripts/test_fast_release.py
       - name: Validate diagnostic redaction
         run: python3 -B scripts/test_ci_diagnostics.py
       - run: REQUIRE_CLEAN_GIT=1 pnpm release:gate
@@ -61,3 +65,18 @@ jobs:
       - run: terraform -chdir=infra/terraform init -backend=false
       - run: terraform -chdir=infra/terraform validate
       - run: terraform -chdir=infra/terraform test
+
+  release-proof:
+    needs: [application, infrastructure]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record the exact tested source tree
+        run: python3 -B scripts/ci_release_proof.py --output release-proof.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-proof-${{ github.run_id }}-${{ github.run_attempt }}
+          path: release-proof.json
+          if-no-files-found: error
+          retention-days: 14

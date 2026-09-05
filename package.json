@@ -45,7 +45,8 @@
     "release:gate": "bash scripts/paid-traffic-gate.sh",
     "openapi:emit": "pnpm --filter @clipsubtitles/server openapi:emit",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
-    "postinstall": "test ! -f packages/server/build-widget.mjs || node packages/server/build-widget.mjs"
+    "postinstall": "test ! -f packages/server/build-widget.mjs || node packages/server/build-widget.mjs",
+    "release:build": "python3 -B scripts/fast-release.py"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

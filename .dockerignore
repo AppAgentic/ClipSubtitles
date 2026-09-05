@@ -10,3 +10,23 @@ artifacts
 coverage
 .env*
 !.env.example
+
+# Production images do not consume release metadata, design boards or tests.
+# The outer CI/Cloud Build source archive still contains these for the full gate.
+docs
+infra
+.github
+.claude
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+apps/web/e2e
+**/test-results
+**/playwright-report
+**/.results
+**/*.tsbuildinfo
+**/*.log
+**/.DS_Store
+# Recreate browser assets from source/locked dependencies instead of local output.
+packages/server/src/mcp/generated
+apps/web/public/fonts
