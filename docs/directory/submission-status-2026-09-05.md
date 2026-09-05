@@ -20,7 +20,7 @@ Saved: display name ClipSubtitles; short description “Create and edit video ca
 - Draft: `asdk_app_6a9c6c7c3bd481918c6e63e5a7658fe9`
 - Version record: `asdk_app_v_6a9c6c7d7e8081918b0209a73989cc3d`
 
-The domain token has been generated and separate deployment preparation is underway; no deployment or successful domain verification is claimed. Reviewer credential fields remain blank. All five positive and three negative intent tests remain unexecuted. No attestations or submission were performed.
+The domain token has been generated and separate deployment preparation is underway; no deployment or successful domain verification is claimed. All five positive and three negative intent case fields have been saved; this does not mark them executed. Positive live execution remains explicitly pending and reviewer credential fields remain blank. Screenshots 1 and 2 have been saved. The third starter is being changed to “Create a captioned version of my video that I can download and share.”; its completed-export screenshot is in preparation, so this record does not yet claim that replacement saved. Global defaults remain en-US and Allow all; these unchanged defaults are not a reviewed availability decision. No attestations or submission were performed.
 
 During earlier prerequisite inspection, Create plugin → With MCP → Continue unexpectedly created an untitled draft under the previous project. Only that newly created empty draft was removed; the existing AppStoreCopilot draft was verified unchanged. The create-on-Continue behavior is recorded in the owning shared skill.
 
@@ -35,9 +35,9 @@ During earlier prerequisite inspection, Create plugin → With MCP → Continue 
 
 1. Deploy and verify the generated domain challenge. Confirm the saved scan is still current after any server metadata release; complete annotation justifications and explanations for any actually reported external frame domains.
 2. Review the prepared long description and release notes, save the final availability/language choices, and reconcile listing claims with the final serving code. Name, short description, category, author, URLs, icons and three starters have been saved.
-3. Provide a dedicated reviewer identity with seeded nonprivate sample data, sufficient existing credits and unobstructed password login. Populate and execute exactly five positive cases and three negative **non-trigger intent** cases from `reviewer-packet-1.0.0.md`. API security checks are retained separately in its appendix, not substituted for portal negative cases.
-4. Supply one PNG/JPEG per starter prompt at 706 pixels wide and 400–860 pixels tall. Existing engineering screenshots are not automatically the listing set.
-5. Review and release the prepared MCP commerce correction (commit `17ea678`, not deployed) and verify the low-balance path before commerce attestation. Resolve remaining annotation questions against exact behavior.
+3. Provide a dedicated reviewer identity with seeded nonprivate sample data, sufficient existing credits and unobstructed password login. Execute the saved five positive cases and three negative **non-trigger intent** cases from `reviewer-packet-1.0.0.md`. API security checks are retained separately in its appendix, not substituted for portal negative cases.
+4. Finish and save the third result-led starter and its completed-export screenshot. Screenshots 1 and 2 are already saved. Every screenshot must be 706 pixels wide and 400–860 pixels tall; existing engineering screenshots are not automatically the listing set.
+5. Review and release the prepared MCP commerce and domain changes (`17ea678`, `59a3cab`). Parent reports full checks passed with 406 tests and local visual verification; no production deployment is claimed by this status. Verify the serving low-balance path and live domain response before commerce attestation/domain verification. Resolve remaining annotation questions against exact behavior.
 6. Complete owner policy review and required attestations. Privacy/Terms remain early-access text; reconcile data handling, controller/contact details, retention and processor terms before attesting. No legal-page edit is included here.
 7. Reopen the final draft for Joe's review and explicit approval to submit. No directory submission has been authorized or performed.
 
